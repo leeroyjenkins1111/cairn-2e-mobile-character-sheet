@@ -1,0 +1,64 @@
+{
+  "armor": "1",
+  "background": "Fletchwind",
+  "bonds": "Anonymized bond text.",
+  "containers": [
+    { "id": 0, "name": "Main", "slots": 10 }
+  ],
+  "custom_background": "",
+  "custom_image": false,
+  "custom_name": "",
+  "deprived": false,
+  "description": "Anonymized Fletchwind description.",
+  "dexterity": 14,
+  "dexterity_max": 14,
+  "gold": 11,
+  "hp": 3,
+  "hp_max": 3,
+  "id": 1002,
+  "image_url": "portrait-placeholder.webp",
+  "items": [
+    {
+      "d6,bulky": [],
+      "description": "Anonymized bow description.",
+      "id": "fixture-bow",
+      "location": 0,
+      "name": "Wych Elm",
+      "tags": ["d6", "bulky"]
+    },
+    {
+      "d6": [],
+      "description": "",
+      "id": "fixture-knife",
+      "location": 0,
+      "name": "Serrated Knife",
+      "tags": ["d6"]
+    },
+    {
+      "1 Armor": [],
+      "description": "",
+      "id": "fixture-leather",
+      "location": 0,
+      "name": "Boiled Leather",
+      "tags": ["1 Armor"]
+    },
+    {
+      "description": "Restores 1d4 STR.",
+      "id": "fixture-salve",
+      "location": 0,
+      "name": "Heartroot Salve",
+      "tags": ["uses"],
+      "uses": 1
+    }
+  ],
+  "name": "Fixture Fletchwind",
+  "notes": "Anonymized notes.",
+  "omens": "",
+  "panicked": false,
+  "scars": "",
+  "strength": 12,
+  "strength_max": 12,
+  "traits": "Anonymized traits.",
+  "willpower": 9,
+  "willpower_max": 9
+}

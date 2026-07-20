@@ -563,14 +563,16 @@
   // 1. Constants
   // ============================================================
   const APP_ID = 'cairn-mobile-sheet';
-  const APP_VERSION = '0.1.0';
-  const SCHEMA_VERSION = 1;
+  const APP_VERSION = '0.2.0';
+  const SCHEMA_VERSION = 2;
   const STORAGE_KEY = `${APP_ID}:state`;
   const RECOVERY_KEY = `${APP_ID}:recovery`;
   const HISTORY_LIMIT = 50;
   const DICE_HISTORY_LIMIT = 20;
   const SAVE_DEBOUNCE_MS = 300;
   const DICE_SIDES = [4, 6, 8, 10, 12, 20, 100];
+  const DAMAGE_DIE_SIDES = [4, 6, 8, 10, 12];
+  const MAX_DAMAGE_DICE = 4;
   const ATTRS = {
     str: { label: 'SIŁ', full: 'Siła' },
     dex: { label: 'ZRE', full: 'Zręczność' },
@@ -688,6 +690,61 @@
   };
   const jsonEqual = (a, b) => JSON.stringify(a) === JSON.stringify(b);
 
+  function parseDamageFormulaNotation(notation, blast = false) {
+    const normalized = trimText(notation).toLowerCase().replace(/\s+/g, '');
+    if (!normalized) return null;
+    const pattern = /^d(?:4|6|8|10|12)(?:\+d(?:4|6|8|10|12)){0,3}$/;
+    if (!pattern.test(normalized)) return null;
+    const dice = normalized.split('+').map(token => toInt(token.slice(1), 0));
+    return { dice, keep: dice.length > 1 ? 'highest' : 'sum', blast: Boolean(blast) };
+  }
+
+  function normalizeDamageFormula(value, fallbackBlast = false) {
+    if (!value) return null;
+    if (typeof value === 'string') return parseDamageFormulaNotation(value, fallbackBlast);
+    if (typeof value !== 'object' || Array.isArray(value)) return null;
+    const dice = safeArray(value.dice).map(side => toInt(side, 0));
+    if (!dice.length || dice.length > MAX_DAMAGE_DICE || dice.some(side => !DAMAGE_DIE_SIDES.includes(side))) return null;
+    const keep = dice.length === 1 ? 'sum' : 'highest';
+    return { dice, keep, blast: Boolean(value.blast ?? fallbackBlast) };
+  }
+
+  function formatDamageFormula(formula) {
+    const normalized = normalizeDamageFormula(formula);
+    return normalized ? normalized.dice.map(side => `d${side}`).join('+') : '';
+  }
+
+  function isDamageFormulaTag(value) {
+    return Boolean(parseDamageFormulaNotation(String(value || '')));
+  }
+
+  function rollDamageFormula(formula, roller = rollDie) {
+    const normalized = normalizeDamageFormula(formula);
+    if (!normalized) throw new Error('Nieprawidłowa formuła obrażeń.');
+    const rolls = normalized.dice.map((sides, index) => {
+      const value = toInt(roller(sides, index), 0);
+      if (value < 1 || value > sides) throw new Error(`Nieprawidłowy wynik k${sides}.`);
+      return { sides, value };
+    });
+    const values = rolls.map(entry => entry.value);
+    const total = normalized.keep === 'highest' ? Math.max(...values) : values.reduce((sum, value) => sum + value, 0);
+    return { formula: normalized, notation: formatDamageFormula(normalized), rolls, total };
+  }
+
+  function polishUsesLabel(value) {
+    const count = Math.max(0, toInt(value, 0));
+    const lastTwo = count % 100;
+    const last = count % 10;
+    const noun = count === 1 ? 'użycie' : last >= 2 && last <= 4 && !(lastTwo >= 12 && lastTwo <= 14) ? 'użycia' : 'użyć';
+    return `${count} ${noun}`;
+  }
+
+  function formatUses(uses) {
+    if (!uses || (uses.current === null && uses.max === null)) return '';
+    if (uses.max === null) return polishUsesLabel(uses.current ?? 0);
+    return `${uses.current ?? 0}/${uses.max}`;
+  }
+
   // ============================================================
   // 3. Model and defaults
   // ============================================================
@@ -772,7 +829,7 @@
       gold: 18
     };
     demo.inventory.items = [
-      makeItem({ name: 'Krótki łuk', description: 'Lekki łuk myśliwski.', damageDie: 'd6', slots: 1, carryState: 'held' }),
+      makeItem({ name: 'Krótki łuk', description: 'Lekki łuk myśliwski.', damageFormula: parseDamageFormulaNotation('d6'), slots: 1, carryState: 'held' }),
       makeItem({ name: 'Skórzany kaftan', description: 'Wytarty, ale nadal użyteczny.', armorValue: 1, slots: 1, carryState: 'worn' }),
       makeItem({ name: 'Pochodnia', uses: { current: 2, max: 3 }, slots: 1 }),
       makeItem({ name: 'Suszone racje', uses: { current: 2, max: 3 }, slots: 1 }),
@@ -783,6 +840,13 @@
   }
 
   function makeItem(partial = {}) {
+    const rawTraits = Array.from(new Set(safeArray(partial.traits).map(String)));
+    const blastFromTraits = rawTraits.some(trait => trait.toLowerCase() === 'blast');
+    const formulaSource = partial.damageFormula || partial.damageDie || null;
+    const damageFormula = normalizeDamageFormula(formulaSource, blastFromTraits);
+    const sourceExtras = partial.sourceExtras && typeof partial.sourceExtras === 'object' ? deepClone(partial.sourceExtras) : {};
+    if (partial.damageDie && !damageFormula) sourceExtras.legacyDamageDie = String(partial.damageDie);
+    if (partial.damageFormula && !damageFormula) sourceExtras.unparsedDamageFormula = deepClone(partial.damageFormula);
     return {
       id: partial.id || makeId(),
       sourceId: partial.sourceId ?? null,
@@ -790,16 +854,16 @@
       description: partial.description || '',
       slots: clamp(toInt(partial.slots, 1), 0, 10),
       category: partial.category || 'inne',
-      damageDie: partial.damageDie || null,
+      damageFormula,
       armorValue: clamp(toInt(partial.armorValue, 0), 0, 3),
       uses: partial.uses ? {
         current: partial.uses.current === null ? null : Math.max(0, toInt(partial.uses.current, 0)),
-        max: partial.uses.max === null ? null : Math.max(0, toInt(partial.uses.max, 0))
+        max: partial.uses.max === null || partial.uses.max === undefined || partial.uses.max === '' ? null : Math.max(0, toInt(partial.uses.max, 0))
       } : { current: null, max: null },
       carryState: partial.carryState || 'stored',
-      traits: Array.from(new Set(safeArray(partial.traits).map(String))),
+      traits: rawTraits.filter(trait => !(damageFormula?.blast && trait.toLowerCase() === 'blast')),
       notes: partial.notes || '',
-      sourceExtras: partial.sourceExtras && typeof partial.sourceExtras === 'object' ? deepClone(partial.sourceExtras) : {}
+      sourceExtras
     };
   }
 
@@ -842,11 +906,33 @@
     return { valid: errors.length === 0, errors, warnings };
   }
 
+  function migrateV1ToV2(candidate) {
+    const migrated = deepClone(candidate);
+    migrated.inventory = { slotLimit: 10, items: [], fatigue: [], ...(migrated.inventory || {}) };
+    migrated.inventory.items = safeArray(migrated.inventory.items).map(rawItem => {
+      const item = rawItem && typeof rawItem === 'object' ? deepClone(rawItem) : {};
+      const traits = safeArray(item.traits).map(String);
+      const formula = normalizeDamageFormula(item.damageFormula || item.damageDie, traits.some(trait => trait.toLowerCase() === 'blast'));
+      item.damageFormula = formula;
+      item.traits = traits.filter(trait => !(formula?.blast && trait.toLowerCase() === 'blast'));
+      if (Object.prototype.hasOwnProperty.call(item, 'damageDie')) {
+        item.sourceExtras = { ...(item.sourceExtras || {}), legacyDamageDie: item.damageDie };
+        delete item.damageDie;
+      }
+      return item;
+    });
+    migrated.schemaVersion = 2;
+    return migrated;
+  }
+
   function migrateState(candidate) {
     let migrated = deepClone(candidate);
     if (!Number.isInteger(migrated.schemaVersion)) throw new Error('Brak schemaVersion.');
     if (migrated.schemaVersion > SCHEMA_VERSION) throw new Error('Nieobsługiwana nowsza wersja danych.');
-    // Reserved for future migrations: v1 is the first public schema.
+    while (migrated.schemaVersion < SCHEMA_VERSION) {
+      if (migrated.schemaVersion === 1) migrated = migrateV1ToV2(migrated);
+      else throw new Error(`Brak migracji dla schemaVersion ${migrated.schemaVersion}.`);
+    }
     migrated.appVersion = APP_VERSION;
     migrated.schemaVersion = SCHEMA_VERSION;
     migrated.settings = { theme: 'dark', reducedMotionOverride: null, ...(migrated.settings || {}) };
@@ -1051,6 +1137,23 @@
     return { target, roll: natural, success, naturalSuccess: natural === 1, naturalFailure: natural === 20 };
   }
 
+  function resolvePanicRecovery(sourceState, roll) {
+    const save = resolveSave(sourceState?.stats?.wil?.current, roll);
+    const panickedBefore = Boolean(sourceState?.conditions?.panicked);
+    const hpBefore = Math.max(0, toInt(sourceState?.stats?.hp?.current, 0));
+    return {
+      ...save,
+      panickedBefore,
+      panickedAfter: panickedBefore && !save.success,
+      hpBefore,
+      hpAfter: hpBefore
+    };
+  }
+
+  function applyPanicRecoveryMutation(target, result) {
+    if (result?.success) target.conditions.panicked = false;
+  }
+
   function addDiceHistory(entry) {
     state.diceHistory = [{ id: makeId(), time: nowIso(), ...entry }, ...safeArray(state.diceHistory)].slice(0, DICE_HISTORY_LIMIT);
     recordEvent(entry.summary);
@@ -1091,6 +1194,32 @@
     ], result.success ? 'success' : 'danger');
     return result;
   }
+
+  function attemptRecoverFromPanic(forcedRoll = null) {
+    if (!state.conditions.panicked) {
+      showToast('Postać nie jest obecnie spanikowana.');
+      return null;
+    }
+    let roll;
+    try { roll = forcedRoll ?? rollDie(20); }
+    catch (error) { showToast(error.message, 'error'); return null; }
+    const result = resolvePanicRecovery(state, roll);
+    const natural = result.naturalSuccess ? ' — naturalne 1' : result.naturalFailure ? ' — naturalne 20' : '';
+    const summary = `Opanowanie paniki — WOL: ${roll} vs ${result.target} — ${result.success ? 'sukces' : 'porażka'}${natural}`;
+    addDiceHistory({ type: 'save', attr: 'wil', label: 'Opanowanie paniki', summary, notation: '1k20', result: roll, success: result.success, details: `Cel: ${result.target}` });
+    if (result.success) {
+      commitChange('Opanowano panikę po udanym rzucie WOL', next => applyPanicRecoveryMutation(next, result), { silent: true });
+    }
+    const details = [
+      `Aktualna WOL: ${result.target}.`,
+      result.naturalSuccess ? 'Naturalne 1 zawsze oznacza sukces.' : result.naturalFailure ? 'Naturalne 20 zawsze oznacza porażkę.' : `Wynik ${roll} jest ${result.success ? 'równy lub niższy' : 'wyższy'} od ${result.target}.`,
+      result.success ? `Panika została usunięta. OCHR pozostaje bez zmian (${result.hpAfter}).` : 'Panika pozostaje aktywna.'
+    ];
+    openResultSheet('Spróbuj opanować panikę', roll, result.success ? 'Sukces' : 'Porażka', details, result.success ? 'success' : 'danger');
+    announce(summary);
+    return result;
+  }
+
 
   // ============================================================
   // 8. Cairn rules
@@ -1134,6 +1263,37 @@
     const itemSlots = safeArray(items).reduce((sum, item) => sum + clamp(toInt(item.slots, 1), 0, 10), 0);
     const fatigueSlots = safeArray(fatigue).length;
     return { itemSlots, fatigueSlots, total: itemSlots + fatigueSlots, limit: 10 };
+  }
+
+  function droppableInventoryItems(sourceState = state) {
+    return safeArray(sourceState?.inventory?.items).filter(item => clamp(toInt(item.slots, 0), 0, 10) >= 1);
+  }
+
+  function planFatigueWithDroppedItem(sourceState, itemId, fatigue = makeFatigue()) {
+    const beforeUsage = calculateInventoryUsage(sourceState?.inventory?.items, sourceState?.inventory?.fatigue);
+    const droppedItem = safeArray(sourceState?.inventory?.items).find(item => item.id === itemId);
+    if (!droppedItem || toInt(droppedItem.slots, 0) < 1) {
+      return { valid: false, reason: 'Wybierz przedmiot zajmujący co najmniej jedno miejsce.', beforeUsage };
+    }
+    const next = deepClone(sourceState);
+    next.inventory.items = next.inventory.items.filter(item => item.id !== itemId);
+    next.inventory.fatigue.push(makeFatigue(fatigue));
+    const afterUsage = calculateInventoryUsage(next.inventory.items, next.inventory.fatigue);
+    if (afterUsage.total > next.inventory.slotLimit) {
+      return { valid: false, reason: `Operacja zajęłaby ${afterUsage.total}/${next.inventory.slotLimit} miejsc.`, beforeUsage, afterUsage, droppedItem };
+    }
+    const hpBefore = Math.max(0, toInt(sourceState?.stats?.hp?.current, 0));
+    const hpAfter = afterUsage.total === next.inventory.slotLimit ? 0 : hpBefore;
+    next.stats.hp.current = hpAfter;
+    return { valid: true, next, beforeUsage, afterUsage, droppedItem, fatigue, hpBefore, hpAfter };
+  }
+
+  function applyFatigueDropMutation(target, itemId, fatigue) {
+    const plan = planFatigueWithDroppedItem(target, itemId, fatigue);
+    if (!plan.valid) return false;
+    target.inventory = plan.next.inventory;
+    target.stats.hp.current = plan.hpAfter;
+    return true;
   }
 
   function deriveArmor(sourceState = state) {
@@ -1195,10 +1355,11 @@
     return 0;
   }
 
-  function parseDamageDie(tags) {
-    for (const tag of tags) {
-      const match = String(tag).match(/^\s*d(4|6|8|10|12)\s*$/i);
-      if (match) return `d${match[1]}`;
+  function parseDamageFormulaTags(tags) {
+    const blast = safeArray(tags).some(tag => String(tag).toLowerCase() === 'blast');
+    for (const tag of safeArray(tags)) {
+      const formula = parseDamageFormulaNotation(String(tag), blast);
+      if (formula) return formula;
     }
     return null;
   }
@@ -1214,7 +1375,7 @@
     result.source = {
       type: 'kettlewright',
       importedAt: nowIso(),
-      adapterVersion: 1,
+      adapterVersion: 2,
       sourceId: source.id ?? null,
       original: deepClone(source),
       containerMetadata: safeArray(source.containers).map(container => deepClone(container)),
@@ -1276,21 +1437,21 @@
       if (lowerTags.includes('bulky')) traits.push('nieporęczny');
       if (lowerTags.includes('blast')) traits.push('blast');
       for (const tag of tags) {
-        if (!/^d(4|6|8|10|12)$/i.test(tag) && !/^[123]\s*armor$/i.test(tag) && !['petty','bulky','uses','blast'].includes(tag.toLowerCase())) traits.push(tag);
+        if (!isDamageFormulaTag(tag) && !/^[123]\s*armor$/i.test(tag) && !['petty','bulky','uses','blast'].includes(tag.toLowerCase())) traits.push(tag);
       }
       result.inventory.items.push(makeItem({
         sourceId: rawItem.id ?? null,
         name: itemName,
         description: typeof rawItem.description === 'string' && rawItem.description !== '-' ? rawItem.description : '',
         slots,
-        damageDie: parseDamageDie(tags),
+        damageFormula: parseDamageFormulaTags(tags),
         armorValue: parseArmorTag(tags),
-        uses: usesCurrent === null ? { current: null, max: null } : { current: usesCurrent, max: usesCurrent },
+        uses: usesCurrent === null ? { current: null, max: null } : { current: usesCurrent, max: null },
         carryState: 'stored',
         traits,
         sourceExtras: extras
       }));
-      if (usesCurrent !== null) report.manual.push(`Sprawdź maksymalną liczbę użyć: ${itemName} (przyjęto ${usesCurrent}).`);
+      if (usesCurrent !== null) report.manual.push(`Maksymalna liczba użyć „${itemName}” jest nieznana; zaimportowano tylko wartość aktualną (${usesCurrent}).`);
       if (parseArmorTag(tags) > 0) report.manual.push(`Ustaw, czy pancerz „${itemName}” jest noszony lub trzymany.`);
     }
 
@@ -1604,6 +1765,7 @@
       const conditionsCard = card([], 'card-pad');
       conditionsCard.append(sectionHead('Aktywne stany', button('Zmień', () => setView('more'), 'btn btn-quiet btn-ghost')));
       conditionsCard.append(renderConditionChips());
+      if (state.conditions.panicked) conditionsCard.append(button('Spróbuj opanować panikę — rzut WOL', attemptRecoverFromPanic, 'btn btn-primary btn-block'));
       root.append(conditionsCard);
     }
 
@@ -1618,14 +1780,14 @@
     actions.append(grid);
     root.append(actions);
 
-    const weapons = safeArray(state.inventory.items).filter(item => item.damageDie && item.carryState !== 'spent').slice(0, 4);
+    const weapons = safeArray(state.inventory.items).filter(item => item.damageFormula && item.carryState !== 'spent').slice(0, 4);
     if (weapons.length) {
       const weaponCard = card([], 'card-pad');
       weaponCard.append(sectionHead('Szybki rzut broni', button('Ekwipunek', () => setView('inventory'), 'btn btn-quiet btn-ghost')));
       const row = createEl('div', { className: 'button-row' });
       for (const item of weapons) {
-        const sides = toInt(String(item.damageDie).replace('d',''), 6);
-        row.append(button(`${item.name} · ${item.damageDie}`, () => performRoll({ count: 1, sides }, item.name), 'btn'));
+        const notation = formatDamageFormula(item.damageFormula);
+        row.append(button(`${item.name} · ${notation}`, () => performDamageFormulaRoll(item), 'btn'));
       }
       weaponCard.append(row);
       root.append(weaponCard);
@@ -1814,6 +1976,23 @@
     openSheet({ title: 'Edytuj statystyki', body, footer: save });
   }
 
+  function performDamageFormulaRoll(item) {
+    try {
+      const result = rollDamageFormula(item.damageFormula);
+      const rollText = result.rolls.map(entry => `d${entry.sides}: ${entry.value}`).join(', ');
+      const keepText = result.formula.keep === 'highest' && result.rolls.length > 1 ? ` → najwyższy ${result.total}` : '';
+      const blastText = result.formula.blast ? ' · blast' : '';
+      const summary = `${item.name}: ${result.total} (${result.notation}${blastText})`;
+      addDiceHistory({ type: 'damage', label: item.name, summary, notation: result.notation, result: result.total, details: `${rollText}${keepText}${blastText}` });
+      renderDiceResult(result.total, `${item.name} · ${rollText}${keepText}${blastText}`);
+      announce(`${summary}. ${rollText}${keepText}.`);
+      return result;
+    } catch (error) {
+      showToast(error.message, 'error');
+      return null;
+    }
+  }
+
   // ============================================================
   // 15. Inventory view and sheets
   // ============================================================
@@ -1880,7 +2059,8 @@
     head.append(createEl('span', { className: 'tag', text: `${item.slots} ${item.slots === 1 ? 'miejsce' : 'miejsca'}` }));
     wrap.append(head);
     const meta = createEl('div', { className: 'item-meta' });
-    if (item.damageDie) meta.append(createEl('span', { className: 'tag', text: `obrażenia ${item.damageDie}` }));
+    if (item.damageFormula) meta.append(createEl('span', { className: 'tag', text: `obrażenia ${formatDamageFormula(item.damageFormula)}` }));
+    if (item.damageFormula?.blast) meta.append(createEl('span', { className: 'tag', text: 'blast' }));
     if (item.armorValue) meta.append(createEl('span', { className: 'tag', text: `pancerz +${item.armorValue}` }));
     meta.append(createEl('span', { className: 'tag', text: CARRY_STATES[item.carryState] || item.carryState }));
     for (const trait of item.traits) meta.append(createEl('span', { className: 'tag', text: trait }));
@@ -1888,13 +2068,13 @@
     if (item.uses.current !== null || item.uses.max !== null) {
       const uses = createEl('div', { className: 'uses-control', attrs: { 'aria-label': `Użycia przedmiotu ${item.name}` } }, [
         button('−', () => adjustItemUses(item.id, -1), 'btn btn-ghost', { 'aria-label': `Zmniejsz użycia ${item.name}` }),
-        createEl('span', { className: 'uses-value', text: `${item.uses.current ?? 0}/${item.uses.max ?? '?'}` }),
+        createEl('span', { className: 'uses-value', text: formatUses(item.uses) }),
         button('+', () => adjustItemUses(item.id, 1), 'btn btn-ghost', { 'aria-label': `Zwiększ użycia ${item.name}` })
       ]);
       wrap.append(uses);
     }
     const actions = createEl('div', { className: 'item-actions' });
-    if (item.damageDie) actions.append(button(`Rzuć ${item.damageDie}`, () => performRoll({ count: 1, sides: toInt(item.damageDie.slice(1), 6) }, item.name), 'btn btn-quiet'));
+    if (item.damageFormula) actions.append(button(`Rzuć ${formatDamageFormula(item.damageFormula)}`, () => performDamageFormulaRoll(item), 'btn btn-quiet'));
     actions.append(
       button(item.carryState === 'spent' ? 'Przywróć' : 'Oznacz zużyty', () => toggleItemSpent(item.id), 'btn btn-quiet btn-ghost'),
       button('Edytuj', () => openItemSheet(item.id), 'btn btn-quiet'),
@@ -1924,11 +2104,12 @@
     const description = textarea(item.description, 2000);
     const slots = selectInput([['0','0 — drobiazg'],['1','1 — zwykły'],['2','2 — nieporęczny']], String(item.slots));
     const category = textInput(item.category, 80);
-    const damage = selectInput([['','Brak'],['d4','k4'],['d6','k6'],['d8','k8'],['d10','k10'],['d12','k12']], item.damageDie || '');
+    const damage = textInput(formatDamageFormula(item.damageFormula), 40);
+    const blast = createEl('input', { type: 'checkbox', checked: Boolean(item.damageFormula?.blast) });
     const armor = selectInput([['0','0'],['1','1'],['2','2'],['3','3']], String(item.armorValue));
     const carry = selectInput(Object.entries(CARRY_STATES), item.carryState);
     const usesCurrent = numberInput(item.uses.current ?? 0, 0, 999);
-    const usesMax = numberInput(item.uses.max ?? 0, 0, 999);
+    const usesMax = numberInput(item.uses.max ?? '', 0, 999);
     const hasUses = createEl('input', { type: 'checkbox', checked: item.uses.current !== null || item.uses.max !== null });
     const traits = textInput(item.traits.join(', '), 300);
     const notes = textarea(item.notes, 1000);
@@ -1936,7 +2117,8 @@
       field('Nazwa', name),
       field('Opis', description),
       createEl('div', { className: 'form-grid two' }, [field('Zajmowane miejsca', slots), field('Kategoria', category)]),
-      createEl('div', { className: 'form-grid two' }, [field('Kość obrażeń', damage), field('Wartość pancerza', armor)]),
+      createEl('div', { className: 'form-grid two' }, [field('Formuła obrażeń', damage, 'Do 4 kości: d4, d6, d8, d10 lub d12, np. d6+d6. Przy wielu kościach zachowywany jest najwyższy wynik.'), field('Wartość pancerza', armor)]),
+      createEl('label', { className: 'check-row' }, [blast, createEl('span', { text: 'Atak ma cechę blast' })]),
       field('Stan', carry),
       createEl('label', { className: 'check-row' }, [hasUses, createEl('span', { text: 'Przedmiot ma liczbę użyć' })]),
       createEl('div', { className: 'form-grid two' }, [field('Aktualne użycia', usesCurrent), field('Maksymalne użycia', usesMax)]),
@@ -1946,17 +2128,21 @@
     const save = button(existing ? 'Zapisz przedmiot' : 'Dodaj przedmiot', () => {
       const itemName = trimText(name.value);
       if (!itemName) { showToast('Nazwa przedmiotu jest wymagana.', 'error'); name.focus(); return; }
+      const damageNotation = trimText(damage.value);
+      const damageFormula = damageNotation ? parseDamageFormulaNotation(damageNotation, blast.checked) : null;
+      if (damageNotation && !damageFormula) { showToast('Nieprawidłowa formuła. Użyj np. d6 albo d6+d6.', 'error'); damage.focus(); return; }
+      const enteredTraits = traits.value.split(',').map(value => value.trim()).filter(Boolean).filter(value => value.toLowerCase() !== 'blast');
       const nextItem = makeItem({
         ...item,
         name: itemName,
         description: description.value,
         slots: toInt(slots.value, 1),
         category: trimText(category.value, 'inne'),
-        damageDie: damage.value || null,
+        damageFormula,
         armorValue: toInt(armor.value, 0),
         carryState: carry.value,
-        uses: hasUses.checked ? { current: toInt(usesCurrent.value, 0), max: toInt(usesMax.value, 0) } : { current: null, max: null },
-        traits: traits.value.split(',').map(value => value.trim()).filter(Boolean),
+        uses: hasUses.checked ? { current: toInt(usesCurrent.value, 0), max: trimText(usesMax.value) === '' ? null : toInt(usesMax.value, 0) } : { current: null, max: null },
+        traits: enteredTraits,
         notes: notes.value
       });
       closeSheet();
@@ -1987,7 +2173,7 @@
       targetItem.uses.current = target;
       if (target === 0) targetItem.carryState = targetItem.carryState === 'spent' ? 'spent' : targetItem.carryState;
     }, { silent: true });
-    showToast(`${item.name}: ${target}/${item.uses.max ?? '?'}`);
+    showToast(`${item.name}: ${formatUses({ current: target, max: item.uses.max })}`);
   }
 
   function moveItem(itemId, direction) {
@@ -2020,12 +2206,50 @@
 
   function openAddFatigueSheet() {
     const usage = calculateInventoryUsage();
-    if (usage.total >= 10) {
-      const body = createEl('div', { className: 'sheet-list' }, [
-        createEl('p', { text: 'Nie ma wolnego miejsca. Zgodnie z zasadami, jeśli postać musi dodać zmęczenie, powinna upuścić przedmiot.' }),
-        createEl('p', { className: 'help', text: 'Usuń lub upuść przedmiot z ekwipunku, a następnie dodaj zmęczenie.' })
+    if (usage.total >= state.inventory.slotLimit) {
+      const candidates = droppableInventoryItems();
+      if (!candidates.length) {
+        const body = createEl('div', { className: 'sheet-list' }, [
+          createEl('p', { text: 'Nie ma wolnego miejsca, a ekwipunek nie zawiera przedmiotu zajmującego co najmniej jedno miejsce.' }),
+          createEl('p', { className: 'help', text: 'Drobiazgi zajmujące 0 miejsc nie rozwiązują konfliktu. Dane nie zostały zmienione.' })
+        ]);
+        openSheet({ title: 'Nie można dodać zmęczenia', body, footer: button('Zamknij', closeSheet, 'btn btn-primary btn-block') });
+        return;
+      }
+      const select = selectInput(candidates.map(item => [item.id, `${item.name} (${item.slots} ${item.slots === 1 ? 'miejsce' : 'miejsca'})`]), candidates[0].id);
+      const note = textInput('', 200);
+      const preview = createEl('div', { className: 'report-block', attrs: { 'aria-live': 'polite' } });
+      const updatePreview = () => {
+        const plan = planFatigueWithDroppedItem(state, select.value, { id: 'preview-fatigue', note: trimText(note.value), source: 'manual', slots: 1 });
+        if (!plan.valid) {
+          preview.replaceChildren(createEl('h3', { text: 'Konflikt' }), createEl('p', { className: 'test-fail', text: plan.reason }));
+          return;
+        }
+        preview.replaceChildren(
+          createEl('h3', { text: 'Wspólny podgląd' }),
+          createEl('p', { text: `Upuszczany przedmiot: ${plan.droppedItem.name} (${plan.droppedItem.slots} ${plan.droppedItem.slots === 1 ? 'miejsce' : 'miejsca'}).` }),
+          createEl('p', { text: 'Dodawane: 1 zmęczenie (1 miejsce).' }),
+          createEl('p', { text: `Miejsca: ${plan.beforeUsage.total}/10 → ${plan.afterUsage.total}/10.` }),
+          createEl('p', { text: `OCHR: ${plan.hpBefore} → ${plan.hpAfter}.` })
+        );
+      };
+      select.addEventListener('change', updatePreview);
+      note.addEventListener('input', updatePreview);
+      const body = createEl('div', { className: 'form-grid' }, [
+        createEl('p', { text: 'Brak wolnego miejsca. Zgodnie z zasadami postać musi upuścić przedmiot, aby dodać zmęczenie.' }),
+        field('Przedmiot do upuszczenia', select, 'Drobiazgi zajmujące 0 miejsc nie są dostępne na tej liście.'),
+        field('Powód lub notatka zmęczenia (opcjonalnie)', note),
+        preview
       ]);
-      openSheet({ title: 'Brak miejsca na zmęczenie', body, footer: button('Przejdź do ekwipunku', () => { closeSheet(); setView('inventory'); }, 'btn btn-primary btn-block') });
+      updatePreview();
+      const add = button('Upuść przedmiot i dodaj zmęczenie', () => {
+        const fatigue = makeFatigue({ note: trimText(note.value) });
+        const plan = planFatigueWithDroppedItem(state, select.value, fatigue);
+        if (!plan.valid) { showToast(plan.reason, 'error'); return; }
+        closeSheet();
+        commitChange(`Upuszczono ${plan.droppedItem.name} i dodano zmęczenie`, next => applyFatigueDropMutation(next, select.value, fatigue));
+      }, 'btn btn-danger btn-block');
+      openSheet({ title: 'Zwolnij miejsce na zmęczenie', body, footer: add });
       return;
     }
     const note = textInput('', 200);
@@ -2298,6 +2522,15 @@
       });
       return;
     }
+    if (key === 'panicked' && !enabled) {
+      openConfirmSheet({
+        title: 'Usuń panikę ręcznie',
+        message: 'Zwykle panikę usuwa udany rzut obronny WOL jako akcja. Potwierdź ręczne usunięcie tylko wtedy, gdy Warden rozstrzygnął sytuację inaczej. OCHR nie zostanie przywrócone.',
+        confirmLabel: 'Warden rozstrzygnął — usuń panikę',
+        onConfirm: () => commitChange('Ręcznie usunięto panikę decyzją Wardena', next => { next.conditions.panicked = false; })
+      });
+      return;
+    }
     if (key === 'criticalDamage' && !enabled) {
       openConfirmSheet({ title: 'Usuń obrażenia krytyczne', message: 'Usunąć stan obrażeń krytycznych? Stabilizacja sama w sobie nie usuwa tego stanu.', confirmLabel: 'Usuń stan', onConfirm: () => commitChange('Usunięto obrażenia krytyczne', next => { next.conditions.criticalDamage = false; next.conditions.stabilized = false; }) });
       return;
@@ -2432,28 +2665,69 @@
     base.stats.hp = { current: 5, max: 5 };
     base.stats.str = { current: 10, max: 10 };
 
+    const harrowFixture = {
+      armor:'1', background:'Fieldwarden', deprived:true, dexterity:14, dexterity_max:14, gold:11, hp:4, hp_max:4,
+      name:'Fixture Fieldwarden', panicked:true, strength:14, strength_max:14, willpower:13, willpower_max:13,
+      containers:[{id:0,name:'Main',slots:10}],
+      items:[
+        {id:'letter-a',location:0,name:'Letter',description:'Anonymized petty item.',tags:['petty'],petty:[]},
+        {id:'crop',location:0,name:'Diseased Crop',description:'Anonymized item with uses.',tags:['uses'],uses:6},
+        {id:'armor',location:0,name:'Brigandine',description:'',tags:['1 Armor','bulky'],'1 Armor,bulky':[]},
+        {id:'sling',location:0,name:'Sling',description:'',tags:['d6'],d6:[]},
+        {id:'fatigue',location:0,name:'Fatigue',tags:[],editable:false}
+      ]
+    };
+    const fletchwindFixture = {
+      armor:'1', background:'Fletchwind', deprived:false, dexterity:14, dexterity_max:14, gold:11, hp:3, hp_max:3,
+      name:'Fixture Fletchwind', panicked:false, strength:12, strength_max:12, willpower:9, willpower_max:9,
+      containers:[{id:0,name:'Main',slots:10}],
+      items:[
+        {id:'bow',location:0,name:'Wych Elm',description:'Anonymized bow.',tags:['d6','bulky'],'d6,bulky':[]},
+        {id:'knife',location:0,name:'Serrated Knife',description:'',tags:['d6'],d6:[]},
+        {id:'leather',location:0,name:'Boiled Leather',description:'',tags:['1 Armor'],'1 Armor':[]},
+        {id:'salve',location:0,name:'Heartroot Salve',description:'Restores 1d4 STR.',tags:['uses'],uses:1}
+      ]
+    };
+
     test('1. Pancerz zatrzymuje wszystkie obrażenia', () => { const r = calculateDamage(base, 2, 3); assert(r.damageAfterArmor === 0 && r.hpAfter === 5 && r.strAfter === 10); });
     test('2. Obrażenia mniejsze od OCHR', () => { const r = calculateDamage(base, 3, 0); assert(r.hpAfter === 2 && r.strAfter === 10); });
     test('3. Obrażenia sprowadzają OCHR dokładnie do zera', () => { const r = calculateDamage(base, 5, 0); assert(r.hpAfter === 0 && r.scarRequired && !r.strengthSaveRequired); });
     test('4. Obrażenia przechodzą na SIŁ', () => { const r = calculateDamage(base, 8, 0); assert(r.hpAfter === 0 && r.strAfter === 7 && r.strengthSaveRequired); });
-    test('5. Kolejne obrażenia przy zerowym OCHR', () => { const s = deepClone(base); s.stats.hp.current = 0; const r = calculateDamage(s, 3, 0); assert(r.strAfter === 7 && r.strengthSaveRequired); });
+    test('5. Kolejne obrażenia przy zerowym OCHR', () => { const fixture = deepClone(base); fixture.stats.hp.current = 0; const r = calculateDamage(fixture, 3, 0); assert(r.strAfter === 7 && r.strengthSaveRequired); });
     test('6. SIŁ sprowadzona do zera', () => { const r = calculateDamage(base, 15, 0); assert(r.strAfter === 0 && r.strengthZero); });
     test('7. Naturalne 1 w rzucie obronnym', () => { assert(resolveSave(0, 1).success); });
     test('8. Naturalne 20 w rzucie obronnym', () => { assert(!resolveSave(20, 20).success); });
-    test('9. Pełne 10 miejsc', () => { const usage = calculateInventoryUsage(Array.from({ length: 10 }, () => makeItem({ slots: 1 })), []); assert(usage.total === 10); });
-    test('10. Przedmiot nieporęczny zajmuje dwa miejsca', () => { assert(calculateInventoryUsage([makeItem({ slots: 2 })], []).total === 2); });
-    test('11. Drobiazg zajmuje zero miejsc', () => { assert(calculateInventoryUsage([makeItem({ slots: 0 })], []).total === 0); });
-    test('12. Zmęczenie zajmuje jedno miejsce', () => { assert(calculateInventoryUsage([], [makeFatigue()]).total === 1); });
-    test('13. Import prawidłowego JSON Kettlewright', () => { const fixture = { name:'Test', hp:3, hp_max:3, strength:10, strength_max:10, dexterity:11, dexterity_max:11, willpower:12, willpower_max:12, items:[], armor:'0' }; const r = normalizeKettlewright(fixture); assert(r.candidate?.identity.name === 'Test' && !r.report.errors.length); });
-    test('14. Import uszkodzonego JSON', () => { const r = parseImportText('{nie'); assert(r.type === 'invalid' && r.report.errors.length === 1); });
-    test('15. Import nieznanej nowszej wersji', () => { const fixture = createDefaultState(); fixture.schemaVersion = 999; const r = parseImportText(JSON.stringify(fixture)); assert(!r.candidate && r.report.errors.length); });
-    test('16. Zapis i odczyt JSON zachowuje postać', () => { const fixture = createDemoState(); const copy = sanitizeLoadedState(JSON.parse(JSON.stringify(fixture))); assert(copy.identity.name === fixture.identity.name && copy.inventory.items.length === fixture.inventory.items.length); });
-    test('17. Snapshot umożliwia cofnięcie', () => { const fixture = createDemoState(); const snap = snapshotForHistory(fixture); fixture.stats.hp.current = 0; applySnapshot(fixture, snap); assert(fixture.stats.hp.current === snap.stats.hp.current); });
-    test('18. Eksport i ponowny import kopii', () => { const fixture = createDemoState(); const r = parseImportText(JSON.stringify(fixture)); assert(r.type === 'backup' && r.candidate?.identity.name === fixture.identity.name); });
-    test('19. Długie i niebezpieczne teksty są zachowywane jako dane', () => { const payload = '<img src=x onerror=alert(1)>'.repeat(20); const fixture = { name: payload, hp:1, hp_max:1, strength:1, strength_max:1, dexterity:1, dexterity_max:1, willpower:1, willpower_max:1, items:[] }; const r = normalizeKettlewright(fixture); assert(r.candidate.identity.name === payload); });
-    test('20. Dokument nie ładuje zewnętrznych skryptów ani styli', () => { const external = $$('script[src], link[rel="stylesheet"][href]').filter(el => /^https?:/i.test(el.src || el.href)); assert(external.length === 0); });
-    test('21. Efektywny pancerz jest ograniczony do 3', () => { const fixture = createDemoState(); fixture.inventory.items = [makeItem({ armorValue: 2, carryState:'worn' }), makeItem({ armorValue: 2, carryState:'held' })]; assert(deriveArmor(fixture).effective === 3); });
-    test('22. Fatigue z Kettlewright jest normalizowane osobno', () => { const fixture = { name:'T', hp:0,hp_max:1,strength:1,strength_max:1,dexterity:1,dexterity_max:1,willpower:1,willpower_max:1,items:[{id:'f',name:'Fatigue',tags:[],editable:false}] }; const r = normalizeKettlewright(fixture); assert(r.candidate.inventory.fatigue.length === 1 && r.candidate.inventory.items.length === 0); });
+
+    test('9. Sukces wychodzenia z paniki', () => { const fixture = createDefaultState(); fixture.conditions.panicked = true; fixture.stats.wil.current = 12; const r = resolvePanicRecovery(fixture, 8); assert(r.success && !r.panickedAfter); });
+    test('10. Porażka wychodzenia z paniki', () => { const fixture = createDefaultState(); fixture.conditions.panicked = true; fixture.stats.wil.current = 8; const r = resolvePanicRecovery(fixture, 15); assert(!r.success && r.panickedAfter); });
+    test('11. Naturalne 1 i 20 przy panice', () => { const fixture = createDefaultState(); fixture.conditions.panicked = true; fixture.stats.wil.current = 10; assert(resolvePanicRecovery(fixture, 1).success); assert(!resolvePanicRecovery(fixture, 20).success); });
+    test('12. Opanowanie paniki nie przywraca OCHR', () => { const fixture = createDefaultState(); fixture.conditions.panicked = true; fixture.stats.hp.current = 0; fixture.stats.wil.current = 12; const r = resolvePanicRecovery(fixture, 5); applyPanicRecoveryMutation(fixture, r); assert(!fixture.conditions.panicked && fixture.stats.hp.current === 0); });
+
+    test('13. Pełne 10 miejsc', () => { const usage = calculateInventoryUsage(Array.from({ length: 10 }, (_, index) => makeItem({ id:`i${index}`, slots:1 })), []); assert(usage.total === 10); });
+    test('14. Przedmiot nieporęczny zajmuje dwa miejsca', () => { assert(calculateInventoryUsage([makeItem({ slots:2 })], []).total === 2); });
+    test('15. Drobiazg zajmuje zero miejsc', () => { assert(calculateInventoryUsage([makeItem({ slots:0 })], []).total === 0); });
+    test('16. Dodanie zmęczenia przy 9/10 prowadzi do 10/10', () => { const fixture = createDefaultState(); fixture.inventory.items = Array.from({ length: 9 }, (_, index) => makeItem({ id:`pack-${index}`, slots:1 })); const next = deepClone(fixture); next.inventory.fatigue.push(makeFatigue()); assert(calculateInventoryUsage(next.inventory.items, next.inventory.fatigue).total === 10); });
+    test('17. Pełny ekwipunek: upuszczenie przedmiotu i zmęczenie są atomowe', () => { const fixture = createDefaultState(); fixture.initialized = true; fixture.stats.hp.current = 3; fixture.inventory.items = [makeItem({ id:'drop', name:'Drop', slots:1 }), ...Array.from({ length: 9 }, (_, index) => makeItem({ id:`rest-${index}`, slots:1 }))]; const plan = planFatigueWithDroppedItem(fixture, 'drop', makeFatigue({ id:'fatigue-test' })); assert(plan.valid && !plan.next.inventory.items.some(item => item.id === 'drop') && plan.next.inventory.fatigue.length === 1 && plan.afterUsage.total === 10 && plan.hpAfter === 0); });
+    test('18. Cofnięcie wspólnej operacji przywraca przedmiot i usuwa zmęczenie', () => { const fixture = createDefaultState(); fixture.initialized = true; fixture.inventory.items = [makeItem({ id:'drop', slots:1 }), ...Array.from({ length: 9 }, (_, index) => makeItem({ id:`rest-${index}`, slots:1 }))]; const snapshot = snapshotForHistory(fixture); const plan = planFatigueWithDroppedItem(fixture, 'drop', makeFatigue({ id:'fatigue-test' })); applySnapshot(fixture, snapshotForHistory(plan.next)); applySnapshot(fixture, snapshot); assert(fixture.inventory.items.some(item => item.id === 'drop') && fixture.inventory.fatigue.length === 0); });
+    test('19. Drobiazg nie może zwolnić miejsca na zmęczenie', () => { const fixture = createDefaultState(); fixture.inventory.items = [makeItem({ id:'petty', slots:0 }), ...Array.from({ length: 10 }, (_, index) => makeItem({ id:`full-${index}`, slots:1 }))]; assert(!droppableInventoryItems(fixture).some(item => item.id === 'petty')); assert(!planFatigueWithDroppedItem(fixture, 'petty').valid); });
+    test('20. Brak przedmiotu do upuszczenia nie zmienia danych', () => { const fixture = createDefaultState(); fixture.inventory.items = [makeItem({ id:'petty', slots:0 })]; fixture.inventory.fatigue = Array.from({ length: 10 }, (_, index) => makeFatigue({ id:`fatigue-${index}` })); const before = JSON.stringify(fixture); assert(droppableInventoryItems(fixture).length === 0); assert(!planFatigueWithDroppedItem(fixture, 'petty').valid); assert(JSON.stringify(fixture) === before); });
+
+    test('21. Migracja damageDie d6 do damageFormula', () => { const fixture = createDefaultState(); fixture.schemaVersion = 1; fixture.inventory.items = [{ id:'old', name:'Old', slots:1, damageDie:'d6', uses:{current:null,max:null}, traits:[], sourceExtras:{} }]; const migrated = sanitizeLoadedState(fixture); assert(migrated.schemaVersion === 2 && formatDamageFormula(migrated.inventory.items[0].damageFormula) === 'd6' && migrated.inventory.items[0].sourceExtras.legacyDamageDie === 'd6'); });
+    test('22. Import Kettlewright rozpoznaje d6+d6', () => { const fixture = deepClone(fletchwindFixture); fixture.items[0].tags = ['d6+d6','bulky']; const r = normalizeKettlewright(fixture); assert(formatDamageFormula(r.candidate.inventory.items[0].damageFormula) === 'd6+d6' && r.candidate.inventory.items[0].damageFormula.keep === 'highest'); });
+    test('23. Rzut dwiema kośćmi zachowuje najwyższy wynik', () => { const values = [2,5]; const result = rollDamageFormula(parseDamageFormulaNotation('d6+d6'), (_sides,index) => values[index]); assert(result.total === 5 && result.rolls.length === 2); });
+    test('24. Formuła blast jest serializowalna', () => { const formula = parseDamageFormulaNotation('d8+d8', true); const copy = JSON.parse(JSON.stringify(formula)); assert(copy.blast && copy.keep === 'highest' && formatDamageFormula(copy) === 'd8+d8'); });
+
+    test('25. Harrow fixture importuje panikę, pozbawienie, fatigue, petty, bulky, pancerz i użycia', () => { const r = normalizeKettlewright(harrowFixture); const brigandine = r.candidate.inventory.items.find(item => item.name === 'Brigandine'); const crop = r.candidate.inventory.items.find(item => item.name === 'Diseased Crop'); assert(r.candidate.conditions.panicked && r.candidate.conditions.deprived && r.candidate.inventory.fatigue.length === 1 && brigandine.slots === 2 && brigandine.armorValue === 1 && crop.uses.current === 6 && crop.uses.max === null); });
+    test('26. Fletchwind fixture importuje broń, pancerz i przedmiot przywracający atrybut', () => { const r = normalizeKettlewright(fletchwindFixture); assert(r.candidate.inventory.items.some(item => item.damageFormula) && r.candidate.inventory.items.some(item => item.armorValue === 1) && r.candidate.inventory.items.some(item => /1d4 STR/.test(item.description))); });
+    test('27. Import uses zachowuje nieznane maksimum', () => { const r = normalizeKettlewright(harrowFixture); const item = r.candidate.inventory.items.find(entry => entry.name === 'Diseased Crop'); assert(item.uses.current === 6 && item.uses.max === null && formatUses(item.uses) === '6 użyć'); assert(r.report.manual.some(message => /Maksymalna liczba użyć/.test(message))); });
+    test('28. Import prawidłowego JSON Kettlewright', () => { const r = normalizeKettlewright(fletchwindFixture); assert(r.candidate?.identity.name === 'Fixture Fletchwind' && !r.report.errors.length); });
+    test('29. Import uszkodzonego JSON', () => { const r = parseImportText('{nie'); assert(r.type === 'invalid' && r.report.errors.length === 1); });
+    test('30. Import nieznanej nowszej wersji', () => { const fixture = createDefaultState(); fixture.schemaVersion = 999; const r = parseImportText(JSON.stringify(fixture)); assert(!r.candidate && r.report.errors.length); });
+    test('31. Odczyt starego zapisu schemaVersion 1', () => { const fixture = createDefaultState(); fixture.schemaVersion = 1; fixture.inventory.items = [makeItem({ name:'Legacy' })]; fixture.inventory.items[0].damageDie = 'd8'; delete fixture.inventory.items[0].damageFormula; const copy = sanitizeLoadedState(JSON.parse(JSON.stringify(fixture))); assert(copy.schemaVersion === 2 && formatDamageFormula(copy.inventory.items[0].damageFormula) === 'd8'); });
+    test('32. Eksport i ponowny import schemaVersion 2', () => { const fixture = createDemoState(); const r = parseImportText(JSON.stringify(fixture)); assert(r.type === 'backup' && r.candidate?.schemaVersion === 2 && r.candidate?.identity.name === fixture.identity.name); });
+    test('33. Długie i niebezpieczne teksty są zachowywane jako dane', () => { const payload = '<img src=x onerror=alert(1)>'.repeat(20); const fixture = { name:payload, hp:1, hp_max:1, strength:1, strength_max:1, dexterity:1, dexterity_max:1, willpower:1, willpower_max:1, items:[] }; const r = normalizeKettlewright(fixture); assert(r.candidate.identity.name === payload); });
+    test('34. Dokument nie ładuje zewnętrznych skryptów ani styli', () => { const external = $$('script[src], link[rel="stylesheet"][href]').filter(el => /^https?:/i.test(el.src || el.href)); assert(external.length === 0); });
+    test('35. Efektywny pancerz jest ograniczony do 3', () => { const fixture = createDemoState(); fixture.inventory.items = [makeItem({ armorValue:2, carryState:'worn' }), makeItem({ armorValue:2, carryState:'held' })]; assert(deriveArmor(fixture).effective === 3); });
     return results;
   }
 
@@ -2506,7 +2780,11 @@
       runTests: runDeveloperTests,
       calculateDamage,
       resolveSave,
+      resolvePanicRecovery,
       normalizeKettlewright,
+      parseDamageFormulaNotation,
+      rollDamageFormula,
+      planFatigueWithDroppedItem,
       calculateInventoryUsage
     };
     if (new URLSearchParams(location.search).get('selftest') === '1') {
