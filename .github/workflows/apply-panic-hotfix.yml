@@ -1,0 +1,103 @@
+name: Apply panic button hotfix
+
+on:
+  push:
+    branches: [hotfix-panic-button-handler]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout hotfix branch
+        uses: actions/checkout@v4
+        with:
+          ref: hotfix-panic-button-handler
+
+      - name: Patch panic action and regression test
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib
+          import re
+
+          index_path = Path('index.html')
+          text = index_path.read_text(encoding='utf-8')
+
+          replacements = [
+              (
+                  "const APP_VERSION = '0.2.0';",
+                  "const APP_VERSION = '0.2.1';",
+              ),
+              (
+                  "if (state.conditions.panicked) conditionsCard.append(button('Spróbuj opanować panikę — rzut WOL', attemptRecoverFromPanic, 'btn btn-primary btn-block'));",
+                  "if (state.conditions.panicked) conditionsCard.append(button('Spróbuj opanować panikę — rzut WOL', () => attemptRecoverFromPanic(), 'btn btn-primary btn-block'));",
+              ),
+              (
+                  "  function attemptRecoverFromPanic(forcedRoll = null) {\n    if (!state.conditions.panicked) {",
+                  "  function normalizeForcedD20(value) {\n    return Number.isInteger(value) && value >= 1 && value <= 20 ? value : null;\n  }\n\n  function attemptRecoverFromPanic(forcedRoll = null) {\n    if (!state.conditions.panicked) {",
+              ),
+              (
+                  "    let roll;\n    try { roll = forcedRoll ?? rollDie(20); }",
+                  "    const forcedD20 = normalizeForcedD20(forcedRoll);\n    let roll;\n    try { roll = forcedD20 ?? rollDie(20); }",
+              ),
+              (
+                  "    test('35. Efektywny pancerz jest ograniczony do 3', () => { const fixture = createDemoState(); fixture.inventory.items = [makeItem({ armorValue:2, carryState:'worn' }), makeItem({ armorValue:2, carryState:'held' })]; assert(deriveArmor(fixture).effective === 3); });\n    return results;",
+                  "    test('35. Efektywny pancerz jest ograniczony do 3', () => { const fixture = createDemoState(); fixture.inventory.items = [makeItem({ armorValue:2, carryState:'worn' }), makeItem({ armorValue:2, carryState:'held' })]; assert(deriveArmor(fixture).effective === 3); });\n    test('36. Zdarzenie kliknięcia nie jest traktowane jako wymuszony wynik k20', () => { assert(normalizeForcedD20({ type: 'click' }) === null); assert(normalizeForcedD20(1) === 1); assert(normalizeForcedD20(20) === 20); assert(normalizeForcedD20(21) === null); });\n    return results;",
+              ),
+          ]
+
+          for old, new in replacements:
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'Expected exactly one match, found {count}: {old[:90]!r}')
+              text = text.replace(old, new, 1)
+
+          index_path.write_text(text, encoding='utf-8')
+
+          digest = hashlib.sha256(index_path.read_bytes()).hexdigest()
+          workflow_path = Path('.github/workflows/deploy-pages.yml')
+          workflow = workflow_path.read_text(encoding='utf-8')
+          workflow, count = re.subn(
+              r'(test "\$\(sha256sum index\.html \| cut -d\' \' -f1\)" = ")[0-9a-f]{64}("\s*)',
+              rf'\g<1>{digest}\g<2>',
+              workflow,
+              count=1,
+          )
+          if count != 1:
+              raise SystemExit('Could not update the deploy-pages SHA-256 guard.')
+          workflow_path.write_text(workflow, encoding='utf-8')
+
+          Path('.github/workflows/apply-panic-hotfix.yml').unlink()
+          print(f'Updated index.html SHA-256: {digest}')
+          PY
+
+      - name: Validate JavaScript and patch scope
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          text = Path('index.html').read_text(encoding='utf-8')
+          scripts = re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>', text, flags=re.S | re.I)
+          if len(scripts) != 1:
+              raise SystemExit(f'Expected one inline script, found {len(scripts)}')
+          Path('/tmp/app.js').write_text(scripts[0], encoding='utf-8')
+          assert "() => attemptRecoverFromPanic()" in text
+          assert "normalizeForcedD20({ type: 'click' }) === null" in text
+          PY
+          node --check /tmp/app.js
+          test "$(git diff --name-only | sort)" = $'.github/workflows/apply-panic-hotfix.yml\n.github/workflows/deploy-pages.yml\nindex.html'
+
+      - name: Commit hotfix
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html .github/workflows/deploy-pages.yml .github/workflows/apply-panic-hotfix.yml
+          git commit -m "Fix panic recovery button handler"
+          git push origin HEAD:hotfix-panic-button-handler
