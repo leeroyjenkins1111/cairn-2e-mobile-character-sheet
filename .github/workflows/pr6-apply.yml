@@ -44,6 +44,8 @@ jobs:
           node --check /tmp/index-inline.js
 
       - name: Run browser audit
+        id: browser
+        continue-on-error: true
         shell: bash
         run: |
           npm init -y >/dev/null 2>&1
@@ -53,7 +55,21 @@ jobs:
           SERVER_PID=$!
           trap 'kill $SERVER_PID || true' EXIT
           sleep 2
-          node /tmp/pr6_browser_audit.cjs
+          node /tmp/pr6_browser_audit.cjs 2>&1 | tee /tmp/pr6-browser-audit.log
+
+      - name: Upload browser audit diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr6-browser-audit
+          path: |
+            /tmp/pr6-browser-audit.log
+            /tmp/pr6-http.log
+          if-no-files-found: warn
+
+      - name: Require browser audit success
+        if: steps.browser.outcome != 'success'
+        run: exit 1
 
       - name: Update Pages checksum
         shell: bash
