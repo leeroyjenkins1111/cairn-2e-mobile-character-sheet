@@ -1,3 +1,4 @@
+# Trigger compact dice dashboard validation after workflow registration.
 name: Apply PR6 compact dice dashboard
 
 on:
