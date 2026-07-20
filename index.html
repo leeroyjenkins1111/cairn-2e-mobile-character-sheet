@@ -1831,7 +1831,7 @@
     openResultSheet(`Rzut obronny ${ATTRS[attrKey].label}`, roll, result.success ? 'Sukces' : 'Porażka', [
       `Aktualna wartość: ${attr.current}`,
       result.naturalSuccess ? 'Naturalne 1 zawsze oznacza sukces.' : result.naturalFailure ? 'Naturalne 20 zawsze oznacza porażkę.' : `Wynik ${roll} jest ${result.success ? 'równy lub niższy' : 'wyższy'} od ${attr.current}.`
-    ], result.success ? 'success' : 'danger');
+    ], result.success ? 'success' : 'danger', { sides: 20 });
     return result;
   }
 
@@ -1864,7 +1864,7 @@
       result.naturalSuccess ? 'Naturalne 1 zawsze oznacza sukces.' : result.naturalFailure ? 'Naturalne 20 zawsze oznacza porażkę.' : `Wynik ${roll} jest ${result.success ? 'równy lub niższy' : 'wyższy'} od ${result.target}.`,
       result.success ? `Panika została usunięta. Ochrona pozostaje bez zmian (${result.hpAfter}).` : 'Panika pozostaje aktywna.'
     ];
-    openResultSheet('Spróbuj opanować panikę', roll, result.success ? 'Sukces' : 'Porażka', details, result.success ? 'success' : 'danger');
+    openResultSheet('Spróbuj opanować panikę', roll, result.success ? 'Sukces' : 'Porażka', details, result.success ? 'success' : 'danger', { sides: 20 });
     announce(summary);
     return result;
   }
@@ -1896,7 +1896,7 @@
       `Aktualna ZRE: ${result.target}.`,
       result.naturalSuccess ? 'Naturalne 1 zawsze oznacza sukces.' : result.naturalFailure ? 'Naturalne 20 zawsze oznacza porażkę.' : result.canAct ? 'Wynik jest równy lub niższy od ZRE.' : 'Wynik jest wyższy od ZRE.',
       'Od drugiej rundy postać działa normalnie. Specjalne okoliczności mogą zanegować wymóg rzutu decyzją Wardena.'
-    ], result.canAct ? 'success' : 'danger');
+    ], result.canAct ? 'success' : 'danger', { sides: 20 });
     announce(summary);
     return result;
   }
@@ -1911,7 +1911,7 @@
     openResultSheet('Atak bez broni', roll, 'Obrażenia k4', [
       'Ataki w walce trafiają automatycznie.',
       'Warden odejmuje pancerz celu i rozpatruje pozostałe obrażenia.'
-    ]);
+    ], 'success', { sides: 4 });
     announce(summary);
     return roll;
   }
@@ -2362,16 +2362,21 @@
     openSheet({ title, body, footer: createEl('div', { className: 'button-row' }, [cancelBtn, confirmBtn]) });
   }
 
-  function openResultSheet(title, value, status, details, tone = 'success') {
+  function openResultSheet(title, value, status, details, tone = 'success', options = {}) {
     const body = createEl('div', { className: 'sheet-list' });
-    const result = createEl('div', { className: 'dice-result' });
-    result.append(createEl('div', {}, [
-      createEl('strong', { text: value }),
-      createEl('span', { text: status, className: tone === 'danger' ? 'test-fail' : 'test-pass' })
-    ]));
+    const result = createEl('div', { className: 'dice-result', attrs: { 'aria-live': 'polite', 'aria-atomic': 'true' } });
     body.append(result);
     for (const detail of details) body.append(createEl('p', { className: 'muted', text: detail }));
     openSheet({ title, body, footer: button('Zamknij', closeSheet, 'btn btn-primary btn-block') });
+    const numericValue = Number(value);
+    if (options.animate !== false && Number.isFinite(numericValue)) {
+      animateDiceResult(result, numericValue, status, options.sides || 6, tone);
+      return;
+    }
+    result.replaceChildren(createEl('div', {}, [
+      createEl('strong', { text: value }),
+      createEl('span', { text: status, className: tone === 'danger' ? 'test-fail' : tone === 'success' ? 'test-pass' : '' })
+    ]));
   }
 
   // ============================================================
@@ -2560,14 +2565,18 @@
     return Boolean(globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
   }
 
-  function animateDiceResult(container, value, label, sides = 6) {
+  function animateDiceResult(container, value, label, sides = 6, tone = 'neutral') {
     if (!container) return;
     const token = ++diceAnimationToken;
     const numericSides = DICE_SIDES.includes(Number(sides)) ? Number(sides) : 6;
     const icon = dieIcon(numericSides);
     const number = createEl('strong', { text: shouldReduceMotion() ? value : '—' });
-    const copy = createEl('span', { text: shouldReduceMotion() ? label : 'Kość w ruchu…' });
+    const copy = createEl('span', {
+      text: shouldReduceMotion() ? label : 'Kość w ruchu…',
+      className: tone === 'danger' ? 'test-fail' : tone === 'success' ? 'test-pass' : ''
+    });
     const shell = createEl('div', { className: `animated-dice-result${shouldReduceMotion() ? ' settled' : ' rolling'}` }, [icon, number, copy]);
+    if (!shouldReduceMotion()) shell.setAttribute('aria-hidden', 'true');
     container.replaceChildren(shell);
     if (shouldReduceMotion()) return;
     const started = performance.now();
@@ -2582,6 +2591,7 @@
         return;
       }
       copy.textContent = label;
+      shell.removeAttribute('aria-hidden');
       shell.classList.remove('rolling');
       shell.classList.add('settled');
     };
@@ -2805,7 +2815,7 @@
         createEl('p', { text: `${result.rawDamage} obrażeń − ${result.armor} pancerza = ${result.damageAfterArmor}` }),
         createEl('p', { text: `Ochrona: ${result.hpBefore} → ${result.hpAfter}` }),
         createEl('p', { text: `SIŁ: ${result.strBefore} → ${result.strAfter}` }),
-        createEl('p', { className: result.scarRequired || result.strengthSaveRequired || result.strengthZero ? 'test-fail' : 'muted', text: result.noEffect ? 'Pancerz zatrzymuje wszystkie obrażenia.' : result.scarRequired ? `Dokładnie 0 Ochrony: rozpatrz Bliznę według ${result.hpLost} utraconej Ochrony.` : result.strengthZero ? 'SIŁ spada do 0: postać umiera.' : result.strengthSaveRequired ? `Po zatwierdzeniu wykonaj rzut obronny SIŁ przeciw ${result.strengthSaveTarget}.` : 'Obrażenia nie przechodzą na SIŁ.' })
+        createEl('p', { className: result.scarRequired || result.strengthSaveRequired || result.strengthZero ? 'test-fail' : 'muted', text: result.noEffect ? 'Pancerz zatrzymuje wszystkie obrażenia.' : result.scarRequired ? `Dokładnie 0 Ochrony: rozpatrz Bliznę według ${result.hpLost} utraconych punktów Ochrony.` : result.strengthZero ? 'SIŁ spada do 0: postać umiera.' : result.strengthSaveRequired ? `Po zatwierdzeniu wykonaj rzut obronny SIŁ przeciw ${result.strengthSaveTarget}.` : 'Obrażenia nie przechodzą na SIŁ.' })
       );
     };
     raw.addEventListener('input', update);
@@ -2858,13 +2868,15 @@
     const summary = `Rzut obronny SIŁ po obrażeniach: ${roll} vs ${target} — ${result.success ? 'sukces' : 'porażka'}${natural}`;
     addDiceHistory({ type: 'save', attr: 'str', label: 'Rzut SIŁ po obrażeniach', summary, notation: '1k20', result: roll, success: result.success, details: `Cel: ${target}` });
     announce(summary);
+    const animatedResult = createEl('div', { className: 'dice-result', attrs: { 'aria-live': 'polite', 'aria-atomic': 'true' } });
     const body = createEl('div', { className: 'sheet-list' }, [
-      createEl('div', { className: 'dice-result' }, [createEl('div', {}, [createEl('strong', { text: roll }), createEl('span', { className: result.success ? 'test-pass' : 'test-fail', text: result.success ? 'Sukces' : 'Porażka' })])]),
+      animatedResult,
       createEl('p', { className: 'muted', text: result.naturalSuccess ? 'Naturalne 1 zawsze oznacza sukces.' : result.naturalFailure ? 'Naturalne 20 zawsze oznacza porażkę.' : `Cel rzutu: ${target}.` }),
       createEl('p', { text: result.success ? 'Postać pozostaje w walce z obniżoną SIŁ.' : 'Porażka oznacza obrażenia krytyczne: postać może tylko pełzać i umrze w ciągu godziny bez pomocy.' })
     ]);
     if (result.success) {
       openSheet({ title: 'Rzut obronny SIŁ', body, footer: button('Zamknij', closeSheet, 'btn btn-primary btn-block') });
+      animateDiceResult(animatedResult, roll, 'Sukces', 20, 'success');
       return;
     }
     const later = button('Warden rozstrzygnął inaczej', closeSheet, 'btn btn-ghost');
@@ -2873,6 +2885,7 @@
       commitChange('Oznaczono obrażenia krytyczne', next => { next.conditions.criticalDamage = true; next.conditions.stabilized = false; });
     }, 'btn btn-danger');
     openSheet({ title: 'Rzut obronny SIŁ', body, footer: createEl('div', { className: 'button-row' }, [later, mark]) });
+    animateDiceResult(animatedResult, roll, 'Porażka', 20, 'danger');
   }
 
   function openScarPrompt(hpLost) {
@@ -2905,7 +2918,7 @@
     const summary = `${guide.title} — rzut pomocniczy: ${roll} (${interpretation})`;
     addDiceHistory({ type: 'scar', label: guide.title, summary, notation: 'k6', result: roll, details: interpretation });
     closeSheet();
-    openResultSheet(guide.title, roll, interpretation, [guide.summary, 'Zapisz własny opis Blizny po uzgodnieniu szczegółów z Wardenem.']);
+    openResultSheet(guide.title, roll, interpretation, [guide.summary, 'Zapisz własny opis Blizny po uzgodnieniu szczegółów z Wardenem.'], 'success', { sides: 6 });
     return { roll, interpretation };
   }
 
@@ -3458,11 +3471,15 @@
   }
 
   function performFateRoll() {
-    const result = performRoll({ count: 1, sides: 6 }, 'Kość Losu');
-    if (!result) return;
+    let result;
+    try { result = rollDice({ count: 1, sides: 6 }); }
+    catch (error) { showToast(error.message, 'error'); return null; }
     const verdict = result.total >= 4 ? 'Wynik zwykle sprzyja postaciom.' : 'Wynik zwykle oznacza niepomyślny obrót.';
+    const summary = `Kość Losu: ${result.total} (1k6)`;
+    addDiceHistory({ type: 'dice', label: 'Kość Losu', summary, notation: '1k6', result: result.total, details: verdict });
     renderDiceResult(result.total, `Kość Losu · ${verdict}`, { sides: 6 });
-    announce(`Kość Losu: ${result.total}. ${verdict}`);
+    announce(`${summary}. ${verdict}`);
+    return result;
   }
 
   function openDualWeaponsSheet() {
@@ -3882,6 +3899,8 @@
     test('50. Sytuacje w walce nie są oznaczone jako główne akcje', () => { renderDiceView(); assert(!$('#view-dice .combat-scenarios .btn-primary')); });
     test('51. Ochrona ma osobny, wyjaśniający workflow', () => { assert(typeof openProtectionSheet === 'function' && combatScenarioDefinitions().every(entry => entry.title !== 'Pierwsza runda')); });
     test('52. Wspólny animator kości respektuje reduced motion', () => { assert(typeof animateDiceResult === 'function' && typeof shouldReduceMotion === 'function'); });
+    test('53. Rzuty w panelach używają wspólnego animatora', () => { assert(openResultSheet.toString().includes('animateDiceResult') && performCriticalStrengthSave.toString().includes('animateDiceResult')); });
+    test('54. Kość Losu prezentuje pojedynczy wynik', () => { assert((performFateRoll.toString().match(/renderDiceResult/g) || []).length === 1 && !performFateRoll.toString().includes('performRoll(')); });
     return results;
   }
 
