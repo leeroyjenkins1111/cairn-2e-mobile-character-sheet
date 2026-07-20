@@ -1,0 +1,2527 @@
+<!doctype html>
+<html lang="pl" data-theme="dark">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="color-scheme" content="dark light">
+  <meta name="theme-color" content="#17131a">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>Karta Wędrowca — Cairn 2e</title>
+  <style>
+    :root {
+      --bg: #141116;
+      --bg-elev: #1d1820;
+      --surface: rgba(40, 33, 43, 0.82);
+      --surface-strong: #2a222d;
+      --surface-soft: rgba(57, 48, 61, 0.56);
+      --text: #f3eee6;
+      --muted: #b9adb9;
+      --faint: #887d8b;
+      --line: rgba(239, 228, 211, 0.14);
+      --green: #91a982;
+      --green-strong: #b4c99f;
+      --amber: #d7a55d;
+      --amber-strong: #f2c47f;
+      --danger: #e18c84;
+      --danger-bg: rgba(121, 46, 52, 0.28);
+      --success: #a6c69a;
+      --shadow: 0 14px 40px rgba(0, 0, 0, 0.28);
+      --radius: 18px;
+      --radius-sm: 12px;
+      --nav-height: 74px;
+      --header-height: 58px;
+      --tap: 46px;
+      --focus: 0 0 0 3px rgba(242, 196, 127, 0.48);
+      font-family: ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      color-scheme: dark;
+    }
+
+    html[data-theme="light"] {
+      --bg: #eee9e2;
+      --bg-elev: #f8f4ee;
+      --surface: rgba(255, 252, 247, 0.88);
+      --surface-strong: #fffaf4;
+      --surface-soft: rgba(224, 217, 207, 0.7);
+      --text: #211c22;
+      --muted: #655d67;
+      --faint: #837a82;
+      --line: rgba(52, 42, 54, 0.15);
+      --green: #5f7654;
+      --green-strong: #435f3b;
+      --amber: #a56f29;
+      --amber-strong: #7b4d13;
+      --danger: #9f413f;
+      --danger-bg: rgba(169, 72, 67, 0.12);
+      --success: #4f7048;
+      --shadow: 0 14px 34px rgba(45, 35, 48, 0.12);
+      color-scheme: light;
+    }
+
+    * { box-sizing: border-box; }
+    html { min-width: 320px; background: var(--bg); }
+    body {
+      margin: 0;
+      min-width: 320px;
+      min-height: 100dvh;
+      background:
+        radial-gradient(circle at 12% 4%, rgba(87, 55, 91, 0.22), transparent 32rem),
+        radial-gradient(circle at 90% 18%, rgba(67, 91, 63, 0.13), transparent 28rem),
+        repeating-linear-gradient(115deg, rgba(255,255,255,0.012) 0 1px, transparent 1px 9px),
+        var(--bg);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+      text-rendering: optimizeLegibility;
+      overflow-x: hidden;
+    }
+
+    button, input, select, textarea { font: inherit; }
+    button, input, select, textarea { font-size: 16px; }
+    button { -webkit-tap-highlight-color: transparent; }
+    button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, [tabindex]:focus-visible {
+      outline: none;
+      box-shadow: var(--focus);
+    }
+    button:disabled { opacity: 0.46; cursor: not-allowed; }
+    a { color: var(--amber-strong); }
+    .sr-only {
+      position: absolute !important;
+      width: 1px; height: 1px;
+      padding: 0; margin: -1px;
+      overflow: hidden; clip: rect(0,0,0,0);
+      white-space: nowrap; border: 0;
+    }
+    .hidden { display: none !important; }
+
+    .app-shell {
+      width: min(100%, 720px);
+      min-height: 100dvh;
+      margin: 0 auto;
+      padding-top: env(safe-area-inset-top);
+      position: relative;
+    }
+
+    .app-header {
+      min-height: var(--header-height);
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 9px 14px;
+      background: color-mix(in srgb, var(--bg) 86%, transparent);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--line);
+    }
+    .brand { min-width: 0; }
+    .brand-kicker {
+      margin: 0;
+      color: var(--green-strong);
+      font-size: 0.72rem;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+    }
+    .brand-title {
+      margin: 1px 0 0;
+      font-size: 1.04rem;
+      line-height: 1.15;
+      overflow: hidden;
+      white-space: nowrap;
+      text-overflow: ellipsis;
+    }
+    .header-actions { display: flex; gap: 8px; }
+
+    .main {
+      padding: 14px 14px calc(var(--nav-height) + env(safe-area-inset-bottom) + 22px);
+    }
+    .view { display: grid; gap: 14px; min-width: 0; }
+    .view > * { min-width: 0; max-width: 100%; }
+    .view[hidden] { display: none; }
+
+    .card {
+      min-width: 0;
+      max-width: 100%;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background: var(--surface);
+      box-shadow: var(--shadow);
+      overflow: clip;
+    }
+    .card-pad { padding: 15px; }
+    .card-section + .card-section { border-top: 1px solid var(--line); }
+    .card-section { padding: 15px; }
+    .section-head {
+      min-width: 0;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 10px;
+    }
+    .section-head h2, .section-head h3 { margin: 0; font-size: 1rem; }
+    .section-head p { margin: 0; }
+    .eyebrow {
+      margin: 0 0 5px;
+      color: var(--green-strong);
+      font-size: 0.74rem;
+      font-weight: 800;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+    }
+    .muted { color: var(--muted); }
+    .faint { color: var(--faint); }
+    .small { font-size: 0.84rem; }
+    .micro { font-size: 0.74rem; }
+    .wrap-anywhere { overflow-wrap: anywhere; }
+
+    .btn {
+      min-height: var(--tap);
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      padding: 10px 13px;
+      background: var(--surface-soft);
+      color: var(--text);
+      font-weight: 760;
+      line-height: 1.1;
+      cursor: pointer;
+      transition: transform 120ms ease, background 120ms ease, border-color 120ms ease;
+      touch-action: manipulation;
+    }
+    .btn:active { transform: scale(0.98); }
+    .btn-primary {
+      color: #22180c;
+      background: linear-gradient(180deg, var(--amber-strong), var(--amber));
+      border-color: rgba(255, 224, 174, 0.45);
+    }
+    html[data-theme="light"] .btn-primary { color: #fffaf2; }
+    .btn-danger { background: var(--danger-bg); border-color: color-mix(in srgb, var(--danger) 56%, transparent); color: var(--danger); }
+    .btn-ghost { background: transparent; box-shadow: none; }
+    .btn-quiet { min-height: 44px; padding: 8px 10px; font-size: 0.86rem; }
+    .btn-icon { width: var(--tap); padding: 0; display: inline-grid; place-items: center; }
+    .btn-block { width: 100%; }
+    .button-row { min-width: 0; display: flex; gap: 9px; flex-wrap: wrap; }
+    .button-row > .btn { flex: 1 1 130px; }
+    .action-grid { min-width: 0; display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+    .action-grid .btn { min-height: 58px; text-align: left; }
+    .action-grid .btn strong { display: block; }
+    .action-grid .btn span { display: block; margin-top: 3px; color: color-mix(in srgb, currentColor 72%, transparent); font-size: 0.76rem; font-weight: 600; }
+
+    .character-hero { padding: 16px; }
+    .identity-row { min-width: 0; display: grid; grid-template-columns: 62px minmax(0,1fr) auto; gap: 12px; align-items: center; }
+    .avatar {
+      width: 62px; height: 62px;
+      border-radius: 19px;
+      display: grid; place-items: center;
+      background:
+        radial-gradient(circle at 30% 25%, rgba(255,255,255,0.12), transparent 42%),
+        linear-gradient(145deg, rgba(137, 164, 119, 0.38), rgba(83, 51, 85, 0.5));
+      border: 1px solid var(--line);
+      color: var(--amber-strong);
+      font-size: 1.65rem;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+    .character-name { margin: 0; font-size: clamp(1.32rem, 5.4vw, 1.8rem); line-height: 1.08; overflow-wrap: anywhere; }
+    .character-background { margin: 4px 0 0; color: var(--muted); overflow-wrap: anywhere; }
+    .demo-badge, .tag, .condition-chip {
+      display: inline-flex;
+      align-items: center;
+      min-height: 28px;
+      padding: 5px 9px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      background: var(--surface-soft);
+      color: var(--muted);
+      font-size: 0.74rem;
+      font-weight: 750;
+    }
+    .demo-badge { color: var(--amber-strong); }
+
+    .vitals-grid { min-width: 0; display: grid; grid-template-columns: 1.3fr 0.7fr; gap: 10px; margin-top: 15px; }
+    .hp-card, .mini-stat {
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: color-mix(in srgb, var(--surface-strong) 76%, transparent);
+    }
+    .hp-card { padding: 14px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .hp-value { font-size: clamp(2.15rem, 11vw, 3.1rem); line-height: 0.9; font-weight: 900; letter-spacing: -0.04em; }
+    .hp-value small { font-size: 0.4em; color: var(--muted); letter-spacing: 0; }
+    .hp-label { font-size: 0.74rem; font-weight: 850; color: var(--green-strong); text-transform: uppercase; letter-spacing: 0.1em; }
+    .mini-stats { display: grid; grid-template-columns: 1fr; gap: 8px; }
+    .mini-stat { padding: 10px 12px; }
+    .mini-stat strong { font-size: 1.28rem; display: block; }
+    .mini-stat span { color: var(--muted); font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; }
+
+    .attributes-grid { min-width: 0; display: grid; grid-template-columns: repeat(3, 1fr); gap: 9px; }
+    .attribute-btn {
+      min-width: 0;
+      overflow-wrap: anywhere;
+      min-height: 92px;
+      padding: 10px 7px;
+      text-align: center;
+      border-radius: 16px;
+    }
+    .attribute-btn .attr-label { display: block; color: var(--green-strong); font-size: 0.72rem; letter-spacing: 0.1em; }
+    .attribute-btn .attr-value { display: block; margin: 4px 0 2px; font-size: 1.8rem; font-weight: 900; }
+    .attribute-btn .attr-max { display: block; color: var(--muted); font-size: 0.72rem; }
+
+    .condition-list { display: flex; flex-wrap: wrap; gap: 7px; }
+    .condition-chip.active { color: var(--danger); background: var(--danger-bg); border-color: color-mix(in srgb, var(--danger) 48%, transparent); }
+    .condition-chip.good { color: var(--success); }
+
+    .alert {
+      border: 1px solid color-mix(in srgb, var(--danger) 42%, transparent);
+      background: var(--danger-bg);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      color: var(--text);
+    }
+    .alert strong { color: var(--danger); }
+    .alert p { margin: 5px 0 0; }
+
+    .history-list, .inventory-list, .dice-history { display: grid; gap: 8px; }
+    .history-item, .dice-history-item {
+      padding: 11px 12px;
+      border-radius: 12px;
+      background: var(--surface-soft);
+      border: 1px solid var(--line);
+    }
+    .history-item p, .dice-history-item p { margin: 0; }
+    .history-item time, .dice-history-item time { display: block; margin-top: 4px; color: var(--faint); font-size: 0.72rem; }
+
+    .slot-meter { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; }
+    .slot-cell { height: 13px; border: 1px solid var(--line); border-radius: 4px; background: transparent; }
+    .slot-cell.filled { background: var(--green); border-color: var(--green); }
+    .slot-cell.fatigue { background: var(--danger); border-color: var(--danger); }
+    .usage-line { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 8px; }
+    .usage-line strong { font-size: 1.25rem; }
+
+    .inventory-item {
+      min-width: 0;
+      max-width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 15px;
+      background: var(--surface-soft);
+      padding: 12px;
+    }
+    .inventory-item-head { min-width: 0; display: flex; flex-wrap: wrap; align-items: flex-start; justify-content: space-between; gap: 10px; }
+    .inventory-item h3 { margin: 0; font-size: 1rem; overflow-wrap: anywhere; }
+    .inventory-item p { margin: 5px 0 0; color: var(--muted); font-size: 0.84rem; overflow-wrap: anywhere; white-space: pre-wrap; }
+    .item-meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 9px; }
+    .item-actions { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 10px; }
+    .item-actions .btn { min-width: 44px; min-height: 44px; padding: 7px 10px; flex: 0 1 auto; }
+    .uses-control { display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--line); border-radius: 12px; padding: 3px; }
+    .uses-control .btn { min-width: 44px; min-height: 44px; padding: 0; }
+    .uses-value { min-width: 42px; text-align: center; font-weight: 850; }
+
+    .dice-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+    .die-btn { min-height: 56px; font-size: 1.02rem; }
+    .dice-result {
+      display: grid;
+      place-items: center;
+      min-height: 150px;
+      text-align: center;
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      background:
+        radial-gradient(circle at center, rgba(215,165,93,0.12), transparent 68%),
+        var(--surface-soft);
+    }
+    .dice-result strong { display: block; font-size: 3.4rem; line-height: 1; letter-spacing: -0.05em; }
+    .dice-result span { display: block; margin-top: 8px; color: var(--muted); overflow-wrap: anywhere; }
+
+    .form-grid { display: grid; gap: 12px; }
+    .form-grid.two { grid-template-columns: 1fr 1fr; }
+    .field { display: grid; gap: 6px; min-width: 0; }
+    .field label, .field-label { color: var(--muted); font-size: 0.78rem; font-weight: 800; }
+    .field input, .field select, .field textarea {
+      width: 100%;
+      min-height: var(--tap);
+      padding: 10px 11px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--bg-elev);
+      color: var(--text);
+    }
+    .field textarea { min-height: 96px; resize: vertical; line-height: 1.45; }
+    .field input[type="checkbox"] { width: 22px; min-height: 22px; }
+    .check-row { display: flex; align-items: center; gap: 9px; min-height: 44px; }
+    .help { margin: 0; color: var(--faint); font-size: 0.76rem; line-height: 1.42; }
+    .validation { color: var(--danger); font-size: 0.78rem; }
+
+    .onboarding { padding: 22px 16px; text-align: center; }
+    .onboarding-mark {
+      width: 78px; height: 78px;
+      margin: 0 auto 15px;
+      display: grid; place-items: center;
+      border: 1px solid var(--line);
+      border-radius: 25px;
+      background: linear-gradient(145deg, rgba(145,169,130,0.26), rgba(83,51,85,0.48));
+      font-size: 2rem;
+    }
+    .onboarding h1 { margin: 0; font-size: 1.7rem; }
+    .onboarding p { color: var(--muted); line-height: 1.55; }
+    .onboarding-actions { display: grid; gap: 9px; margin-top: 18px; }
+
+    .settings-list { display: grid; gap: 1px; }
+    .settings-row {
+      min-height: 58px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 14px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .settings-row:last-child { border-bottom: 0; }
+    .settings-row p { margin: 3px 0 0; }
+
+    .bottom-nav {
+      position: fixed;
+      left: 50%;
+      bottom: 0;
+      z-index: 30;
+      width: min(100%, 720px);
+      transform: translateX(-50%);
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 2px;
+      min-height: calc(var(--nav-height) + env(safe-area-inset-bottom));
+      padding: 7px 8px calc(7px + env(safe-area-inset-bottom));
+      background: color-mix(in srgb, var(--bg-elev) 91%, transparent);
+      border-top: 1px solid var(--line);
+      backdrop-filter: blur(18px);
+      -webkit-backdrop-filter: blur(18px);
+    }
+    .nav-btn {
+      min-width: 0;
+      overflow-wrap: anywhere;
+      min-height: 56px;
+      border: 0;
+      border-radius: 14px;
+      background: transparent;
+      color: var(--muted);
+      display: grid;
+      place-items: center;
+      align-content: center;
+      gap: 3px;
+      font-size: 0.72rem;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    .nav-btn .nav-icon { font-size: 1.16rem; line-height: 1; }
+    .nav-btn[aria-current="page"] { background: var(--surface-soft); color: var(--amber-strong); }
+
+    .sheet-backdrop {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+      padding-top: env(safe-area-inset-top);
+      background: rgba(7, 5, 8, 0.62);
+    }
+    .sheet-backdrop.open { display: flex; }
+    .sheet {
+      width: min(100%, 720px);
+      max-height: min(88dvh, 850px);
+      display: grid;
+      grid-template-rows: auto minmax(0,1fr) auto;
+      border: 1px solid var(--line);
+      border-bottom: 0;
+      border-radius: 24px 24px 0 0;
+      background: var(--bg-elev);
+      box-shadow: 0 -18px 60px rgba(0,0,0,0.36);
+      overflow: hidden;
+      animation: sheet-in 180ms ease-out;
+    }
+    .sheet-handle { width: 42px; height: 4px; border-radius: 999px; background: var(--line); margin: 8px auto 0; }
+    .sheet-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 7px 14px 12px; border-bottom: 1px solid var(--line); }
+    .sheet-head h2 { margin: 0; font-size: 1.08rem; }
+    .sheet-body { overflow-y: auto; overscroll-behavior: contain; padding: 14px; }
+    .sheet-foot { padding: 10px 14px calc(10px + env(safe-area-inset-bottom)); border-top: 1px solid var(--line); background: var(--bg-elev); }
+    .sheet-foot:empty { display: none; }
+    .sheet-list { display: grid; gap: 9px; }
+    .report-block { border: 1px solid var(--line); border-radius: 12px; padding: 11px; background: var(--surface-soft); }
+    .report-block h3 { margin: 0 0 7px; font-size: 0.9rem; }
+    .report-block ul { margin: 0; padding-left: 20px; color: var(--muted); }
+    .report-block li + li { margin-top: 4px; }
+
+    .toast {
+      position: fixed;
+      z-index: 150;
+      left: 50%;
+      bottom: calc(var(--nav-height) + env(safe-area-inset-bottom) + 12px);
+      width: min(calc(100% - 28px), 520px);
+      transform: translate(-50%, 14px);
+      opacity: 0;
+      pointer-events: none;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      background: var(--surface-strong);
+      box-shadow: var(--shadow);
+      color: var(--text);
+      transition: opacity 150ms ease, transform 150ms ease;
+    }
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
+    .toast.error { border-color: color-mix(in srgb, var(--danger) 55%, transparent); }
+
+    .test-pass { color: var(--success); }
+    .test-fail { color: var(--danger); }
+
+    @keyframes sheet-in { from { transform: translateY(24px); opacity: 0.85; } to { transform: translateY(0); opacity: 1; } }
+
+    .identity-row > *, .vitals-grid > *, .attributes-grid > *, .action-grid > *, .section-head > *, .button-row > * { min-width: 0; }
+    .character-name, .character-background, .btn, .tag, .condition-chip { overflow-wrap: anywhere; }
+
+    @media (min-width: 620px) {
+      .main { padding-left: 18px; padding-right: 18px; }
+      .action-grid { grid-template-columns: repeat(4, 1fr); }
+      .dice-grid { grid-template-columns: repeat(7, 1fr); }
+    }
+
+    @media (max-width: 350px) {
+      .identity-row { grid-template-columns: 52px minmax(0,1fr); }
+      .avatar { width: 52px; height: 52px; border-radius: 16px; }
+      .identity-row > :last-child { grid-column: 1 / -1; justify-self: start; }
+      .form-grid.two { grid-template-columns: 1fr; }
+      .action-grid { grid-template-columns: 1fr; }
+      .dice-grid { grid-template-columns: repeat(3, 1fr); }
+      .main { padding-left: 10px; padding-right: 10px; }
+      .app-header { padding-left: 10px; padding-right: 10px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.001ms !important;
+        animation-iteration-count: 1 !important;
+        scroll-behavior: auto !important;
+        transition-duration: 0.001ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="app-header">
+      <div class="brand">
+        <p class="brand-kicker">Cairn 2e</p>
+        <p class="brand-title" id="headerTitle">Karta Wędrowca</p>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-icon btn-ghost" id="quickUndoBtn" type="button" aria-label="Cofnij ostatnią zmianę" title="Cofnij">↶</button>
+        <button class="btn btn-icon btn-ghost" id="quickDiceBtn" type="button" aria-label="Otwórz szybki rzut kością" title="Kości">◇</button>
+      </div>
+    </header>
+
+    <main class="main" id="main">
+      <section class="view" id="view-character" data-view="character" aria-labelledby="nav-character"></section>
+      <section class="view" id="view-inventory" data-view="inventory" aria-labelledby="nav-inventory" hidden></section>
+      <section class="view" id="view-dice" data-view="dice" aria-labelledby="nav-dice" hidden></section>
+      <section class="view" id="view-more" data-view="more" aria-labelledby="nav-more" hidden></section>
+    </main>
+
+    <nav class="bottom-nav" aria-label="Główna nawigacja">
+      <button class="nav-btn" id="nav-character" type="button" data-nav="character" aria-current="page"><span class="nav-icon" aria-hidden="true">◉</span><span>Postać</span></button>
+      <button class="nav-btn" id="nav-inventory" type="button" data-nav="inventory"><span class="nav-icon" aria-hidden="true">▦</span><span>Ekwipunek</span></button>
+      <button class="nav-btn" id="nav-dice" type="button" data-nav="dice"><span class="nav-icon" aria-hidden="true">◇</span><span>Kości</span></button>
+      <button class="nav-btn" id="nav-more" type="button" data-nav="more"><span class="nav-icon" aria-hidden="true">•••</span><span>Więcej</span></button>
+    </nav>
+  </div>
+
+  <div class="sheet-backdrop" id="sheetBackdrop" aria-hidden="true">
+    <section class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
+      <div>
+        <div class="sheet-handle" aria-hidden="true"></div>
+        <div class="sheet-head">
+          <h2 id="sheetTitle">Panel</h2>
+          <button class="btn btn-icon btn-ghost" id="sheetCloseBtn" type="button" aria-label="Zamknij panel">×</button>
+        </div>
+      </div>
+      <div class="sheet-body" id="sheetBody"></div>
+      <div class="sheet-foot" id="sheetFoot"></div>
+    </section>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <div class="sr-only" id="liveRegion" aria-live="assertive" aria-atomic="true"></div>
+
+  <input class="hidden" id="importFileInput" type="file" accept="application/json,.json">
+  <input class="hidden" id="backupFileInput" type="file" accept="application/json,.json">
+
+  <script>
+  'use strict';
+
+  // ============================================================
+  // 1. Constants
+  // ============================================================
+  const APP_ID = 'cairn-mobile-sheet';
+  const APP_VERSION = '0.1.0';
+  const SCHEMA_VERSION = 1;
+  const STORAGE_KEY = `${APP_ID}:state`;
+  const RECOVERY_KEY = `${APP_ID}:recovery`;
+  const HISTORY_LIMIT = 50;
+  const DICE_HISTORY_LIMIT = 20;
+  const SAVE_DEBOUNCE_MS = 300;
+  const DICE_SIDES = [4, 6, 8, 10, 12, 20, 100];
+  const ATTRS = {
+    str: { label: 'SIŁ', full: 'Siła' },
+    dex: { label: 'ZRE', full: 'Zręczność' },
+    wil: { label: 'WOL', full: 'Wola' }
+  };
+  const CARRY_STATES = {
+    held: 'trzymany',
+    worn: 'noszony',
+    stored: 'schowany',
+    spent: 'zużyty'
+  };
+  const CONDITION_DEFS = [
+    ['deprived', 'Pozbawienie / dyskomfort'],
+    ['panicked', 'Panika'],
+    ['criticalDamage', 'Obrażenia krytyczne'],
+    ['stabilized', 'Stabilizacja'],
+    ['paralyzed', 'Paraliż'],
+    ['delirious', 'Delirium']
+  ];
+
+  // ============================================================
+  // 2. Utilities
+  // ============================================================
+  const $ = (selector, root = document) => root.querySelector(selector);
+  const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
+  const deepClone = (value) => typeof structuredClone === 'function'
+    ? structuredClone(value)
+    : JSON.parse(JSON.stringify(value));
+  const nowIso = () => new Date().toISOString();
+  const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+  const toInt = (value, fallback = 0) => {
+    const parsed = Number.parseInt(value, 10);
+    return Number.isFinite(parsed) ? parsed : fallback;
+  };
+  const trimText = (value, fallback = '') => typeof value === 'string' ? value.trim() : fallback;
+  const safeArray = (value) => Array.isArray(value) ? value : [];
+  const makeId = () => {
+    if (globalThis.crypto?.randomUUID) return crypto.randomUUID();
+    return `${Date.now().toString(36)}-${secureRandomInt(1_000_000).toString(36)}`;
+  };
+  const formatDateTime = (iso) => {
+    try { return new Intl.DateTimeFormat('pl-PL', { dateStyle: 'short', timeStyle: 'short' }).format(new Date(iso)); }
+    catch { return iso || ''; }
+  };
+  const initials = (name) => {
+    const parts = trimText(name).split(/\s+/).filter(Boolean);
+    return (parts.slice(0, 2).map(p => p[0]).join('') || '?').toUpperCase();
+  };
+  const createEl = (tag, options = {}, children = []) => {
+    const el = document.createElement(tag);
+    for (const [key, value] of Object.entries(options)) {
+      if (key === 'className') el.className = value;
+      else if (key === 'text') el.textContent = String(value);
+      else if (key === 'dataset') Object.assign(el.dataset, value);
+      else if (key === 'attrs') for (const [name, val] of Object.entries(value)) {
+        if (val === false || val === null || val === undefined) continue;
+        el.setAttribute(name, val === true ? '' : String(val));
+      }
+      else if (key.startsWith('on') && typeof value === 'function') el.addEventListener(key.slice(2).toLowerCase(), value);
+      else if (key in el) el[key] = value;
+      else el.setAttribute(key, value);
+    }
+    for (const child of Array.isArray(children) ? children : [children]) {
+      if (child === null || child === undefined) continue;
+      el.append(child instanceof Node ? child : document.createTextNode(String(child)));
+    }
+    return el;
+  };
+  const button = (label, onClick, className = 'btn', attrs = {}) => createEl('button', {
+    type: 'button', className, text: label, attrs, onclick: onClick
+  });
+  const field = (labelText, control, helpText = '') => {
+    const wrap = createEl('div', { className: 'field' });
+    const id = control.id || makeId();
+    control.id = id;
+    wrap.append(createEl('label', { text: labelText, htmlFor: id }), control);
+    if (helpText) wrap.append(createEl('p', { className: 'help', text: helpText }));
+    return wrap;
+  };
+  const numberInput = (value, min = 0, max = 99, step = 1) => createEl('input', {
+    type: 'number', value, min, max, step, inputMode: 'numeric'
+  });
+  const textInput = (value = '', maxLength = 200) => createEl('input', {
+    type: 'text', value, maxLength, autoComplete: 'off'
+  });
+  const textarea = (value = '', maxLength = 5000) => createEl('textarea', { value, maxLength });
+  const selectInput = (options, value) => {
+    const select = createEl('select');
+    for (const [optionValue, label] of options) {
+      select.append(createEl('option', { value: optionValue, text: label, selected: optionValue === value }));
+    }
+    return select;
+  };
+  const announce = (message) => {
+    const live = $('#liveRegion');
+    live.textContent = '';
+    requestAnimationFrame(() => { live.textContent = message; });
+  };
+  let toastTimer = null;
+  const showToast = (message, type = 'info') => {
+    const toast = $('#toast');
+    toast.textContent = message;
+    toast.className = `toast show${type === 'error' ? ' error' : ''}`;
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { toast.className = 'toast'; }, 3300);
+  };
+  const downloadTextFile = (filename, text, type = 'application/json') => {
+    const blob = new Blob([text], { type });
+    const url = URL.createObjectURL(blob);
+    const a = createEl('a', { href: url, download: filename });
+    document.body.append(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+  };
+  const jsonEqual = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+
+  // ============================================================
+  // 3. Model and defaults
+  // ============================================================
+  function createDefaultState() {
+    const timestamp = nowIso();
+    return {
+      appId: APP_ID,
+      schemaVersion: SCHEMA_VERSION,
+      appVersion: APP_VERSION,
+      characterId: makeId(),
+      createdAt: timestamp,
+      updatedAt: timestamp,
+      initialized: false,
+      isDemo: false,
+      identity: {
+        name: '',
+        background: '',
+        backgroundDescription: '',
+        portrait: { type: 'initial', value: '' },
+        traits: '',
+        bonds: '',
+        omens: ''
+      },
+      stats: {
+        hp: { current: 0, max: 0 },
+        str: { current: 0, max: 0 },
+        dex: { current: 0, max: 0 },
+        wil: { current: 0, max: 0 },
+        armor: { mode: 'equipment', manual: 0, importedValue: null },
+        gold: 0
+      },
+      inventory: { slotLimit: 10, items: [], fatigue: [] },
+      conditions: {
+        deprived: false,
+        panicked: false,
+        criticalDamage: false,
+        stabilized: false,
+        paralyzed: false,
+        delirious: false,
+        custom: []
+      },
+      scars: [],
+      notes: '',
+      diceHistory: [],
+      changeHistory: [],
+      source: {
+        type: 'manual',
+        importedAt: null,
+        adapterVersion: null,
+        sourceId: null,
+        original: null,
+        containerMetadata: [],
+        unmappedPaths: [],
+        warnings: []
+      },
+      settings: {
+        theme: 'dark',
+        reducedMotionOverride: null
+      }
+    };
+  }
+
+  function createDemoState() {
+    const demo = createDefaultState();
+    demo.initialized = true;
+    demo.isDemo = true;
+    demo.identity = {
+      name: 'Mara Ciernista',
+      background: 'Zwiadowczyni Głębokiego Boru',
+      backgroundDescription: 'Dane demonstracyjne — możesz je dowolnie zmienić lub usunąć.',
+      portrait: { type: 'initial', value: 'MC' },
+      traits: 'Cicha, uważna i zawsze gotowa do odwrotu.',
+      bonds: 'Obiecała wrócić po kogoś, kto został w Lesie.',
+      omens: 'Ptaki milkną, gdy zbliża się mgła.'
+    };
+    demo.stats = {
+      hp: { current: 4, max: 5 },
+      str: { current: 11, max: 12 },
+      dex: { current: 15, max: 15 },
+      wil: { current: 10, max: 10 },
+      armor: { mode: 'equipment', manual: 0, importedValue: null },
+      gold: 18
+    };
+    demo.inventory.items = [
+      makeItem({ name: 'Krótki łuk', description: 'Lekki łuk myśliwski.', damageDie: 'd6', slots: 1, carryState: 'held' }),
+      makeItem({ name: 'Skórzany kaftan', description: 'Wytarty, ale nadal użyteczny.', armorValue: 1, slots: 1, carryState: 'worn' }),
+      makeItem({ name: 'Pochodnia', uses: { current: 2, max: 3 }, slots: 1 }),
+      makeItem({ name: 'Suszone racje', uses: { current: 2, max: 3 }, slots: 1 }),
+      makeItem({ name: 'Mosiężny gwizdek', slots: 0, traits: ['drobiazg'] })
+    ];
+    demo.notes = 'To przykładowa karta. Nie zawiera danych z importu.';
+    return demo;
+  }
+
+  function makeItem(partial = {}) {
+    return {
+      id: partial.id || makeId(),
+      sourceId: partial.sourceId ?? null,
+      name: partial.name || 'Nowy przedmiot',
+      description: partial.description || '',
+      slots: clamp(toInt(partial.slots, 1), 0, 10),
+      category: partial.category || 'inne',
+      damageDie: partial.damageDie || null,
+      armorValue: clamp(toInt(partial.armorValue, 0), 0, 3),
+      uses: partial.uses ? {
+        current: partial.uses.current === null ? null : Math.max(0, toInt(partial.uses.current, 0)),
+        max: partial.uses.max === null ? null : Math.max(0, toInt(partial.uses.max, 0))
+      } : { current: null, max: null },
+      carryState: partial.carryState || 'stored',
+      traits: Array.from(new Set(safeArray(partial.traits).map(String))),
+      notes: partial.notes || '',
+      sourceExtras: partial.sourceExtras && typeof partial.sourceExtras === 'object' ? deepClone(partial.sourceExtras) : {}
+    };
+  }
+
+  function makeFatigue(partial = {}) {
+    return {
+      id: partial.id || makeId(),
+      addedAt: partial.addedAt || nowIso(),
+      source: partial.source || 'manual',
+      note: partial.note || '',
+      slots: 1
+    };
+  }
+
+  // ============================================================
+  // 4. Validation and migrations
+  // ============================================================
+  function validateState(candidate) {
+    const errors = [];
+    const warnings = [];
+    if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) errors.push('Dane nie są obiektem karty.');
+    if (candidate?.appId !== APP_ID) errors.push('Nieprawidłowy identyfikator formatu kopii.');
+    if (!Number.isInteger(candidate?.schemaVersion)) errors.push('Brak prawidłowego schemaVersion.');
+    if (candidate?.schemaVersion > SCHEMA_VERSION) errors.push(`Kopia używa nowszej wersji schematu (${candidate.schemaVersion}).`);
+    if (!candidate?.identity || typeof candidate.identity !== 'object') errors.push('Brak danych podstawowych postaci.');
+    if (!candidate?.stats || typeof candidate.stats !== 'object') errors.push('Brak statystyk postaci.');
+    if (!candidate?.inventory || !Array.isArray(candidate.inventory.items) || !Array.isArray(candidate.inventory.fatigue)) errors.push('Nieprawidłowy ekwipunek.');
+    if (candidate?.inventory?.items?.length > 200) errors.push('Zbyt wiele przedmiotów w pliku.');
+    if (candidate?.stats) {
+      for (const key of ['hp', 'str', 'dex', 'wil']) {
+        const pair = candidate.stats[key];
+        if (!pair || !Number.isFinite(Number(pair.current)) || !Number.isFinite(Number(pair.max))) errors.push(`Nieprawidłowa statystyka: ${key}.`);
+      }
+    }
+    if (candidate?.inventory) {
+      const usage = calculateInventoryUsage(candidate.inventory.items || [], candidate.inventory.fatigue || []);
+      if (usage.total > 10) errors.push(`Ekwipunek zajmuje ${usage.total}/10 miejsc.`);
+      if (usage.total === 10 && toInt(candidate?.stats?.hp?.current, 0) > 0) warnings.push('Pełny ekwipunek przy OCHR powyżej 0 wymaga rozpatrzenia reguły 0 OCHR.');
+    }
+    if (candidate?.conditions?.panicked && toInt(candidate?.stats?.hp?.current, 0) > 0) warnings.push('Postać jest spanikowana, ale ma OCHR powyżej 0.');
+    return { valid: errors.length === 0, errors, warnings };
+  }
+
+  function migrateState(candidate) {
+    let migrated = deepClone(candidate);
+    if (!Number.isInteger(migrated.schemaVersion)) throw new Error('Brak schemaVersion.');
+    if (migrated.schemaVersion > SCHEMA_VERSION) throw new Error('Nieobsługiwana nowsza wersja danych.');
+    // Reserved for future migrations: v1 is the first public schema.
+    migrated.appVersion = APP_VERSION;
+    migrated.schemaVersion = SCHEMA_VERSION;
+    migrated.settings = { theme: 'dark', reducedMotionOverride: null, ...(migrated.settings || {}) };
+    migrated.changeHistory = safeArray(migrated.changeHistory).slice(-HISTORY_LIMIT);
+    migrated.diceHistory = safeArray(migrated.diceHistory).slice(-DICE_HISTORY_LIMIT);
+    return migrated;
+  }
+
+  function sanitizeLoadedState(candidate) {
+    const base = createDefaultState();
+    const migrated = migrateState(candidate);
+    const merged = {
+      ...base,
+      ...migrated,
+      identity: { ...base.identity, ...(migrated.identity || {}), portrait: { ...base.identity.portrait, ...(migrated.identity?.portrait || {}) } },
+      stats: {
+        ...base.stats,
+        ...(migrated.stats || {}),
+        hp: { ...base.stats.hp, ...(migrated.stats?.hp || {}) },
+        str: { ...base.stats.str, ...(migrated.stats?.str || {}) },
+        dex: { ...base.stats.dex, ...(migrated.stats?.dex || {}) },
+        wil: { ...base.stats.wil, ...(migrated.stats?.wil || {}) },
+        armor: { ...base.stats.armor, ...(migrated.stats?.armor || {}) }
+      },
+      inventory: { ...base.inventory, ...(migrated.inventory || {}), items: safeArray(migrated.inventory?.items).map(makeItem), fatigue: safeArray(migrated.inventory?.fatigue).map(makeFatigue) },
+      conditions: { ...base.conditions, ...(migrated.conditions || {}), custom: safeArray(migrated.conditions?.custom) },
+      source: { ...base.source, ...(migrated.source || {}) },
+      settings: { ...base.settings, ...(migrated.settings || {}) }
+    };
+    return merged;
+  }
+
+  // ============================================================
+  // 5. Storage
+  // ============================================================
+  let state = createDefaultState();
+  let storageBlocked = false;
+  let loadWarning = '';
+  let saveTimer = null;
+
+  function canUseStorage() {
+    try {
+      const key = `${APP_ID}:probe`;
+      localStorage.setItem(key, '1');
+      localStorage.removeItem(key);
+      return true;
+    } catch { return false; }
+  }
+
+
+  function safeStorageGet(key) {
+    try { return localStorage.getItem(key); }
+    catch { return null; }
+  }
+
+  function loadState() {
+    if (!canUseStorage()) {
+      storageBlocked = true;
+      loadWarning = 'Przeglądarka blokuje zapis lokalny. Eksportuj kopię po każdej sesji.';
+      return createDefaultState();
+    }
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return createDefaultState();
+    try {
+      const parsed = JSON.parse(raw);
+      const migrated = sanitizeLoadedState(parsed);
+      const validation = validateState(migrated);
+      if (!validation.valid) throw new Error(validation.errors.join(' '));
+      loadWarning = validation.warnings.join(' ');
+      return migrated;
+    } catch (error) {
+      try { localStorage.setItem(RECOVERY_KEY, raw); } catch {}
+      loadWarning = `Nie udało się odczytać zapisu. Oryginalne dane zachowano jako kopię odzyskiwania. ${error.message}`;
+      return createDefaultState();
+    }
+  }
+
+  function scheduleSave() {
+    if (storageBlocked) return;
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(saveNow, SAVE_DEBOUNCE_MS);
+  }
+
+  function saveNow() {
+    if (storageBlocked) return false;
+    try {
+      state.updatedAt = nowIso();
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      return true;
+    } catch (error) {
+      storageBlocked = true;
+      showToast(`Nie udało się zapisać danych: ${error.message}`, 'error');
+      announce('Błąd zapisu lokalnego.');
+      return false;
+    }
+  }
+
+  // ============================================================
+  // 6. History and undo
+  // ============================================================
+  function snapshotForHistory(sourceState = state) {
+    return deepClone({
+      initialized: sourceState.initialized,
+      isDemo: sourceState.isDemo,
+      identity: sourceState.identity,
+      stats: sourceState.stats,
+      inventory: sourceState.inventory,
+      conditions: sourceState.conditions,
+      scars: sourceState.scars,
+      notes: sourceState.notes
+    });
+  }
+
+  function applySnapshot(target, snapshot) {
+    for (const key of ['initialized', 'isDemo', 'identity', 'stats', 'inventory', 'conditions', 'scars', 'notes']) {
+      target[key] = deepClone(snapshot[key]);
+    }
+  }
+
+  function commitChange(description, mutator, options = {}) {
+    const before = snapshotForHistory();
+    const next = deepClone(state);
+    mutator(next);
+    next.updatedAt = nowIso();
+    const after = snapshotForHistory(next);
+    if (jsonEqual(before, after)) {
+      if (!options.silentNoop) showToast('Brak zmian do zapisania.');
+      return false;
+    }
+    const entry = {
+      id: makeId(),
+      time: nowIso(),
+      description,
+      before,
+      after,
+      undoable: options.undoable !== false
+    };
+    next.changeHistory = [...safeArray(state.changeHistory), entry].slice(-HISTORY_LIMIT);
+    state = next;
+    scheduleSave();
+    renderAll();
+    if (!options.silent) showToast(description);
+    return true;
+  }
+
+  function recordEvent(description) {
+    const unchanged = snapshotForHistory();
+    const entry = { id: makeId(), time: nowIso(), description, before: unchanged, after: deepClone(unchanged), undoable: false };
+    state.changeHistory = [...safeArray(state.changeHistory), entry].slice(-HISTORY_LIMIT);
+    scheduleSave();
+  }
+
+  function undoLastChange() {
+    const history = safeArray(state.changeHistory);
+    let index = -1;
+    for (let i = history.length - 1; i >= 0; i--) {
+      if (history[i].undoable && history[i].before) { index = i; break; }
+    }
+    if (index < 0) {
+      showToast('Brak zmiany możliwej do cofnięcia.');
+      return;
+    }
+    const entry = history[index];
+    const next = deepClone(state);
+    applySnapshot(next, entry.before);
+    next.changeHistory = history.filter((_, i) => i !== index);
+    next.updatedAt = nowIso();
+    state = next;
+    scheduleSave();
+    renderAll();
+    showToast(`Cofnięto: ${entry.description}`);
+    announce(`Cofnięto zmianę: ${entry.description}`);
+  }
+
+  // ============================================================
+  // 7. Dice engine
+  // ============================================================
+  function secureRandomInt(maxExclusive) {
+    if (!Number.isInteger(maxExclusive) || maxExclusive <= 0) throw new Error('Nieprawidłowy zakres losowania.');
+    if (!globalThis.crypto?.getRandomValues) throw new Error('Ta przeglądarka nie udostępnia crypto.getRandomValues.');
+    const limit = Math.floor(0x100000000 / maxExclusive) * maxExclusive;
+    const array = new Uint32Array(1);
+    do { crypto.getRandomValues(array); } while (array[0] >= limit);
+    return array[0] % maxExclusive;
+  }
+
+  function rollDie(sides) { return secureRandomInt(sides) + 1; }
+
+  function rollDice({ count = 1, sides = 6, modifier = 0, keepHighest = false } = {}) {
+    count = clamp(toInt(count, 1), 1, 100);
+    sides = clamp(toInt(sides, 6), 2, 1000);
+    modifier = clamp(toInt(modifier, 0), -999, 999);
+    const rolls = Array.from({ length: count }, () => rollDie(sides));
+    const base = keepHighest ? Math.max(...rolls) : rolls.reduce((sum, value) => sum + value, 0);
+    return { count, sides, modifier, keepHighest, rolls, base, total: base + modifier };
+  }
+
+  function resolveSave(attributeValue, roll) {
+    const target = clamp(toInt(attributeValue, 0), 0, 99);
+    const natural = toInt(roll, 0);
+    const success = natural === 1 ? true : natural === 20 ? false : natural <= target;
+    return { target, roll: natural, success, naturalSuccess: natural === 1, naturalFailure: natural === 20 };
+  }
+
+  function addDiceHistory(entry) {
+    state.diceHistory = [{ id: makeId(), time: nowIso(), ...entry }, ...safeArray(state.diceHistory)].slice(0, DICE_HISTORY_LIMIT);
+    recordEvent(entry.summary);
+    scheduleSave();
+    renderDiceView();
+  }
+
+  function performRoll(config, label = '') {
+    try {
+      const result = rollDice(config);
+      const notation = `${result.count}k${result.sides}${result.modifier ? (result.modifier > 0 ? `+${result.modifier}` : result.modifier) : ''}`;
+      const details = `${result.rolls.join(', ')}${result.keepHighest ? ` → najwyższy ${result.base}` : ''}`;
+      const summary = `${label || 'Rzut'}: ${result.total} (${notation})`;
+      addDiceHistory({ type: 'dice', label: label || 'Rzut', summary, notation, result: result.total, details });
+      renderDiceResult(result.total, `${label || notation} · ${details}`);
+      announce(`${summary}. Wyniki kości: ${result.rolls.join(', ')}.`);
+      return result;
+    } catch (error) {
+      showToast(error.message, 'error');
+      return null;
+    }
+  }
+
+  function performSave(attrKey, forcedRoll = null) {
+    const attr = state.stats[attrKey];
+    if (!attr) return;
+    let roll;
+    try { roll = forcedRoll ?? rollDie(20); }
+    catch (error) { showToast(error.message, 'error'); return; }
+    const result = resolveSave(attr.current, roll);
+    const natural = result.naturalSuccess ? ' — naturalne 1' : result.naturalFailure ? ' — naturalne 20' : '';
+    const summary = `Rzut obronny ${ATTRS[attrKey].label}: ${roll} vs ${attr.current} — ${result.success ? 'sukces' : 'porażka'}${natural}`;
+    addDiceHistory({ type: 'save', attr: attrKey, label: `Rzut obronny ${ATTRS[attrKey].label}`, summary, notation: '1k20', result: roll, success: result.success, details: `Cel: ${attr.current}` });
+    announce(summary);
+    openResultSheet(`Rzut obronny ${ATTRS[attrKey].label}`, roll, result.success ? 'Sukces' : 'Porażka', [
+      `Aktualna wartość: ${attr.current}`,
+      result.naturalSuccess ? 'Naturalne 1 zawsze oznacza sukces.' : result.naturalFailure ? 'Naturalne 20 zawsze oznacza porażkę.' : `Wynik ${roll} jest ${result.success ? 'równy lub niższy' : 'wyższy'} od ${attr.current}.`
+    ], result.success ? 'success' : 'danger');
+    return result;
+  }
+
+  // ============================================================
+  // 8. Cairn rules
+  // ============================================================
+  function calculateDamage(sourceState, rawDamage, armorValue) {
+    const raw = Math.max(0, toInt(rawDamage, 0));
+    const armor = clamp(toInt(armorValue, 0), 0, 3);
+    const afterArmor = Math.max(0, raw - armor);
+    const hpBefore = Math.max(0, toInt(sourceState.stats.hp.current, 0));
+    const strBefore = Math.max(0, toInt(sourceState.stats.str.current, 0));
+    const hpAfter = Math.max(0, hpBefore - afterArmor);
+    const overflow = Math.max(0, afterArmor - hpBefore);
+    const strAfter = Math.max(0, strBefore - overflow);
+    const hpLost = hpBefore - hpAfter;
+    return {
+      rawDamage: raw,
+      armor,
+      damageAfterArmor: afterArmor,
+      hpBefore,
+      hpAfter,
+      hpLost,
+      overflow,
+      strBefore,
+      strAfter,
+      scarRequired: hpBefore > 0 && afterArmor === hpBefore,
+      strengthSaveRequired: overflow > 0 && strAfter > 0,
+      strengthSaveTarget: strAfter,
+      strengthZero: strAfter === 0 && overflow > 0,
+      noEffect: afterArmor === 0
+    };
+  }
+
+  function calculateDirectAttributeDamage(sourceState, attrKey, amount) {
+    const before = Math.max(0, toInt(sourceState.stats[attrKey]?.current, 0));
+    const damage = Math.max(0, toInt(amount, 0));
+    const after = Math.max(0, before - damage);
+    return { attrKey, damage, before, after, reachedZero: before > 0 && after === 0 };
+  }
+
+  function calculateInventoryUsage(items = state.inventory.items, fatigue = state.inventory.fatigue) {
+    const itemSlots = safeArray(items).reduce((sum, item) => sum + clamp(toInt(item.slots, 1), 0, 10), 0);
+    const fatigueSlots = safeArray(fatigue).length;
+    return { itemSlots, fatigueSlots, total: itemSlots + fatigueSlots, limit: 10 };
+  }
+
+  function deriveArmor(sourceState = state) {
+    const armor = sourceState.stats.armor || { mode: 'equipment', manual: 0 };
+    const sources = safeArray(sourceState.inventory.items)
+      .filter(item => ['held', 'worn'].includes(item.carryState) && toInt(item.armorValue, 0) > 0)
+      .map(item => ({ name: item.name, value: clamp(toInt(item.armorValue, 0), 0, 3), carryState: item.carryState }));
+    const equipmentTotal = sources.reduce((sum, source) => sum + source.value, 0);
+    const effective = armor.mode === 'manual' ? clamp(toInt(armor.manual, 0), 0, 3) : clamp(equipmentTotal, 0, 3);
+    return { effective, mode: armor.mode, manual: toInt(armor.manual, 0), equipmentTotal, sources, capped: equipmentTotal > 3 };
+  }
+
+  function applyInventoryMutation(description, mutator, options = {}) {
+    const beforeUsage = calculateInventoryUsage();
+    const proposed = deepClone(state);
+    mutator(proposed);
+    const afterUsage = calculateInventoryUsage(proposed.inventory.items, proposed.inventory.fatigue);
+    if (afterUsage.total > proposed.inventory.slotLimit) {
+      showToast(`Brak miejsca: operacja zajęłaby ${afterUsage.total}/10 miejsc.`, 'error');
+      announce('Operacja zablokowana: przekroczono limit ekwipunku.');
+      return;
+    }
+    const crossesFull = beforeUsage.total < 10 && afterUsage.total === 10;
+    const apply = (setHpZero) => commitChange(description, next => {
+      mutator(next);
+      if (setHpZero) next.stats.hp.current = 0;
+    });
+    if (crossesFull && state.stats.hp.current > 0) {
+      openConfirmSheet({
+        title: 'Pełny ekwipunek',
+        message: 'Ta operacja zapełni wszystkie 10 miejsc. Zgodnie z zasadami postać zostaje sprowadzona do 0 OCHR.',
+        confirmLabel: 'Zatwierdź i ustaw 0 OCHR',
+        danger: true,
+        onConfirm: () => apply(true)
+      });
+      return;
+    }
+    apply(false);
+  }
+
+  // ============================================================
+  // 9. Kettlewright adapter
+  // ============================================================
+  const KW_TOP_KNOWN = new Set(['armor','background','bonds','containers','custom_background','custom_image','custom_name','deprived','description','dexterity','dexterity_max','gold','hp','hp_max','id','image_url','items','name','notes','omens','panicked','scars','strength','strength_max','traits','willpower','willpower_max']);
+  const KW_ITEM_KNOWN = new Set(['id','location','name','description','tags','uses','editable']);
+
+  function looksLikeKettlewright(value) {
+    return value && typeof value === 'object' && !Array.isArray(value)
+      && Array.isArray(value.items)
+      && ('strength' in value || 'dexterity' in value || 'willpower' in value)
+      && ('hp' in value || 'hp_max' in value);
+  }
+
+  function parseArmorTag(tags) {
+    for (const tag of tags) {
+      const match = String(tag).match(/^\s*([123])\s*armor\s*$/i);
+      if (match) return toInt(match[1], 0);
+    }
+    return 0;
+  }
+
+  function parseDamageDie(tags) {
+    for (const tag of tags) {
+      const match = String(tag).match(/^\s*d(4|6|8|10|12)\s*$/i);
+      if (match) return `d${match[1]}`;
+    }
+    return null;
+  }
+
+  function normalizeKettlewright(source) {
+    const report = { imported: [], unrecognized: [], manual: [], warnings: [], errors: [] };
+    if (!looksLikeKettlewright(source)) {
+      report.errors.push('Plik nie przypomina obsługiwanego eksportu Kettlewright.');
+      return { candidate: null, report };
+    }
+    const result = createDefaultState();
+    result.initialized = true;
+    result.source = {
+      type: 'kettlewright',
+      importedAt: nowIso(),
+      adapterVersion: 1,
+      sourceId: source.id ?? null,
+      original: deepClone(source),
+      containerMetadata: safeArray(source.containers).map(container => deepClone(container)),
+      unmappedPaths: [],
+      warnings: []
+    };
+    const chosenName = trimText(source.custom_name) || trimText(source.name) || 'Bez imienia';
+    const chosenBackground = trimText(source.custom_background) || trimText(source.background);
+    result.identity = {
+      name: chosenName,
+      background: chosenBackground,
+      backgroundDescription: trimText(source.description),
+      portrait: { type: 'initial', value: initials(chosenName) },
+      traits: trimText(source.traits),
+      bonds: trimText(source.bonds),
+      omens: trimText(source.omens)
+    };
+    result.stats.hp = { current: Math.max(0, toInt(source.hp, 0)), max: Math.max(0, toInt(source.hp_max, toInt(source.hp, 0))) };
+    result.stats.str = { current: Math.max(0, toInt(source.strength, 0)), max: Math.max(0, toInt(source.strength_max, toInt(source.strength, 0))) };
+    result.stats.dex = { current: Math.max(0, toInt(source.dexterity, 0)), max: Math.max(0, toInt(source.dexterity_max, toInt(source.dexterity, 0))) };
+    result.stats.wil = { current: Math.max(0, toInt(source.willpower, 0)), max: Math.max(0, toInt(source.willpower_max, toInt(source.willpower, 0))) };
+    const importedArmor = clamp(toInt(source.armor, 0), 0, 3);
+    result.stats.armor = { mode: 'manual', manual: importedArmor, importedValue: importedArmor };
+    result.stats.gold = Math.max(0, toInt(source.gold, 0));
+    result.conditions.deprived = source.deprived === true;
+    result.conditions.panicked = source.panicked === true;
+    result.scars = trimText(source.scars) ? [{ id: makeId(), text: trimText(source.scars), addedAt: nowIso() }] : [];
+    result.notes = trimText(source.notes);
+    report.imported.push('imię, tło, opis, cechy, więzi, omeny i notatki');
+    report.imported.push('aktualne i maksymalne OCHR, SIŁ, ZRE i WOL');
+    report.imported.push('pancerz, złoto oraz stany pozbawienia i paniki');
+
+    for (const [key] of Object.entries(source)) {
+      if (!KW_TOP_KNOWN.has(key)) report.unrecognized.push(key);
+    }
+
+    for (const [index, rawItem] of safeArray(source.items).entries()) {
+      if (!rawItem || typeof rawItem !== 'object') {
+        report.warnings.push(`Pominięto nieprawidłowy przedmiot #${index + 1}.`);
+        continue;
+      }
+      const itemName = trimText(rawItem.name, `Przedmiot ${index + 1}`);
+      if (itemName.toLowerCase() === 'fatigue') {
+        result.inventory.fatigue.push(makeFatigue({ id: rawItem.id || makeId(), source: 'kettlewright', note: '' }));
+        report.imported.push(`zmęczenie: ${itemName}`);
+        continue;
+      }
+      const tags = safeArray(rawItem.tags).map(String);
+      const lowerTags = tags.map(tag => tag.toLowerCase());
+      const slots = lowerTags.includes('petty') ? 0 : lowerTags.includes('bulky') ? 2 : 1;
+      const usesCurrent = rawItem.uses === undefined ? null : Math.max(0, toInt(rawItem.uses, 0));
+      const extras = {};
+      for (const [key, value] of Object.entries(rawItem)) {
+        if (!KW_ITEM_KNOWN.has(key) && !tags.includes(key)) extras[key] = deepClone(value);
+        if (!KW_ITEM_KNOWN.has(key)) result.source.unmappedPaths.push(`items[${index}].${key || '(pusty klucz)'}`);
+      }
+      const traits = [];
+      if (lowerTags.includes('petty')) traits.push('drobiazg');
+      if (lowerTags.includes('bulky')) traits.push('nieporęczny');
+      if (lowerTags.includes('blast')) traits.push('blast');
+      for (const tag of tags) {
+        if (!/^d(4|6|8|10|12)$/i.test(tag) && !/^[123]\s*armor$/i.test(tag) && !['petty','bulky','uses','blast'].includes(tag.toLowerCase())) traits.push(tag);
+      }
+      result.inventory.items.push(makeItem({
+        sourceId: rawItem.id ?? null,
+        name: itemName,
+        description: typeof rawItem.description === 'string' && rawItem.description !== '-' ? rawItem.description : '',
+        slots,
+        damageDie: parseDamageDie(tags),
+        armorValue: parseArmorTag(tags),
+        uses: usesCurrent === null ? { current: null, max: null } : { current: usesCurrent, max: usesCurrent },
+        carryState: 'stored',
+        traits,
+        sourceExtras: extras
+      }));
+      if (usesCurrent !== null) report.manual.push(`Sprawdź maksymalną liczbę użyć: ${itemName} (przyjęto ${usesCurrent}).`);
+      if (parseArmorTag(tags) > 0) report.manual.push(`Ustaw, czy pancerz „${itemName}” jest noszony lub trzymany.`);
+    }
+
+    const usage = calculateInventoryUsage(result.inventory.items, result.inventory.fatigue);
+    report.imported.push(`${result.inventory.items.length} przedmiotów i ${result.inventory.fatigue.length} zmęczenia (${usage.total}/10 miejsc)`);
+    if (usage.total > 10) report.errors.push(`Importowany ekwipunek zajmuje ${usage.total}/10 miejsc.`);
+    if (usage.total === 10 && result.stats.hp.current > 0) report.warnings.push('Pełne 10 miejsc, ale OCHR jest wyższe od 0. Import zachowa wartość źródłową i pokaże akcję zastosowania reguły.');
+    if (result.conditions.panicked && result.stats.hp.current > 0) report.warnings.push('Postać jest spanikowana, ale ma OCHR wyższe od 0. Import zachowa wartość źródłową i pokaże ostrzeżenie.');
+    if (trimText(source.image_url)) report.manual.push(`Portret „${source.image_url}” jest ścieżką Kettlewright i nie zostanie osadzony w pojedynczym pliku HTML.`);
+    if (result.source.unmappedPaths.length) report.unrecognized.push(...result.source.unmappedPaths);
+    report.manual.push('Stan noszenia/trzymania pozostałych przedmiotów wymaga ręcznego ustawienia.');
+    result.source.unmappedPaths = Array.from(new Set(result.source.unmappedPaths));
+    result.source.warnings = [...report.warnings];
+    const validation = validateState(result);
+    report.errors.push(...validation.errors);
+    report.warnings.push(...validation.warnings.filter(w => !/Pełny ekwipunek|spanikowana/i.test(w) && !report.warnings.includes(w)));
+    report.errors = Array.from(new Set(report.errors));
+    report.warnings = Array.from(new Set(report.warnings));
+    report.manual = Array.from(new Set(report.manual));
+    report.unrecognized = Array.from(new Set(report.unrecognized));
+    result.source.warnings = [...report.warnings];
+    return { candidate: result, report };
+  }
+
+  // ============================================================
+  // 10. Import and export
+  // ============================================================
+  let pendingImport = null;
+
+  function parseImportText(text) {
+    let parsed;
+    try { parsed = JSON.parse(text); }
+    catch (error) { return { type: 'invalid', candidate: null, report: { imported: [], unrecognized: [], manual: [], warnings: [], errors: [`Uszkodzony JSON: ${error.message}`] } }; }
+    if (parsed?.appId === APP_ID) {
+      try {
+        const candidate = sanitizeLoadedState(parsed);
+        const validation = validateState(candidate);
+        return { type: 'backup', candidate: validation.valid ? candidate : null, report: { imported: validation.valid ? ['pełna kopia karty aplikacji'] : [], unrecognized: [], manual: [], warnings: validation.warnings, errors: validation.errors } };
+      } catch (error) {
+        return { type: 'backup', candidate: null, report: { imported: [], unrecognized: [], manual: [], warnings: [], errors: [error.message] } };
+      }
+    }
+    const normalized = normalizeKettlewright(parsed);
+    return { type: 'kettlewright', ...normalized };
+  }
+
+  async function handleImportFile(file, expectedType = 'any') {
+    if (!file) return;
+    if (file.size > 5_000_000) {
+      showToast('Plik jest zbyt duży. Limit wynosi 5 MB.', 'error');
+      return;
+    }
+    let text;
+    try { text = await file.text(); }
+    catch (error) { showToast(`Nie udało się odczytać pliku: ${error.message}`, 'error'); return; }
+    const result = parseImportText(text);
+    if (expectedType === 'backup' && result.type !== 'backup') result.report.errors.push('Wybrany plik nie jest kopią tej aplikacji.');
+    pendingImport = { ...result, filename: file.name };
+    openImportReport(pendingImport);
+  }
+
+  function applyPendingImport() {
+    if (!pendingImport?.candidate || pendingImport.report.errors.length) return;
+    const imported = deepClone(pendingImport.candidate);
+    imported.settings = { ...state.settings, ...imported.settings };
+    imported.updatedAt = nowIso();
+    state = imported;
+    pendingImport = null;
+    saveNow();
+    closeSheet();
+    setView('character');
+    renderAll();
+    showToast('Zaimportowano postać.');
+    announce('Import postaci zakończony.');
+  }
+
+  function exportBackup() {
+    saveNow();
+    const name = trimText(state.identity.name, 'postać').replace(/[^\p{L}\p{N}_-]+/gu, '-').replace(/^-|-$/g, '').toLowerCase() || 'postac';
+    downloadTextFile(`cairn-${name}-kopia-${new Date().toISOString().slice(0,10)}.json`, JSON.stringify(state, null, 2));
+    showToast('Pobrano kopię zapasową JSON.');
+  }
+
+  function exportCharacterJson() {
+    const payload = {
+      appId: APP_ID,
+      schemaVersion: SCHEMA_VERSION,
+      exportedAt: nowIso(),
+      character: {
+        identity: state.identity,
+        stats: state.stats,
+        inventory: state.inventory,
+        conditions: state.conditions,
+        scars: state.scars,
+        notes: state.notes
+      },
+      source: state.source
+    };
+    const name = trimText(state.identity.name, 'postać').replace(/[^\p{L}\p{N}_-]+/gu, '-').replace(/^-|-$/g, '').toLowerCase() || 'postac';
+    downloadTextFile(`cairn-${name}-eksport.json`, JSON.stringify(payload, null, 2));
+    showToast('Pobrano eksport postaci.');
+  }
+
+  // ============================================================
+  // 11. Sheet controller
+  // ============================================================
+  let lastFocusedElement = null;
+  let closeHandler = null;
+
+  function openSheet({ title, body, footer = null, onClose = null }) {
+    lastFocusedElement = document.activeElement;
+    closeHandler = onClose;
+    $('#sheetTitle').textContent = title;
+    $('#sheetBody').replaceChildren(body instanceof Node ? body : createEl('p', { text: body }));
+    $('#sheetFoot').replaceChildren(...(footer ? (Array.isArray(footer) ? footer : [footer]) : []));
+    const backdrop = $('#sheetBackdrop');
+    backdrop.classList.add('open');
+    backdrop.setAttribute('aria-hidden', 'false');
+    document.body.style.overflow = 'hidden';
+    requestAnimationFrame(() => {
+      const focusable = getSheetFocusable();
+      (focusable[0] || $('#sheetCloseBtn')).focus();
+    });
+  }
+
+  function closeSheet() {
+    const backdrop = $('#sheetBackdrop');
+    if (!backdrop.classList.contains('open')) return;
+    backdrop.classList.remove('open');
+    backdrop.setAttribute('aria-hidden', 'true');
+    document.body.style.overflow = '';
+    const handler = closeHandler;
+    closeHandler = null;
+    if (handler) handler();
+    if (lastFocusedElement?.focus) lastFocusedElement.focus();
+  }
+
+  function getSheetFocusable() {
+    return $$('button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [href], [tabindex]:not([tabindex="-1"])', $('#sheet'));
+  }
+
+  function trapSheetFocus(event) {
+    if (event.key === 'Escape') { event.preventDefault(); closeSheet(); return; }
+    if (event.key !== 'Tab') return;
+    const focusable = getSheetFocusable();
+    if (!focusable.length) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
+  }
+
+  function openConfirmSheet({ title = 'Potwierdź', message, confirmLabel = 'Potwierdź', cancelLabel = 'Anuluj', danger = false, onConfirm }) {
+    const body = createEl('div', { className: 'sheet-list' }, [createEl('p', { text: message })]);
+    const confirmBtn = button(confirmLabel, () => { closeSheet(); onConfirm?.(); }, `btn ${danger ? 'btn-danger' : 'btn-primary'}`);
+    const cancelBtn = button(cancelLabel, closeSheet, 'btn btn-ghost');
+    openSheet({ title, body, footer: createEl('div', { className: 'button-row' }, [cancelBtn, confirmBtn]) });
+  }
+
+  function openResultSheet(title, value, status, details, tone = 'success') {
+    const body = createEl('div', { className: 'sheet-list' });
+    const result = createEl('div', { className: 'dice-result' });
+    result.append(createEl('div', {}, [
+      createEl('strong', { text: value }),
+      createEl('span', { text: status, className: tone === 'danger' ? 'test-fail' : 'test-pass' })
+    ]));
+    body.append(result);
+    for (const detail of details) body.append(createEl('p', { className: 'muted', text: detail }));
+    openSheet({ title, body, footer: button('Zamknij', closeSheet, 'btn btn-primary btn-block') });
+  }
+
+  // ============================================================
+  // 12. Rendering helpers
+  // ============================================================
+  let activeView = 'character';
+
+  function setView(view) {
+    activeView = ['character','inventory','dice','more'].includes(view) ? view : 'character';
+    for (const section of $$('[data-view]')) section.hidden = section.dataset.view !== activeView;
+    for (const nav of $$('[data-nav]')) {
+      if (nav.dataset.nav === activeView) nav.setAttribute('aria-current', 'page');
+      else nav.removeAttribute('aria-current');
+    }
+    if (activeView === 'character') renderCharacterView();
+    if (activeView === 'inventory') renderInventoryView();
+    if (activeView === 'dice') renderDiceView();
+    if (activeView === 'more') renderMoreView();
+    window.scrollTo({ top: 0, behavior: 'auto' });
+  }
+
+  function renderAll() {
+    document.documentElement.dataset.theme = state.settings.theme === 'light' ? 'light' : 'dark';
+    $('#headerTitle').textContent = state.initialized ? state.identity.name || 'Karta Wędrowca' : 'Karta Wędrowca';
+    $('#quickUndoBtn').disabled = !safeArray(state.changeHistory).some(entry => entry.undoable);
+    renderCharacterView();
+    renderInventoryView();
+    renderDiceView();
+    renderMoreView();
+  }
+
+  function card(children, className = '') { return createEl('section', { className: `card ${className}`.trim() }, children); }
+  function sectionHead(title, action = null, kicker = '') {
+    const left = createEl('div');
+    if (kicker) left.append(createEl('p', { className: 'eyebrow', text: kicker }));
+    left.append(createEl('h2', { text: title }));
+    return createEl('div', { className: 'section-head' }, action ? [left, action] : [left]);
+  }
+  function renderConditionChips(compact = false) {
+    const list = createEl('div', { className: 'condition-list' });
+    const active = CONDITION_DEFS.filter(([key]) => state.conditions[key]);
+    for (const [key, label] of active) list.append(createEl('span', { className: 'condition-chip active', text: label }));
+    for (const custom of safeArray(state.conditions.custom)) list.append(createEl('span', { className: 'condition-chip active', text: custom.name || 'Własny stan' }));
+    if (!active.length && !state.conditions.custom.length && !compact) list.append(createEl('span', { className: 'condition-chip good', text: 'Brak aktywnych stanów' }));
+    return list;
+  }
+
+  function inconsistencyAlerts() {
+    const alerts = [];
+    const usage = calculateInventoryUsage();
+    if (usage.total === 10 && state.stats.hp.current > 0) {
+      const wrap = createEl('div', { className: 'alert' }, [
+        createEl('strong', { text: 'Pełny ekwipunek' }),
+        createEl('p', { className: 'small', text: 'Postać zajmuje 10/10 miejsc, ale ma OCHR powyżej 0.' }),
+        button('Zastosuj regułę: 0 OCHR', () => openConfirmSheet({ title: 'Ustaw 0 OCHR', message: 'Pełne 10 miejsc sprowadza OCHR postaci do 0. Zmianę będzie można cofnąć.', confirmLabel: 'Ustaw 0 OCHR', danger: true, onConfirm: () => commitChange('Pełny ekwipunek: OCHR ustawiono na 0', next => { next.stats.hp.current = 0; }) }), 'btn btn-danger btn-block')
+      ]);
+      alerts.push(wrap);
+    }
+    if (state.conditions.panicked && state.stats.hp.current > 0) {
+      const wrap = createEl('div', { className: 'alert' }, [
+        createEl('strong', { text: 'Panika i OCHR' }),
+        createEl('p', { className: 'small', text: 'Spanikowana postać ma zgodnie z zasadami 0 OCHR.' }),
+        button('Ustaw 0 OCHR', () => openConfirmSheet({ title: 'Skutek paniki', message: 'Zastosować 0 OCHR dla spanikowanej postaci?', confirmLabel: 'Zastosuj', danger: true, onConfirm: () => commitChange('Panika: OCHR ustawiono na 0', next => { next.stats.hp.current = 0; }) }), 'btn btn-danger btn-block')
+      ]);
+      alerts.push(wrap);
+    }
+    if (loadWarning) {
+      alerts.push(createEl('div', { className: 'alert' }, [createEl('strong', { text: 'Uwaga dotycząca danych' }), createEl('p', { className: 'small wrap-anywhere', text: loadWarning })]));
+    }
+    return alerts;
+  }
+
+  // ============================================================
+  // 13. Character view
+  // ============================================================
+  function renderCharacterView() {
+    const root = $('#view-character');
+    if (!root) return;
+    root.replaceChildren();
+    if (!state.initialized) {
+      const welcome = card([], 'onboarding');
+      welcome.append(
+        createEl('div', { className: 'onboarding-mark', text: '◇', attrs: { 'aria-hidden': 'true' } }),
+        createEl('h1', { text: 'Mobilna karta postaci' }),
+        createEl('p', { text: 'Jedna lekka karta Cairn 2e. Dane pozostają w tej przeglądarce i na tym urządzeniu.' }),
+        createEl('div', { className: 'onboarding-actions' }, [
+          button('Utwórz pustą postać', openCreateCharacterSheet, 'btn btn-primary btn-block'),
+          button('Importuj z Kettlewright', () => $('#importFileInput').click(), 'btn btn-block'),
+          button('Uruchom tryb demonstracyjny', () => openConfirmSheet({ title: 'Dane demonstracyjne', message: 'Tryb demonstracyjny zastąpi obecną pustą kartę przykładową postacią.', confirmLabel: 'Wczytaj demo', onConfirm: () => { state = createDemoState(); saveNow(); renderAll(); showToast('Wczytano dane demonstracyjne.'); } }), 'btn btn-ghost btn-block')
+        ])
+      );
+      root.append(welcome);
+      for (const alert of inconsistencyAlerts()) root.append(alert);
+      return;
+    }
+
+    for (const alert of inconsistencyAlerts()) root.append(alert);
+
+    const hero = card([], 'character-hero');
+    const identity = createEl('div', { className: 'identity-row' });
+    identity.append(
+      createEl('div', { className: 'avatar', text: initials(state.identity.name) }),
+      createEl('div', {}, [
+        createEl('h1', { className: 'character-name', text: state.identity.name || 'Bez imienia' }),
+        createEl('p', { className: 'character-background', text: state.identity.background || 'Bez tła' })
+      ])
+    );
+    if (state.isDemo) identity.append(createEl('span', { className: 'demo-badge', text: 'DEMO' }));
+    hero.append(identity);
+
+    const armor = deriveArmor();
+    const usage = calculateInventoryUsage();
+    const vitals = createEl('div', { className: 'vitals-grid' });
+    const hpButton = createEl('button', { type: 'button', className: 'hp-card btn-ghost', attrs: { 'aria-label': `OCHR ${state.stats.hp.current} z ${state.stats.hp.max}. Edytuj.` }, onclick: openEditStatsSheet }, [
+      createEl('div', {}, [createEl('div', { className: 'hp-label', text: 'OCHR' }), createEl('div', { className: 'hp-value' }, [String(state.stats.hp.current), createEl('small', { text: ` / ${state.stats.hp.max}` })])]),
+      createEl('span', { className: 'muted small', text: 'edytuj ›' })
+    ]);
+    const mini = createEl('div', { className: 'mini-stats' }, [
+      createEl('div', { className: 'mini-stat' }, [createEl('span', { text: 'Pancerz' }), createEl('strong', { text: armor.effective }), createEl('span', { className: 'micro', text: armor.mode === 'manual' ? 'ręcznie' : 'ze sprzętu' })]),
+      createEl('div', { className: 'mini-stat' }, [createEl('span', { text: 'Miejsca' }), createEl('strong', { text: `${usage.total}/10` }), createEl('span', { className: 'micro', text: `${usage.fatigueSlots} zmęczenia` })])
+    ]);
+    vitals.append(hpButton, mini);
+    hero.append(vitals);
+    root.append(hero);
+
+    const attrsCard = card([], 'card-pad');
+    attrsCard.append(sectionHead('Rzuty obronne', createEl('span', { className: 'muted small', text: '1k20 ≤ atrybut' })));
+    const attrGrid = createEl('div', { className: 'attributes-grid' });
+    for (const key of ['str','dex','wil']) {
+      const attr = state.stats[key];
+      const btn = createEl('button', { type: 'button', className: 'btn attribute-btn', attrs: { 'aria-label': `Rzut obronny ${ATTRS[key].full}, aktualna wartość ${attr.current}` }, onclick: () => performSave(key) }, [
+        createEl('span', { className: 'attr-label', text: ATTRS[key].label }),
+        createEl('span', { className: 'attr-value', text: attr.current }),
+        createEl('span', { className: 'attr-max', text: `maks. ${attr.max}` })
+      ]);
+      attrGrid.append(btn);
+    }
+    attrsCard.append(attrGrid);
+    root.append(attrsCard);
+
+    if (renderConditionChips(true).childElementCount) {
+      const conditionsCard = card([], 'card-pad');
+      conditionsCard.append(sectionHead('Aktywne stany', button('Zmień', () => setView('more'), 'btn btn-quiet btn-ghost')));
+      conditionsCard.append(renderConditionChips());
+      root.append(conditionsCard);
+    }
+
+    const actions = card([], 'card-pad');
+    actions.append(sectionHead('Szybkie akcje', null, 'Przy stole'));
+    const grid = createEl('div', { className: 'action-grid' }, [
+      createEl('button', { type: 'button', className: 'btn btn-primary', onclick: openDamageSheet }, [createEl('strong', { text: 'Otrzymaj obrażenia' }), createEl('span', { text: 'Pancerz → OCHR → SIŁ' })]),
+      createEl('button', { type: 'button', className: 'btn', onclick: openRestSheet }, [createEl('strong', { text: 'Krótki odpoczynek' }), createEl('span', { text: 'Przywróć OCHR po ocenie warunków' })]),
+      createEl('button', { type: 'button', className: 'btn', onclick: openAddFatigueSheet }, [createEl('strong', { text: 'Dodaj zmęczenie' }), createEl('span', { text: 'Zajmuje jedno miejsce' })]),
+      createEl('button', { type: 'button', className: 'btn', onclick: () => setView('dice') }, [createEl('strong', { text: 'Rzuć kośćmi' }), createEl('span', { text: 'Kości, broń i Kość Losu' })])
+    ]);
+    actions.append(grid);
+    root.append(actions);
+
+    const weapons = safeArray(state.inventory.items).filter(item => item.damageDie && item.carryState !== 'spent').slice(0, 4);
+    if (weapons.length) {
+      const weaponCard = card([], 'card-pad');
+      weaponCard.append(sectionHead('Szybki rzut broni', button('Ekwipunek', () => setView('inventory'), 'btn btn-quiet btn-ghost')));
+      const row = createEl('div', { className: 'button-row' });
+      for (const item of weapons) {
+        const sides = toInt(String(item.damageDie).replace('d',''), 6);
+        row.append(button(`${item.name} · ${item.damageDie}`, () => performRoll({ count: 1, sides }, item.name), 'btn'));
+      }
+      weaponCard.append(row);
+      root.append(weaponCard);
+    }
+
+    const historyCard = card([], 'card-pad');
+    historyCard.append(sectionHead('Ostatnie zmiany', button('Cofnij', undoLastChange, 'btn btn-quiet btn-ghost', { disabled: !safeArray(state.changeHistory).some(entry => entry.undoable) })));
+    const list = createEl('div', { className: 'history-list' });
+    const entries = safeArray(state.changeHistory).slice(-5).reverse();
+    if (!entries.length) list.append(createEl('p', { className: 'muted small', text: 'Historia jest jeszcze pusta.' }));
+    for (const entry of entries) list.append(createEl('div', { className: 'history-item' }, [createEl('p', { text: entry.description }), createEl('time', { text: formatDateTime(entry.time), dateTime: entry.time })]));
+    historyCard.append(list);
+    root.append(historyCard);
+  }
+
+  // ============================================================
+  // 14. Damage, recovery and stat sheets
+  // ============================================================
+  function openDamageSheet() {
+    const body = createEl('form', { className: 'form-grid', id: 'damageForm' });
+    const raw = numberInput(1, 0, 999);
+    const armor = numberInput(deriveArmor().effective, 0, 3);
+    const source = textInput('', 200);
+    const preview = createEl('div', { className: 'report-block', attrs: { 'aria-live': 'polite' } });
+    const update = () => {
+      const result = calculateDamage(state, raw.value, armor.value);
+      preview.replaceChildren(
+        createEl('h3', { text: 'Podgląd' }),
+        createEl('p', { text: `${result.rawDamage} obrażeń − ${result.armor} pancerza = ${result.damageAfterArmor}` }),
+        createEl('p', { text: `OCHR: ${result.hpBefore} → ${result.hpAfter}` }),
+        createEl('p', { text: `SIŁ: ${result.strBefore} → ${result.strAfter}` }),
+        createEl('p', { className: result.scarRequired || result.strengthSaveRequired || result.strengthZero ? 'test-fail' : 'muted', text: result.noEffect ? 'Pancerz zatrzymuje wszystkie obrażenia.' : result.scarRequired ? `Dokładnie 0 OCHR: rozpatrz Bliznę według ${result.hpLost} utraconych OCHR.` : result.strengthZero ? 'SIŁ spada do 0: postać umiera.' : result.strengthSaveRequired ? `Po zatwierdzeniu wykonaj rzut obronny SIŁ przeciw ${result.strengthSaveTarget}.` : 'Obrażenia nie przechodzą na SIŁ.' })
+      );
+    };
+    raw.addEventListener('input', update);
+    armor.addEventListener('input', update);
+    body.append(
+      field('Surowe obrażenia', raw),
+      field('Pancerz', armor, 'Domyślnie pobrany z karty. Maksimum 3.'),
+      field('Źródło lub notatka (opcjonalnie)', source),
+      preview
+    );
+    update();
+    const apply = button('Zatwierdź obrażenia', () => {
+      const result = calculateDamage(state, raw.value, armor.value);
+      const label = trimText(source.value);
+      closeSheet();
+      commitChange(`Obrażenia ${result.damageAfterArmor}${label ? ` — ${label}` : ''}`, next => {
+        next.stats.hp.current = result.hpAfter;
+        next.stats.str.current = result.strAfter;
+      });
+      if (result.strengthZero) {
+        openResultSheet('Skutek obrażeń', 0, 'SIŁ spadła do zera', ['Zgodnie z zasadami postać umiera. Aplikacja nie podejmuje dalszych decyzji fabularnych.'], 'danger');
+      } else if (result.strengthSaveRequired) {
+        openCriticalSavePrompt(result.strengthSaveTarget);
+      } else if (result.scarRequired) {
+        openScarPrompt(result.hpLost);
+      }
+    }, 'btn btn-primary btn-block');
+    openSheet({ title: 'Otrzymaj obrażenia', body, footer: apply });
+  }
+
+  function openCriticalSavePrompt(target) {
+    const body = createEl('div', { className: 'sheet-list' }, [
+      createEl('p', { text: `Obrażenia przeszły na SIŁ. Wykonaj natychmiast rzut obronny SIŁ przy nowej wartości ${target}.` }),
+      createEl('p', { className: 'help', text: 'Aplikacja nie oznaczy obrażeń krytycznych bez wyniku rzutu.' })
+    ]);
+    const rollBtn = button('Rzuć 1k20', () => {
+      closeSheet();
+      performCriticalStrengthSave(target);
+    }, 'btn btn-primary btn-block');
+    openSheet({ title: 'Wymagany rzut SIŁ', body, footer: rollBtn });
+  }
+
+
+  function performCriticalStrengthSave(target) {
+    let roll;
+    try { roll = rollDie(20); }
+    catch (error) { showToast(error.message, 'error'); return; }
+    const result = resolveSave(target, roll);
+    const natural = result.naturalSuccess ? ' — naturalne 1' : result.naturalFailure ? ' — naturalne 20' : '';
+    const summary = `Rzut obronny SIŁ po obrażeniach: ${roll} vs ${target} — ${result.success ? 'sukces' : 'porażka'}${natural}`;
+    addDiceHistory({ type: 'save', attr: 'str', label: 'Rzut SIŁ po obrażeniach', summary, notation: '1k20', result: roll, success: result.success, details: `Cel: ${target}` });
+    announce(summary);
+    const body = createEl('div', { className: 'sheet-list' }, [
+      createEl('div', { className: 'dice-result' }, [createEl('div', {}, [createEl('strong', { text: roll }), createEl('span', { className: result.success ? 'test-pass' : 'test-fail', text: result.success ? 'Sukces' : 'Porażka' })])]),
+      createEl('p', { className: 'muted', text: result.naturalSuccess ? 'Naturalne 1 zawsze oznacza sukces.' : result.naturalFailure ? 'Naturalne 20 zawsze oznacza porażkę.' : `Cel rzutu: ${target}.` }),
+      createEl('p', { text: result.success ? 'Postać pozostaje w walce z obniżoną SIŁ.' : 'Porażka oznacza obrażenia krytyczne. Aplikacja czeka na Twoje potwierdzenie stanu.' })
+    ]);
+    if (result.success) {
+      openSheet({ title: 'Rzut obronny SIŁ', body, footer: button('Zamknij', closeSheet, 'btn btn-primary btn-block') });
+      return;
+    }
+    const later = button('Oznacz później', closeSheet, 'btn btn-ghost');
+    const mark = button('Oznacz obrażenia krytyczne', () => {
+      closeSheet();
+      commitChange('Oznaczono obrażenia krytyczne', next => { next.conditions.criticalDamage = true; next.conditions.stabilized = false; });
+    }, 'btn btn-danger');
+    openSheet({ title: 'Rzut obronny SIŁ', body, footer: createEl('div', { className: 'button-row' }, [later, mark]) });
+  }
+
+  function openScarPrompt(hpLost) {
+    const body = createEl('div', { className: 'sheet-list' }, [
+      createEl('p', { text: `Atak sprowadził OCHR dokładnie do zera. Sprawdź pozycję ${hpLost} w oficjalnej tabeli Blizn.` }),
+      createEl('p', { className: 'help', text: 'Aplikacja zapisze opis, ale nie narzuca fabularnej interpretacji ani trwałych zmian bez Twojej decyzji.' })
+    ]);
+    const addBtn = button('Dodaj opis Blizny', () => { closeSheet(); openAddScarSheet(hpLost); }, 'btn btn-primary');
+    const laterBtn = button('Rozpatrz później', closeSheet, 'btn btn-ghost');
+    openSheet({ title: 'Rozpatrz Bliznę', body, footer: createEl('div', { className: 'button-row' }, [laterBtn, addBtn]) });
+  }
+
+  function openAddScarSheet(hpLost = null) {
+    const input = textarea('', 1000);
+    const body = createEl('div', { className: 'form-grid' }, [field('Opis Blizny', input, hpLost ? `Wskazówka: pozycja ${hpLost} według liczby utraconych OCHR.` : '')]);
+    const save = button('Zapisz Bliznę', () => {
+      const text = trimText(input.value);
+      if (!text) { showToast('Wpisz opis Blizny.', 'error'); return; }
+      closeSheet();
+      commitChange('Dodano Bliznę', next => { next.scars.push({ id: makeId(), text, addedAt: nowIso(), hpLost }); });
+    }, 'btn btn-primary btn-block');
+    openSheet({ title: 'Dodaj Bliznę', body, footer: save });
+  }
+
+  function openDirectDamageSheet() {
+    const attr = selectInput([['str','SIŁ'],['dex','ZRE'],['wil','WOL']], 'str');
+    const amount = numberInput(1, 0, 999);
+    const note = textInput('', 200);
+    const preview = createEl('div', { className: 'report-block' });
+    const update = () => {
+      const result = calculateDirectAttributeDamage(state, attr.value, amount.value);
+      preview.replaceChildren(createEl('h3', { text: 'Podgląd' }), createEl('p', { text: `${ATTRS[result.attrKey].label}: ${result.before} → ${result.after}` }), result.reachedZero ? createEl('p', { className: 'test-fail', text: result.attrKey === 'str' ? 'SIŁ 0: postać umiera.' : result.attrKey === 'dex' ? 'ZRE 0: postać jest sparaliżowana.' : 'WOL 0: postać jest w delirium.' }) : createEl('p', { className: 'muted', text: 'To narzędzie nie zakłada automatycznie, który atrybut powinien otrzymać obrażenia.' }));
+    };
+    attr.addEventListener('change', update); amount.addEventListener('input', update); update();
+    const body = createEl('div', { className: 'form-grid' }, [field('Atrybut', attr), field('Obrażenia', amount), field('Źródło lub notatka', note), preview]);
+    const apply = button('Zatwierdź', () => {
+      const result = calculateDirectAttributeDamage(state, attr.value, amount.value);
+      const label = trimText(note.value);
+      closeSheet();
+      commitChange(`Obrażenia bezpośrednie ${ATTRS[result.attrKey].label}: ${result.damage}${label ? ` — ${label}` : ''}`, next => {
+        next.stats[result.attrKey].current = result.after;
+        if (result.reachedZero && result.attrKey === 'dex') next.conditions.paralyzed = true;
+        if (result.reachedZero && result.attrKey === 'wil') next.conditions.delirious = true;
+      });
+    }, 'btn btn-primary btn-block');
+    openSheet({ title: 'Obrażenia atrybutu', body, footer: apply });
+  }
+
+  function openRestSheet() {
+    const usage = calculateInventoryUsage();
+    const blockers = [];
+    if (state.conditions.deprived) blockers.push('Postać jest pozbawiona kluczowej potrzeby i nie może odzyskiwać OCHR.');
+    if (state.conditions.panicked) blockers.push('Spanikowana postać ma 0 OCHR; najpierw rozpatrz panikę.');
+    if (usage.total === 10) blockers.push('Pełny ekwipunek sprowadza OCHR do 0; najpierw zwolnij miejsce.');
+    const body = createEl('div', { className: 'sheet-list' }, [
+      createEl('p', { text: 'Krótki odpoczynek i woda mogą przywrócić OCHR, ale wymagają odpowiednich warunków w fikcji. Warden ocenia, czy miejsce i czas są bezpieczne.' }),
+      createEl('p', { className: 'help', text: 'Ta akcja nie przywraca atrybutów, nie usuwa zmęczenia, stanów ani użyć przedmiotów.' })
+    ]);
+    for (const blocker of blockers) body.append(createEl('div', { className: 'alert' }, [createEl('strong', { text: 'Blokada' }), createEl('p', { className: 'small', text: blocker })]));
+    const apply = button(`Przywróć OCHR do ${state.stats.hp.max}`, () => {
+      closeSheet();
+      commitChange('Krótki odpoczynek: przywrócono OCHR', next => { next.stats.hp.current = next.stats.hp.max; });
+    }, 'btn btn-primary btn-block', { disabled: blockers.length > 0 || state.stats.hp.current === state.stats.hp.max });
+    openSheet({ title: 'Krótki odpoczynek', body, footer: apply });
+  }
+
+  function openEditStatsSheet() {
+    const controls = {};
+    const body = createEl('form', { className: 'form-grid' });
+    for (const key of ['hp','str','dex','wil']) {
+      controls[key] = { current: numberInput(state.stats[key].current, 0, 99), max: numberInput(state.stats[key].max, 0, 99) };
+      body.append(createEl('div', { className: 'form-grid two' }, [field(`${key === 'hp' ? 'OCHR' : ATTRS[key].label} aktualne`, controls[key].current), field(`${key === 'hp' ? 'OCHR' : ATTRS[key].label} maksymalne`, controls[key].max)]));
+    }
+    controls.gold = numberInput(state.stats.gold, 0, 999999);
+    body.append(field('Złoto', controls.gold));
+    const save = button('Zapisz statystyki', () => {
+      closeSheet();
+      commitChange('Zmieniono statystyki', next => {
+        for (const key of ['hp','str','dex','wil']) {
+          const max = Math.max(0, toInt(controls[key].max.value, 0));
+          const current = clamp(toInt(controls[key].current.value, 0), 0, max);
+          next.stats[key] = { current, max };
+        }
+        next.stats.gold = Math.max(0, toInt(controls.gold.value, 0));
+      });
+    }, 'btn btn-primary btn-block');
+    openSheet({ title: 'Edytuj statystyki', body, footer: save });
+  }
+
+  // ============================================================
+  // 15. Inventory view and sheets
+  // ============================================================
+  function renderSlotMeter(usage) {
+    const meter = createEl('div', { className: 'slot-meter', attrs: { role: 'img', 'aria-label': `Zajęto ${usage.total} z 10 miejsc, w tym ${usage.fatigueSlots} zmęczenia.` } });
+    const itemFilled = Math.min(10, usage.itemSlots);
+    const fatigueFilled = Math.min(10 - itemFilled, usage.fatigueSlots);
+    for (let i = 0; i < 10; i++) {
+      const cls = i < itemFilled ? 'slot-cell filled' : i < itemFilled + fatigueFilled ? 'slot-cell fatigue' : 'slot-cell';
+      meter.append(createEl('span', { className: cls }));
+    }
+    return meter;
+  }
+
+  function renderInventoryView() {
+    const root = $('#view-inventory');
+    if (!root) return;
+    root.replaceChildren();
+    if (!state.initialized) {
+      root.append(card([createEl('div', { className: 'card-pad' }, [sectionHead('Ekwipunek'), createEl('p', { className: 'muted', text: 'Najpierw utwórz lub zaimportuj postać.' })])]))
+      return;
+    }
+    const usage = calculateInventoryUsage();
+    const overview = card([], 'card-pad');
+    overview.append(sectionHead('Ekwipunek', button('Dodaj', () => openItemSheet(), 'btn btn-primary btn-quiet')));
+    overview.append(createEl('div', { className: 'usage-line' }, [createEl('strong', { text: `${usage.total}/10 miejsc` }), createEl('span', { className: 'muted small', text: `${usage.fatigueSlots} zmęczenia` })]));
+    overview.append(renderSlotMeter(usage));
+    overview.append(createEl('p', { className: 'help', text: 'Drobiazg: 0 miejsc · zwykły przedmiot: 1 · nieporęczny: 2 · każde zmęczenie: 1.' }));
+    root.append(overview);
+
+    const armorCard = card([], 'card-pad');
+    const armor = deriveArmor();
+    armorCard.append(sectionHead(`Pancerz: ${armor.effective}`, button('Ustawienia', openArmorSheet, 'btn btn-quiet btn-ghost')));
+    if (armor.mode === 'manual') armorCard.append(createEl('p', { className: 'muted small', text: `Wartość ręczna: ${armor.manual}. Tryb przydatny po imporcie, gdy Kettlewright nie podaje stanu noszenia.` }));
+    else if (armor.sources.length) {
+      const list = createEl('div', { className: 'condition-list' });
+      for (const source of armor.sources) list.append(createEl('span', { className: 'tag', text: `${source.name}: +${source.value} (${CARRY_STATES[source.carryState]})` }));
+      armorCard.append(list);
+      if (armor.capped) armorCard.append(createEl('p', { className: 'help', text: 'Suma źródeł przekracza 3, ale efektywny pancerz jest ograniczony do 3.' }));
+    } else armorCard.append(createEl('p', { className: 'muted small', text: 'Brak noszonych lub trzymanych przedmiotów zapewniających pancerz.' }));
+    root.append(armorCard);
+
+    const actions = createEl('div', { className: 'button-row' }, [
+      button('Dodaj przedmiot', () => openItemSheet(), 'btn'),
+      button('Dodaj zmęczenie', openAddFatigueSheet, 'btn'),
+      button('Obrażenia atrybutu', openDirectDamageSheet, 'btn')
+    ]);
+    root.append(actions);
+
+    const listCard = card([], 'card-pad');
+    listCard.append(sectionHead('Przedmioty', createEl('span', { className: 'muted small', text: `${state.inventory.items.length} wpisów` })));
+    const list = createEl('div', { className: 'inventory-list' });
+    if (!state.inventory.items.length) list.append(createEl('p', { className: 'muted', text: 'Brak przedmiotów.' }));
+    state.inventory.items.forEach((item, index) => list.append(renderItemCard(item, index)));
+    for (const fatigue of state.inventory.fatigue) list.append(renderFatigueCard(fatigue));
+    listCard.append(list);
+    root.append(listCard);
+  }
+
+  function renderItemCard(item, index) {
+    const wrap = createEl('article', { className: 'inventory-item' });
+    const head = createEl('div', { className: 'inventory-item-head' });
+    head.append(createEl('div', {}, [createEl('h3', { text: item.name }), item.description ? createEl('p', { text: item.description }) : null]));
+    head.append(createEl('span', { className: 'tag', text: `${item.slots} ${item.slots === 1 ? 'miejsce' : 'miejsca'}` }));
+    wrap.append(head);
+    const meta = createEl('div', { className: 'item-meta' });
+    if (item.damageDie) meta.append(createEl('span', { className: 'tag', text: `obrażenia ${item.damageDie}` }));
+    if (item.armorValue) meta.append(createEl('span', { className: 'tag', text: `pancerz +${item.armorValue}` }));
+    meta.append(createEl('span', { className: 'tag', text: CARRY_STATES[item.carryState] || item.carryState }));
+    for (const trait of item.traits) meta.append(createEl('span', { className: 'tag', text: trait }));
+    wrap.append(meta);
+    if (item.uses.current !== null || item.uses.max !== null) {
+      const uses = createEl('div', { className: 'uses-control', attrs: { 'aria-label': `Użycia przedmiotu ${item.name}` } }, [
+        button('−', () => adjustItemUses(item.id, -1), 'btn btn-ghost', { 'aria-label': `Zmniejsz użycia ${item.name}` }),
+        createEl('span', { className: 'uses-value', text: `${item.uses.current ?? 0}/${item.uses.max ?? '?'}` }),
+        button('+', () => adjustItemUses(item.id, 1), 'btn btn-ghost', { 'aria-label': `Zwiększ użycia ${item.name}` })
+      ]);
+      wrap.append(uses);
+    }
+    const actions = createEl('div', { className: 'item-actions' });
+    if (item.damageDie) actions.append(button(`Rzuć ${item.damageDie}`, () => performRoll({ count: 1, sides: toInt(item.damageDie.slice(1), 6) }, item.name), 'btn btn-quiet'));
+    actions.append(
+      button(item.carryState === 'spent' ? 'Przywróć' : 'Oznacz zużyty', () => toggleItemSpent(item.id), 'btn btn-quiet btn-ghost'),
+      button('Edytuj', () => openItemSheet(item.id), 'btn btn-quiet'),
+      button('↑', () => moveItem(item.id, -1), 'btn btn-quiet btn-ghost', { 'aria-label': `Przesuń ${item.name} wyżej`, disabled: index === 0 }),
+      button('↓', () => moveItem(item.id, 1), 'btn btn-quiet btn-ghost', { 'aria-label': `Przesuń ${item.name} niżej`, disabled: index === state.inventory.items.length - 1 }),
+      button('Duplikuj', () => duplicateItem(item.id), 'btn btn-quiet btn-ghost'),
+      button('Usuń', () => confirmDeleteItem(item.id), 'btn btn-quiet btn-danger')
+    );
+    wrap.append(actions);
+    return wrap;
+  }
+
+  function renderFatigueCard(fatigue) {
+    const wrap = createEl('article', { className: 'inventory-item' });
+    wrap.append(createEl('div', { className: 'inventory-item-head' }, [
+      createEl('div', {}, [createEl('h3', { text: 'Zmęczenie' }), createEl('p', { text: fatigue.note || 'Zajmuje jedno miejsce do czasu odpowiedniej regeneracji.' })]),
+      createEl('span', { className: 'tag', text: '1 miejsce' })
+    ]));
+    wrap.append(createEl('div', { className: 'item-actions' }, [button('Usuń po regeneracji', () => openRemoveFatigueSheet(fatigue.id), 'btn btn-quiet btn-danger')]));
+    return wrap;
+  }
+
+  function openItemSheet(itemId = null) {
+    const existing = itemId ? state.inventory.items.find(item => item.id === itemId) : null;
+    const item = existing ? deepClone(existing) : makeItem();
+    const name = textInput(existing ? item.name : '', 200);
+    const description = textarea(item.description, 2000);
+    const slots = selectInput([['0','0 — drobiazg'],['1','1 — zwykły'],['2','2 — nieporęczny']], String(item.slots));
+    const category = textInput(item.category, 80);
+    const damage = selectInput([['','Brak'],['d4','k4'],['d6','k6'],['d8','k8'],['d10','k10'],['d12','k12']], item.damageDie || '');
+    const armor = selectInput([['0','0'],['1','1'],['2','2'],['3','3']], String(item.armorValue));
+    const carry = selectInput(Object.entries(CARRY_STATES), item.carryState);
+    const usesCurrent = numberInput(item.uses.current ?? 0, 0, 999);
+    const usesMax = numberInput(item.uses.max ?? 0, 0, 999);
+    const hasUses = createEl('input', { type: 'checkbox', checked: item.uses.current !== null || item.uses.max !== null });
+    const traits = textInput(item.traits.join(', '), 300);
+    const notes = textarea(item.notes, 1000);
+    const body = createEl('div', { className: 'form-grid' }, [
+      field('Nazwa', name),
+      field('Opis', description),
+      createEl('div', { className: 'form-grid two' }, [field('Zajmowane miejsca', slots), field('Kategoria', category)]),
+      createEl('div', { className: 'form-grid two' }, [field('Kość obrażeń', damage), field('Wartość pancerza', armor)]),
+      field('Stan', carry),
+      createEl('label', { className: 'check-row' }, [hasUses, createEl('span', { text: 'Przedmiot ma liczbę użyć' })]),
+      createEl('div', { className: 'form-grid two' }, [field('Aktualne użycia', usesCurrent), field('Maksymalne użycia', usesMax)]),
+      field('Cechy, oddzielone przecinkami', traits, 'Np. drobiazg, nieporęczny, blast.'),
+      field('Własne notatki', notes)
+    ]);
+    const save = button(existing ? 'Zapisz przedmiot' : 'Dodaj przedmiot', () => {
+      const itemName = trimText(name.value);
+      if (!itemName) { showToast('Nazwa przedmiotu jest wymagana.', 'error'); name.focus(); return; }
+      const nextItem = makeItem({
+        ...item,
+        name: itemName,
+        description: description.value,
+        slots: toInt(slots.value, 1),
+        category: trimText(category.value, 'inne'),
+        damageDie: damage.value || null,
+        armorValue: toInt(armor.value, 0),
+        carryState: carry.value,
+        uses: hasUses.checked ? { current: toInt(usesCurrent.value, 0), max: toInt(usesMax.value, 0) } : { current: null, max: null },
+        traits: traits.value.split(',').map(value => value.trim()).filter(Boolean),
+        notes: notes.value
+      });
+      closeSheet();
+      applyInventoryMutation(existing ? `Zmieniono przedmiot: ${itemName}` : `Dodano przedmiot: ${itemName}`, next => {
+        if (existing) next.inventory.items = next.inventory.items.map(old => old.id === existing.id ? nextItem : old);
+        else next.inventory.items.push(nextItem);
+      });
+    }, 'btn btn-primary btn-block');
+    openSheet({ title: existing ? 'Edytuj przedmiot' : 'Dodaj przedmiot', body, footer: save });
+  }
+
+  function toggleItemSpent(itemId) {
+    const item = state.inventory.items.find(entry => entry.id === itemId);
+    if (!item) return;
+    const spent = item.carryState !== 'spent';
+    commitChange(`${spent ? 'Oznaczono jako zużyty' : 'Przywrócono przedmiot'}: ${item.name}`, next => {
+      const target = next.inventory.items.find(entry => entry.id === itemId);
+      target.carryState = spent ? 'spent' : 'stored';
+    });
+  }
+
+  function adjustItemUses(itemId, delta) {
+    const item = state.inventory.items.find(entry => entry.id === itemId);
+    if (!item || item.uses.current === null) return;
+    const target = clamp(item.uses.current + delta, 0, item.uses.max ?? 999);
+    commitChange(`${delta < 0 ? 'Użyto' : 'Przywrócono użycie'}: ${item.name}`, next => {
+      const targetItem = next.inventory.items.find(entry => entry.id === itemId);
+      targetItem.uses.current = target;
+      if (target === 0) targetItem.carryState = targetItem.carryState === 'spent' ? 'spent' : targetItem.carryState;
+    }, { silent: true });
+    showToast(`${item.name}: ${target}/${item.uses.max ?? '?'}`);
+  }
+
+  function moveItem(itemId, direction) {
+    commitChange('Zmieniono kolejność ekwipunku', next => {
+      const index = next.inventory.items.findIndex(item => item.id === itemId);
+      const target = index + direction;
+      if (index < 0 || target < 0 || target >= next.inventory.items.length) return;
+      [next.inventory.items[index], next.inventory.items[target]] = [next.inventory.items[target], next.inventory.items[index]];
+    }, { silent: true });
+  }
+
+  function duplicateItem(itemId) {
+    const item = state.inventory.items.find(entry => entry.id === itemId);
+    if (!item) return;
+    const duplicate = makeItem({ ...deepClone(item), id: makeId(), sourceId: null, name: `${item.name} — kopia` });
+    applyInventoryMutation(`Zduplikowano przedmiot: ${item.name}`, next => { next.inventory.items.push(duplicate); });
+  }
+
+  function confirmDeleteItem(itemId) {
+    const item = state.inventory.items.find(entry => entry.id === itemId);
+    if (!item) return;
+    openConfirmSheet({
+      title: 'Usuń przedmiot',
+      message: `Usunąć „${item.name}”? Dane przedmiotu znikną z aktywnej karty, ale zmianę będzie można cofnąć.`,
+      confirmLabel: 'Usuń przedmiot',
+      danger: true,
+      onConfirm: () => commitChange(`Usunięto przedmiot: ${item.name}`, next => { next.inventory.items = next.inventory.items.filter(entry => entry.id !== itemId); })
+    });
+  }
+
+  function openAddFatigueSheet() {
+    const usage = calculateInventoryUsage();
+    if (usage.total >= 10) {
+      const body = createEl('div', { className: 'sheet-list' }, [
+        createEl('p', { text: 'Nie ma wolnego miejsca. Zgodnie z zasadami, jeśli postać musi dodać zmęczenie, powinna upuścić przedmiot.' }),
+        createEl('p', { className: 'help', text: 'Usuń lub upuść przedmiot z ekwipunku, a następnie dodaj zmęczenie.' })
+      ]);
+      openSheet({ title: 'Brak miejsca na zmęczenie', body, footer: button('Przejdź do ekwipunku', () => { closeSheet(); setView('inventory'); }, 'btn btn-primary btn-block') });
+      return;
+    }
+    const note = textInput('', 200);
+    const body = createEl('div', { className: 'form-grid' }, [
+      createEl('p', { text: 'Każde zmęczenie zajmuje jedno miejsce. Usuń je dopiero, gdy warunki w fikcji pozwolą postaci się zregenerować.' }),
+      field('Powód lub notatka (opcjonalnie)', note)
+    ]);
+    const add = button('Dodaj zmęczenie', () => {
+      const fatigue = makeFatigue({ note: trimText(note.value) });
+      closeSheet();
+      applyInventoryMutation('Dodano zmęczenie', next => { next.inventory.fatigue.push(fatigue); });
+    }, 'btn btn-primary btn-block');
+    openSheet({ title: 'Dodaj zmęczenie', body, footer: add });
+  }
+
+  function openRemoveFatigueSheet(fatigueId) {
+    openConfirmSheet({
+      title: 'Usuń zmęczenie',
+      message: 'Zmęczenie usuwa się po odpowiedniej regeneracji, np. pełnym nocnym odpoczynku w bezpiecznym miejscu. Potwierdź, że warunki zostały spełnione.',
+      confirmLabel: 'Usuń jedno zmęczenie',
+      onConfirm: () => commitChange('Usunięto zmęczenie po regeneracji', next => { next.inventory.fatigue = next.inventory.fatigue.filter(entry => entry.id !== fatigueId); })
+    });
+  }
+
+  function openArmorSheet() {
+    const mode = selectInput([['equipment','Automatycznie z noszonego/trzymanego sprzętu'],['manual','Wartość ręczna']], state.stats.armor.mode);
+    const manual = numberInput(state.stats.armor.manual, 0, 3);
+    const body = createEl('div', { className: 'form-grid' }, [
+      field('Tryb pancerza', mode),
+      field('Wartość ręczna', manual, 'Maksimum 3. Przydatne po imporcie, zanim oznaczysz stan wyposażenia.'),
+      createEl('p', { className: 'help', text: 'Tryb automatyczny liczy tylko przedmioty oznaczone jako noszone lub trzymane.' })
+    ]);
+    const save = button('Zapisz ustawienia pancerza', () => {
+      closeSheet();
+      commitChange('Zmieniono ustawienia pancerza', next => { next.stats.armor.mode = mode.value; next.stats.armor.manual = clamp(toInt(manual.value, 0), 0, 3); });
+    }, 'btn btn-primary btn-block');
+    openSheet({ title: 'Pancerz', body, footer: save });
+  }
+
+  // ============================================================
+  // 16. Dice view
+  // ============================================================
+  function renderDiceView() {
+    const root = $('#view-dice');
+    if (!root) return;
+    root.replaceChildren();
+    const quick = card([], 'card-pad');
+    quick.append(sectionHead('Szybki rzut', createEl('span', { className: 'muted small', text: 'crypto.getRandomValues' })));
+    const grid = createEl('div', { className: 'dice-grid' });
+    for (const sides of DICE_SIDES) grid.append(button(`k${sides}`, () => performRoll({ count: 1, sides }, `k${sides}`), 'btn die-btn'));
+    quick.append(grid);
+    root.append(quick);
+
+    const presets = card([], 'card-pad');
+    presets.append(sectionHead('Cairn — szybkie przypadki'));
+    presets.append(createEl('div', { className: 'button-row' }, [
+      button('Osłabiony · k4', () => performRoll({ count: 1, sides: 4 }, 'Atak osłabiony'), 'btn'),
+      button('Wzmocniony · k12', () => performRoll({ count: 1, sides: 12 }, 'Atak wzmocniony'), 'btn'),
+      button('Kość Losu · k6', () => performFateRoll(), 'btn btn-primary'),
+      button('Dwie bronie', openDualWeaponsSheet, 'btn'),
+      button('Wielu atakujących', openMultipleAttackersSheet, 'btn')
+    ]));
+    root.append(presets);
+
+    const custom = card([], 'card-pad');
+    custom.append(sectionHead('Rzut własny'));
+    const count = numberInput(1, 1, 100);
+    const sides = selectInput(DICE_SIDES.map(side => [String(side), `k${side}`]), '6');
+    const modifier = numberInput(0, -999, 999);
+    const keep = createEl('input', { type: 'checkbox' });
+    const form = createEl('div', { className: 'form-grid' }, [
+      createEl('div', { className: 'form-grid two' }, [field('Liczba kości', count), field('Kość', sides)]),
+      field('Modyfikator', modifier),
+      createEl('label', { className: 'check-row' }, [keep, createEl('span', { text: 'Zachowaj tylko najwyższy wynik' })]),
+      button('Rzuć', () => performRoll({ count: count.value, sides: sides.value, modifier: modifier.value, keepHighest: keep.checked }, 'Rzut własny'), 'btn btn-primary btn-block')
+    ]);
+    custom.append(form);
+    root.append(custom);
+
+    const result = card([], 'card-pad');
+    result.append(sectionHead('Ostatni wynik'));
+    result.append(createEl('div', { className: 'dice-result', id: 'diceResult' }, [createEl('div', {}, [createEl('strong', { text: '—' }), createEl('span', { text: 'Wynik pojawi się tutaj.' })])]))
+    root.append(result);
+
+    const history = card([], 'card-pad');
+    history.append(sectionHead('Historia rzutów', button('Wyczyść', confirmClearDiceHistory, 'btn btn-quiet btn-ghost', { disabled: !state.diceHistory.length })));
+    const list = createEl('div', { className: 'dice-history' });
+    if (!state.diceHistory.length) list.append(createEl('p', { className: 'muted small', text: 'Brak rzutów.' }));
+    for (const entry of state.diceHistory) list.append(createEl('div', { className: 'dice-history-item' }, [createEl('p', { text: entry.summary }), entry.details ? createEl('p', { className: 'muted small', text: entry.details }) : null, createEl('time', { text: formatDateTime(entry.time), dateTime: entry.time })]));
+    history.append(list);
+    root.append(history);
+  }
+
+  function renderDiceResult(value, label) {
+    const result = $('#diceResult');
+    if (!result) return;
+    result.replaceChildren(createEl('div', {}, [createEl('strong', { text: value }), createEl('span', { text: label })]));
+  }
+
+  function performFateRoll() {
+    const result = performRoll({ count: 1, sides: 6 }, 'Kość Losu');
+    if (!result) return;
+    const verdict = result.total >= 4 ? 'Wynik zwykle sprzyja postaciom.' : 'Wynik zwykle oznacza niepomyślny obrót.';
+    renderDiceResult(result.total, `Kość Losu · ${verdict}`);
+    announce(`Kość Losu: ${result.total}. ${verdict}`);
+  }
+
+  function openDualWeaponsSheet() {
+    const first = selectInput([['4','k4'],['6','k6'],['8','k8'],['10','k10'],['12','k12']], '6');
+    const second = selectInput([['4','k4'],['6','k6'],['8','k8'],['10','k10'],['12','k12']], '6');
+    const body = createEl('div', { className: 'form-grid' }, [
+      createEl('p', { text: 'Rzuć kośćmi obu broni i zachowaj pojedynczy najwyższy wynik.' }),
+      createEl('div', { className: 'form-grid two' }, [field('Pierwsza broń', first), field('Druga broń', second)])
+    ]);
+    const roll = button('Rzuć obiema', () => {
+      const r1 = rollDie(toInt(first.value, 6));
+      const r2 = rollDie(toInt(second.value, 6));
+      const high = Math.max(r1, r2);
+      const summary = `Dwie bronie: ${high} (k${first.value}: ${r1}, k${second.value}: ${r2})`;
+      addDiceHistory({ type: 'dice', label: 'Dwie bronie', summary, notation: `k${first.value}+k${second.value}`, result: high, details: `${r1}, ${r2} → najwyższy ${high}` });
+      closeSheet(); setView('dice'); renderDiceResult(high, `Dwie bronie · ${r1}, ${r2} → najwyższy`); announce(summary);
+    }, 'btn btn-primary btn-block');
+    openSheet({ title: 'Dwie bronie', body, footer: roll });
+  }
+
+  function openMultipleAttackersSheet() {
+    const notation = textInput('k6, k8, k6', 200);
+    const body = createEl('div', { className: 'form-grid' }, [
+      createEl('p', { text: 'Wpisz kości oddzielone przecinkami. Aplikacja rzuci wszystkie i zachowa jeden najwyższy wynik.' }),
+      field('Kości atakujących', notation, 'Dozwolone: k4, k6, k8, k10, k12.')
+    ]);
+    const roll = button('Rzuć i zachowaj najwyższy', () => {
+      const matches = notation.value.toLowerCase().match(/k(4|6|8|10|12)/g) || [];
+      if (!matches.length || matches.length > 20) { showToast('Wpisz od 1 do 20 prawidłowych kości.', 'error'); return; }
+      const results = matches.map(token => ({ token, value: rollDie(toInt(token.slice(1), 6)) }));
+      const high = Math.max(...results.map(result => result.value));
+      const details = results.map(result => `${result.token}: ${result.value}`).join(', ');
+      const summary = `Wielu atakujących: ${high} — najwyższy wynik`;
+      addDiceHistory({ type: 'dice', label: 'Wielu atakujących', summary, notation: matches.join('+'), result: high, details });
+      closeSheet(); setView('dice'); renderDiceResult(high, `${details} → najwyższy`); announce(`${summary}. ${details}`);
+    }, 'btn btn-primary btn-block');
+    openSheet({ title: 'Wielu atakujących', body, footer: roll });
+  }
+
+  function confirmClearDiceHistory() {
+    openConfirmSheet({ title: 'Wyczyść historię rzutów', message: 'Usunąć całą lokalną historię rzutów? Tej operacji nie można cofnąć.', confirmLabel: 'Wyczyść', danger: true, onConfirm: () => { state.diceHistory = []; scheduleSave(); renderDiceView(); showToast('Wyczyszczono historię rzutów.'); } });
+  }
+
+  // ============================================================
+  // 17. More view and conditions
+  // ============================================================
+  function renderMoreView() {
+    const root = $('#view-more');
+    if (!root) return;
+    root.replaceChildren();
+    if (!state.initialized) {
+      root.append(card([createEl('div', { className: 'card-pad' }, [sectionHead('Więcej'), createEl('p', { className: 'muted', text: 'Najpierw utwórz lub zaimportuj postać.' }), button('Importuj z Kettlewright', () => $('#importFileInput').click(), 'btn btn-primary btn-block')])]))
+      return;
+    }
+
+    const identity = card([], 'card-pad');
+    identity.append(sectionHead('Dane postaci', button('Edytuj', openEditIdentitySheet, 'btn btn-quiet btn-ghost')));
+    identity.append(createEl('p', { text: state.identity.backgroundDescription || 'Brak opisu tła.', className: 'muted small wrap-anywhere' }));
+    root.append(identity);
+
+    const conditions = card([], 'card-pad');
+    conditions.append(sectionHead('Stany postaci'));
+    const settings = createEl('div', { className: 'settings-list' });
+    for (const [key, label] of CONDITION_DEFS) {
+      const toggle = createEl('input', { type: 'checkbox', checked: Boolean(state.conditions[key]), attrs: { 'aria-label': label } });
+      toggle.addEventListener('change', () => handleConditionToggle(key, toggle.checked));
+      settings.append(createEl('div', { className: 'settings-row' }, [createEl('div', {}, [createEl('strong', { text: label }), createEl('p', { className: 'help', text: conditionHelp(key) })]), toggle]));
+    }
+    settings.append(createEl('div', { className: 'settings-row' }, [createEl('div', {}, [createEl('strong', { text: 'Własne stany' }), createEl('p', { className: 'help', text: state.conditions.custom.map(entry => entry.name).join(', ') || 'Brak' })]), button('Zarządzaj', openCustomConditionsSheet, 'btn btn-quiet btn-ghost')]));
+    conditions.append(settings);
+    root.append(conditions);
+
+    const recovery = card([], 'card-pad');
+    recovery.append(sectionHead('Regeneracja i korekty'));
+    recovery.append(createEl('div', { className: 'button-row' }, [
+      button('Przywróć OCHR', openRestSheet, 'btn'),
+      button('Zmień statystyki', openEditStatsSheet, 'btn'),
+      button('Obrażenia atrybutu', openDirectDamageSheet, 'btn'),
+      button('Dodaj Bliznę', () => openAddScarSheet(), 'btn'),
+      button('Stabilizuj', () => handleStabilize(), 'btn', { disabled: !state.conditions.criticalDamage || state.conditions.stabilized })
+    ]));
+    root.append(recovery);
+
+    const notes = card([], 'card-pad');
+    notes.append(sectionHead('Notatki i opis', button('Edytuj', openNotesSheet, 'btn btn-quiet btn-ghost')));
+    const details = [
+      ['Cechy', state.identity.traits], ['Więzi', state.identity.bonds], ['Omeny', state.identity.omens], ['Notatki', state.notes]
+    ];
+    for (const [label, text] of details) {
+      if (!text) continue;
+      notes.append(createEl('p', { className: 'eyebrow', text: label }), createEl('p', { className: 'small muted wrap-anywhere', text }));
+    }
+    if (!details.some(([,text]) => text)) notes.append(createEl('p', { className: 'muted small', text: 'Brak dodatkowych informacji.' }));
+    if (state.scars.length) {
+      notes.append(createEl('p', { className: 'eyebrow', text: 'Blizny' }));
+      for (const scar of state.scars) notes.append(createEl('p', { className: 'small muted wrap-anywhere', text: scar.text }));
+    }
+    root.append(notes);
+
+    const dataCard = card([], 'card-pad');
+    dataCard.append(sectionHead('Dane i kopie zapasowe'));
+    dataCard.append(createEl('p', { className: 'help', text: 'Dane są zapisane wyłącznie w tej przeglądarce i na tym urządzeniu. Mogą zniknąć po wyczyszczeniu danych przeglądarki. Regularnie pobieraj kopię JSON.' }));
+    dataCard.append(createEl('div', { className: 'button-row' }, [
+      button('Eksportuj kopię', exportBackup, 'btn btn-primary'),
+      button('Eksport postaci', exportCharacterJson, 'btn'),
+      button('Import Kettlewright', () => $('#importFileInput').click(), 'btn'),
+      button('Import kopii', () => $('#backupFileInput').click(), 'btn')
+    ]));
+    root.append(dataCard);
+
+    const appCard = card([], 'card-pad');
+    appCard.append(sectionHead('Aplikacja'));
+    const themeToggle = createEl('input', { type: 'checkbox', checked: state.settings.theme === 'light', attrs: { 'aria-label': 'Jasny motyw' } });
+    themeToggle.addEventListener('change', () => { state.settings.theme = themeToggle.checked ? 'light' : 'dark'; scheduleSave(); renderAll(); });
+    const appSettings = createEl('div', { className: 'settings-list' }, [
+      createEl('div', { className: 'settings-row' }, [createEl('div', {}, [createEl('strong', { text: 'Jasny motyw' }), createEl('p', { className: 'help', text: 'Ciemny pozostaje domyślny.' })]), themeToggle]),
+      createEl('div', { className: 'settings-row' }, [createEl('div', {}, [createEl('strong', { text: 'Testy deweloperskie' }), createEl('p', { className: 'help', text: 'Uruchamia testy czystych funkcji bez frameworka.' })]), button('Uruchom', openTestResults, 'btn btn-quiet btn-ghost')]),
+      createEl('div', { className: 'settings-row' }, [createEl('div', {}, [createEl('strong', { text: `Wersja ${APP_VERSION}` }), createEl('p', { className: 'help', text: `Schemat danych ${SCHEMA_VERSION}` })]), createEl('span', { className: 'tag', text: state.source.type })])
+    ]);
+    appCard.append(appSettings);
+    root.append(appCard);
+
+    const recoveryRaw = safeStorageGet(RECOVERY_KEY);
+    if (recoveryRaw) {
+      const recoveryCard = card([], 'card-pad');
+      recoveryCard.append(sectionHead('Kopia odzyskiwania'));
+      recoveryCard.append(createEl('p', { className: 'muted small', text: 'W pamięci przeglądarki znajduje się surowy zapis, którego aplikacja wcześniej nie mogła odczytać.' }));
+      recoveryCard.append(button('Pobierz surowe dane', () => downloadTextFile('cairn-recovery-raw.json', recoveryRaw), 'btn btn-block'));
+      root.append(recoveryCard);
+    }
+
+    const danger = card([], 'card-pad');
+    danger.append(sectionHead('Operacje destrukcyjne'));
+    danger.append(createEl('div', { className: 'button-row' }, [
+      button('Wyczyść historię zmian', confirmClearChangeHistory, 'btn btn-danger'),
+      button('Zresetuj kartę', openResetSheet, 'btn btn-danger')
+    ]));
+    root.append(danger);
+  }
+
+  function conditionHelp(key) {
+    return {
+      deprived: 'Blokuje odzyskiwanie OCHR, atrybutów i miejsc zajętych przez zmęczenie.',
+      panicked: 'Panika oznacza 0 OCHR, brak działania w pierwszej rundzie i osłabione ataki.',
+      criticalDamage: 'Postać może tylko słabo pełzać; bez pomocy umrze w ciągu godziny.',
+      stabilized: 'Pomoc zatrzymała bezpośrednie ryzyko śmierci, ale nie usuwa obrażeń krytycznych.',
+      paralyzed: 'Zwykle skutek ZRE sprowadzonej do 0.',
+      delirious: 'Zwykle skutek WOL sprowadzonej do 0.'
+    }[key] || '';
+  }
+
+  function handleConditionToggle(key, enabled) {
+    renderMoreView();
+    if (key === 'stabilized' && enabled && !state.conditions.criticalDamage) {
+      showToast('Stabilizacja dotyczy postaci z obrażeniami krytycznymi.', 'error');
+      return;
+    }
+    if (key === 'panicked' && enabled) {
+      openConfirmSheet({
+        title: 'Oznacz panikę',
+        message: 'Spanikowana postać ma 0 OCHR, nie działa w pierwszej rundzie walki, a jej ataki są osłabione. Zastosować stan i ustawić 0 OCHR?',
+        confirmLabel: 'Oznacz panikę i 0 OCHR',
+        danger: true,
+        onConfirm: () => commitChange('Oznaczono panikę', next => { next.conditions.panicked = true; next.stats.hp.current = 0; })
+      });
+      return;
+    }
+    if (key === 'criticalDamage' && !enabled) {
+      openConfirmSheet({ title: 'Usuń obrażenia krytyczne', message: 'Usunąć stan obrażeń krytycznych? Stabilizacja sama w sobie nie usuwa tego stanu.', confirmLabel: 'Usuń stan', onConfirm: () => commitChange('Usunięto obrażenia krytyczne', next => { next.conditions.criticalDamage = false; next.conditions.stabilized = false; }) });
+      return;
+    }
+    commitChange(`${enabled ? 'Dodano' : 'Usunięto'} stan: ${CONDITION_DEFS.find(([id]) => id === key)?.[1] || key}`, next => { next.conditions[key] = enabled; if (key === 'criticalDamage' && enabled) next.conditions.stabilized = false; });
+  }
+
+  function handleStabilize() {
+    openConfirmSheet({ title: 'Stabilizuj postać', message: 'Potwierdź, że postać otrzymała odpowiednią pomoc, np. użyto bandaży. Stabilizacja nie usuwa obrażeń krytycznych.', confirmLabel: 'Oznacz stabilizację', onConfirm: () => commitChange('Postać została ustabilizowana', next => { next.conditions.stabilized = true; }) });
+  }
+
+  function openCustomConditionsSheet() {
+    const name = textInput('', 120);
+    const list = createEl('div', { className: 'sheet-list' });
+    const render = () => {
+      list.replaceChildren();
+      for (const condition of state.conditions.custom) {
+        list.append(createEl('div', { className: 'settings-row' }, [createEl('span', { text: condition.name }), button('Usuń', () => { closeSheet(); commitChange(`Usunięto stan: ${condition.name}`, next => { next.conditions.custom = next.conditions.custom.filter(entry => entry.id !== condition.id); }); }, 'btn btn-quiet btn-danger')]));
+      }
+      if (!state.conditions.custom.length) list.append(createEl('p', { className: 'muted small', text: 'Brak własnych stanów.' }));
+    };
+    render();
+    const body = createEl('div', { className: 'form-grid' }, [field('Nowy stan', name), button('Dodaj stan', () => { const value = trimText(name.value); if (!value) return; closeSheet(); commitChange(`Dodano stan: ${value}`, next => { next.conditions.custom.push({ id: makeId(), name: value }); }); }, 'btn btn-primary btn-block'), list]);
+    openSheet({ title: 'Własne stany', body });
+  }
+
+  function openEditIdentitySheet() {
+    const name = textInput(state.identity.name, 200);
+    const background = textInput(state.identity.background, 200);
+    const description = textarea(state.identity.backgroundDescription, 3000);
+    const body = createEl('div', { className: 'form-grid' }, [field('Imię', name), field('Tło / profesja', background), field('Opis tła', description)]);
+    const save = button('Zapisz dane podstawowe', () => {
+      const value = trimText(name.value);
+      if (!value) { showToast('Imię jest wymagane.', 'error'); return; }
+      closeSheet();
+      commitChange('Zmieniono dane postaci', next => { next.identity.name = value; next.identity.background = trimText(background.value); next.identity.backgroundDescription = description.value; next.isDemo = false; });
+    }, 'btn btn-primary btn-block');
+    openSheet({ title: 'Edytuj postać', body, footer: save });
+  }
+
+  function openNotesSheet() {
+    const traits = textarea(state.identity.traits, 3000);
+    const bonds = textarea(state.identity.bonds, 5000);
+    const omens = textarea(state.identity.omens, 3000);
+    const notes = textarea(state.notes, 8000);
+    const body = createEl('div', { className: 'form-grid' }, [field('Wygląd i cechy', traits), field('Więzi', bonds), field('Omeny', omens), field('Notatki', notes)]);
+    const save = button('Zapisz notatki', () => { closeSheet(); commitChange('Zmieniono notatki i opis', next => { next.identity.traits = traits.value; next.identity.bonds = bonds.value; next.identity.omens = omens.value; next.notes = notes.value; }); }, 'btn btn-primary btn-block');
+    openSheet({ title: 'Notatki i opis', body, footer: save });
+  }
+
+  function openCreateCharacterSheet() {
+    const name = textInput('', 200);
+    const background = textInput('', 200);
+    const hp = numberInput(3, 0, 99);
+    const str = numberInput(10, 0, 99);
+    const dex = numberInput(10, 0, 99);
+    const wil = numberInput(10, 0, 99);
+    const body = createEl('div', { className: 'form-grid' }, [field('Imię', name), field('Tło / profesja', background), createEl('div', { className: 'form-grid two' }, [field('OCHR', hp), field('SIŁ', str)]), createEl('div', { className: 'form-grid two' }, [field('ZRE', dex), field('WOL', wil)])]);
+    const create = button('Utwórz postać', () => {
+      const value = trimText(name.value);
+      if (!value) { showToast('Imię jest wymagane.', 'error'); name.focus(); return; }
+      const next = createDefaultState();
+      next.initialized = true;
+      next.identity.name = value;
+      next.identity.background = trimText(background.value);
+      next.stats.hp = { current: toInt(hp.value, 0), max: toInt(hp.value, 0) };
+      next.stats.str = { current: toInt(str.value, 0), max: toInt(str.value, 0) };
+      next.stats.dex = { current: toInt(dex.value, 0), max: toInt(dex.value, 0) };
+      next.stats.wil = { current: toInt(wil.value, 0), max: toInt(wil.value, 0) };
+      state = next;
+      saveNow(); closeSheet(); renderAll(); showToast('Utworzono pustą postać.');
+    }, 'btn btn-primary btn-block');
+    openSheet({ title: 'Nowa postać', body, footer: create });
+  }
+
+  function openImportReport(importData) {
+    const body = createEl('div', { className: 'sheet-list' });
+    body.append(createEl('p', { className: 'muted small wrap-anywhere', text: `${importData.filename} · format: ${importData.type}` }));
+    const sections = [
+      ['Zaimportowane', importData.report.imported, 'test-pass'],
+      ['Wymaga ręcznego sprawdzenia', importData.report.manual, ''],
+      ['Nierozpoznane lub zachowane bez interpretacji', Array.from(new Set(importData.report.unrecognized)), ''],
+      ['Ostrzeżenia', Array.from(new Set(importData.report.warnings)), 'test-fail'],
+      ['Błędy', Array.from(new Set(importData.report.errors)), 'test-fail']
+    ];
+    for (const [title, entries, tone] of sections) {
+      if (!entries.length) continue;
+      const block = createEl('div', { className: 'report-block' });
+      block.append(createEl('h3', { text: title, className: tone }));
+      const list = createEl('ul');
+      for (const entry of entries) list.append(createEl('li', { text: entry }));
+      block.append(list);
+      body.append(block);
+    }
+    if (importData.candidate) {
+      const usage = calculateInventoryUsage(importData.candidate.inventory.items, importData.candidate.inventory.fatigue);
+      body.append(createEl('div', { className: 'report-block' }, [createEl('h3', { text: 'Podsumowanie' }), createEl('p', { text: `${importData.candidate.identity.name} · ${importData.candidate.identity.background || 'bez tła'} · ${usage.total}/10 miejsc` })]));
+    }
+    const buttons = createEl('div', { className: 'button-row' }, [button('Anuluj', () => { pendingImport = null; closeSheet(); }, 'btn btn-ghost')]);
+    buttons.append(button('Nadpisz kartę importem', () => {
+      if (!importData.candidate || importData.report.errors.length) return;
+      openConfirmSheet({ title: 'Nadpisz aktywną kartę', message: 'Import zastąpi bieżącą aktywną postać. Pobierz wcześniej kopię zapasową, jeśli chcesz ją zachować.', confirmLabel: 'Nadpisz kartę', danger: true, onConfirm: applyPendingImport });
+    }, 'btn btn-primary', { disabled: !importData.candidate || importData.report.errors.length > 0 }));
+    openSheet({ title: 'Raport importu', body, footer: buttons, onClose: () => {} });
+  }
+
+  function confirmClearChangeHistory() {
+    openConfirmSheet({ title: 'Wyczyść historię zmian', message: 'Usunąć historię zmian i możliwość cofania? Aktualny stan postaci pozostanie bez zmian.', confirmLabel: 'Wyczyść historię', danger: true, onConfirm: () => { state.changeHistory = []; scheduleSave(); renderAll(); showToast('Wyczyszczono historię zmian.'); } });
+  }
+
+  function openResetSheet() {
+    const phrase = textInput('', 20);
+    const body = createEl('div', { className: 'form-grid' }, [createEl('p', { text: 'Reset usuwa aktywną kartę, ekwipunek, historię i źródło importu z tej przeglądarki. Najpierw pobierz kopię zapasową.' }), field('Wpisz USUŃ', phrase)]);
+    const reset = button('Usuń wszystkie dane karty', () => {
+      if (phrase.value !== 'USUŃ') { showToast('Wpisz dokładnie: USUŃ', 'error'); return; }
+      openConfirmSheet({ title: 'Ostatnie potwierdzenie', message: 'Czy na pewno całkowicie wyczyścić kartę?', confirmLabel: 'Tak, usuń wszystko', danger: true, onConfirm: () => { try { localStorage.removeItem(STORAGE_KEY); } catch {} state = createDefaultState(); saveNow(); setView('character'); renderAll(); showToast('Karta została wyczyszczona.'); } });
+    }, 'btn btn-danger btn-block');
+    openSheet({ title: 'Reset karty', body, footer: reset });
+  }
+
+  // ============================================================
+  // 18. Developer tests
+  // ============================================================
+  function runDeveloperTests() {
+    const results = [];
+    const test = (name, fn) => {
+      try { fn(); results.push({ name, pass: true }); }
+      catch (error) { results.push({ name, pass: false, error: error.message }); }
+    };
+    const assert = (condition, message = 'Warunek nie został spełniony') => { if (!condition) throw new Error(message); };
+    const base = createDefaultState();
+    base.stats.hp = { current: 5, max: 5 };
+    base.stats.str = { current: 10, max: 10 };
+
+    test('1. Pancerz zatrzymuje wszystkie obrażenia', () => { const r = calculateDamage(base, 2, 3); assert(r.damageAfterArmor === 0 && r.hpAfter === 5 && r.strAfter === 10); });
+    test('2. Obrażenia mniejsze od OCHR', () => { const r = calculateDamage(base, 3, 0); assert(r.hpAfter === 2 && r.strAfter === 10); });
+    test('3. Obrażenia sprowadzają OCHR dokładnie do zera', () => { const r = calculateDamage(base, 5, 0); assert(r.hpAfter === 0 && r.scarRequired && !r.strengthSaveRequired); });
+    test('4. Obrażenia przechodzą na SIŁ', () => { const r = calculateDamage(base, 8, 0); assert(r.hpAfter === 0 && r.strAfter === 7 && r.strengthSaveRequired); });
+    test('5. Kolejne obrażenia przy zerowym OCHR', () => { const s = deepClone(base); s.stats.hp.current = 0; const r = calculateDamage(s, 3, 0); assert(r.strAfter === 7 && r.strengthSaveRequired); });
+    test('6. SIŁ sprowadzona do zera', () => { const r = calculateDamage(base, 15, 0); assert(r.strAfter === 0 && r.strengthZero); });
+    test('7. Naturalne 1 w rzucie obronnym', () => { assert(resolveSave(0, 1).success); });
+    test('8. Naturalne 20 w rzucie obronnym', () => { assert(!resolveSave(20, 20).success); });
+    test('9. Pełne 10 miejsc', () => { const usage = calculateInventoryUsage(Array.from({ length: 10 }, () => makeItem({ slots: 1 })), []); assert(usage.total === 10); });
+    test('10. Przedmiot nieporęczny zajmuje dwa miejsca', () => { assert(calculateInventoryUsage([makeItem({ slots: 2 })], []).total === 2); });
+    test('11. Drobiazg zajmuje zero miejsc', () => { assert(calculateInventoryUsage([makeItem({ slots: 0 })], []).total === 0); });
+    test('12. Zmęczenie zajmuje jedno miejsce', () => { assert(calculateInventoryUsage([], [makeFatigue()]).total === 1); });
+    test('13. Import prawidłowego JSON Kettlewright', () => { const fixture = { name:'Test', hp:3, hp_max:3, strength:10, strength_max:10, dexterity:11, dexterity_max:11, willpower:12, willpower_max:12, items:[], armor:'0' }; const r = normalizeKettlewright(fixture); assert(r.candidate?.identity.name === 'Test' && !r.report.errors.length); });
+    test('14. Import uszkodzonego JSON', () => { const r = parseImportText('{nie'); assert(r.type === 'invalid' && r.report.errors.length === 1); });
+    test('15. Import nieznanej nowszej wersji', () => { const fixture = createDefaultState(); fixture.schemaVersion = 999; const r = parseImportText(JSON.stringify(fixture)); assert(!r.candidate && r.report.errors.length); });
+    test('16. Zapis i odczyt JSON zachowuje postać', () => { const fixture = createDemoState(); const copy = sanitizeLoadedState(JSON.parse(JSON.stringify(fixture))); assert(copy.identity.name === fixture.identity.name && copy.inventory.items.length === fixture.inventory.items.length); });
+    test('17. Snapshot umożliwia cofnięcie', () => { const fixture = createDemoState(); const snap = snapshotForHistory(fixture); fixture.stats.hp.current = 0; applySnapshot(fixture, snap); assert(fixture.stats.hp.current === snap.stats.hp.current); });
+    test('18. Eksport i ponowny import kopii', () => { const fixture = createDemoState(); const r = parseImportText(JSON.stringify(fixture)); assert(r.type === 'backup' && r.candidate?.identity.name === fixture.identity.name); });
+    test('19. Długie i niebezpieczne teksty są zachowywane jako dane', () => { const payload = '<img src=x onerror=alert(1)>'.repeat(20); const fixture = { name: payload, hp:1, hp_max:1, strength:1, strength_max:1, dexterity:1, dexterity_max:1, willpower:1, willpower_max:1, items:[] }; const r = normalizeKettlewright(fixture); assert(r.candidate.identity.name === payload); });
+    test('20. Dokument nie ładuje zewnętrznych skryptów ani styli', () => { const external = $$('script[src], link[rel="stylesheet"][href]').filter(el => /^https?:/i.test(el.src || el.href)); assert(external.length === 0); });
+    test('21. Efektywny pancerz jest ograniczony do 3', () => { const fixture = createDemoState(); fixture.inventory.items = [makeItem({ armorValue: 2, carryState:'worn' }), makeItem({ armorValue: 2, carryState:'held' })]; assert(deriveArmor(fixture).effective === 3); });
+    test('22. Fatigue z Kettlewright jest normalizowane osobno', () => { const fixture = { name:'T', hp:0,hp_max:1,strength:1,strength_max:1,dexterity:1,dexterity_max:1,willpower:1,willpower_max:1,items:[{id:'f',name:'Fatigue',tags:[],editable:false}] }; const r = normalizeKettlewright(fixture); assert(r.candidate.inventory.fatigue.length === 1 && r.candidate.inventory.items.length === 0); });
+    return results;
+  }
+
+  function openTestResults() {
+    const results = runDeveloperTests();
+    const passed = results.filter(result => result.pass).length;
+    const body = createEl('div', { className: 'sheet-list', dataset: { testsPassed: String(passed), testsTotal: String(results.length) } });
+    body.append(createEl('p', { className: passed === results.length ? 'test-pass' : 'test-fail', text: `${passed}/${results.length} testów zakończonych powodzeniem.` }));
+    for (const result of results) body.append(createEl('div', { className: 'history-item' }, [createEl('p', { className: result.pass ? 'test-pass' : 'test-fail', text: `${result.pass ? '✓' : '✕'} ${result.name}` }), result.error ? createEl('p', { className: 'small muted', text: result.error }) : null]));
+    body.append(createEl('div', { className: 'report-block' }, [
+      createEl('h3', { text: 'Kontrole ręczne' }),
+      createEl('ul', {}, [
+        createEl('li', { text: 'szerokość 320 px i 375–390 px' }),
+        createEl('li', { text: 'powiększony tekst systemowy' }),
+        createEl('li', { text: 'iPhone safe areas' }),
+        createEl('li', { text: 'klawiatura ekranowa i focus' }),
+        createEl('li', { text: 'prefers-reduced-motion' }),
+        createEl('li', { text: 'odświeżenie i odzyskanie localStorage' }),
+        createEl('li', { text: 'działanie po odłączeniu internetu' })
+      ])
+    ]));
+    openSheet({ title: 'Testy deweloperskie', body, footer: button('Zamknij', closeSheet, 'btn btn-primary btn-block') });
+  }
+
+  // ============================================================
+  // 19. Events and initialization
+  // ============================================================
+  function bindEvents() {
+    for (const nav of $$('[data-nav]')) nav.addEventListener('click', () => setView(nav.dataset.nav));
+    $('#quickUndoBtn').addEventListener('click', undoLastChange);
+    $('#quickDiceBtn').addEventListener('click', () => { setView('dice'); performRoll({ count: 1, sides: 20 }, 'Szybki k20'); });
+    $('#sheetCloseBtn').addEventListener('click', closeSheet);
+    $('#sheetBackdrop').addEventListener('click', event => { if (event.target === $('#sheetBackdrop')) closeSheet(); });
+    $('#sheet').addEventListener('keydown', trapSheetFocus);
+    $('#importFileInput').addEventListener('change', event => { handleImportFile(event.target.files[0], 'any'); event.target.value = ''; });
+    $('#backupFileInput').addEventListener('change', event => { handleImportFile(event.target.files[0], 'backup'); event.target.value = ''; });
+    window.addEventListener('pagehide', saveNow);
+    document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') saveNow(); });
+  }
+
+  function initialize() {
+    state = loadState();
+    bindEvents();
+    renderAll();
+    setView('character');
+    if (loadWarning) showToast(loadWarning, 'error');
+    globalThis.CairnSheetDev = {
+      version: APP_VERSION,
+      getState: () => deepClone(state),
+      runTests: runDeveloperTests,
+      calculateDamage,
+      resolveSave,
+      normalizeKettlewright,
+      calculateInventoryUsage
+    };
+    if (new URLSearchParams(location.search).get('selftest') === '1') {
+      const results = runDeveloperTests();
+      const passed = results.filter(result => result.pass).length;
+      document.documentElement.dataset.testsPassed = String(passed);
+      document.documentElement.dataset.testsTotal = String(results.length);
+      const marker = createEl('div', { id: 'selftestMarker', className: 'sr-only', text: `SELFTEST ${passed}/${results.length}` });
+      marker.dataset.passed = String(passed);
+      marker.dataset.total = String(results.length);
+      document.body.append(marker);
+    }
+  }
+
+  initialize();
+  </script>
+</body>
+</html>
