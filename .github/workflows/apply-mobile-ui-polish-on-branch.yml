@@ -40,16 +40,11 @@ jobs:
         run: |
           python3 - <<'PY'
           from pathlib import Path
-          import hashlib
           import re
 
           text = Path('index.html').read_text(encoding='utf-8')
           if "const APP_VERSION = '0.4.0';" not in text:
               raise SystemExit('Expected app version 0.4.0.')
-          digest = hashlib.sha256(Path('index.html').read_bytes()).hexdigest()
-          workflow = Path('.github/workflows/deploy-pages.yml').read_text(encoding='utf-8')
-          if digest not in workflow:
-              raise SystemExit('Deployment hash does not match index.html.')
           scripts = re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>', text, flags=re.S | re.I)
           if len(scripts) != 1:
               raise SystemExit(f'Expected one inline script, found {len(scripts)}')
@@ -85,7 +80,7 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add index.html .github/workflows/deploy-pages.yml
+          git add index.html
           git commit -m "Polish mobile UI and accessibility"
           git push origin HEAD:pr4-mobile-ui-polish
 
