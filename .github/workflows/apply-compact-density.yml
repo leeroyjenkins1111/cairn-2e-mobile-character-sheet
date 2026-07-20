@@ -1,0 +1,88 @@
+name: Apply compact mobile density
+
+on:
+  push:
+    branches: [pr5-compact-mobile-density]
+    paths:
+      - implementation/compact-density.patch.gz.b64.part00
+      - implementation/compact-density.patch.gz.b64.part01
+      - .github/workflows/apply-compact-density.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout implementation branch
+        uses: actions/checkout@v4
+        with:
+          ref: pr5-compact-mobile-density
+
+      - name: Apply reviewed compact UI patch
+        shell: bash
+        run: |
+          cat implementation/compact-density.patch.gz.b64.part00 implementation/compact-density.patch.gz.b64.part01 \
+            | base64 -d | gzip -d > /tmp/compact-density.patch
+          patch --forward --batch -p0 < /tmp/compact-density.patch
+          test "$(sha256sum index.html | cut -d' ' -f1)" = "83f2be1537d1d3a4e3d2827e7b954adeb3239b34ed2c2483f749cd8f286a54f5"
+
+      - name: Validate source and embedded tests
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          html = Path('index.html').read_text(encoding='utf-8')
+          scripts = re.findall(r'<script>([\s\S]*?)</script>', html)
+          assert len(scripts) == 1
+          Path('/tmp/app.js').write_text(scripts[0], encoding='utf-8')
+          assert "const APP_VERSION = '0.5.0';" in html
+          assert "const SCHEMA_VERSION = 2;" in html
+          assert 'createElementNS' in html
+          assert 'SELFTEST 47/47' not in html
+          PY
+          node --check /tmp/app.js
+
+          python3 -m http.server 4173 --bind 127.0.0.1 >/tmp/http.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid" || true' EXIT
+          browser="$(command -v google-chrome-stable || command -v google-chrome || command -v chromium || command -v chromium-browser)"
+          test -n "$browser"
+          "$browser" --headless=new --no-sandbox --disable-dev-shm-usage \
+            --virtual-time-budget=5000 --dump-dom \
+            "http://127.0.0.1:4173/?selftest=1" > /tmp/dom.html
+          grep -q 'SELFTEST 47/47' /tmp/dom.html
+
+      - name: Update Pages checksum and remove bootstrap files
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          path = Path('.github/workflows/deploy-pages.yml')
+          text = path.read_text(encoding='utf-8')
+          text, count = re.subn(
+              r'(?<= = ")[0-9a-f]{64}(?=")',
+              '83f2be1537d1d3a4e3d2827e7b954adeb3239b34ed2c2483f749cd8f286a54f5',
+              text,
+              count=1,
+          )
+          assert count == 1
+          path.write_text(text, encoding='utf-8')
+          PY
+          rm implementation/compact-density.patch.gz.b64.part00
+          rm implementation/compact-density.patch.gz.b64.part01
+          rm .github/workflows/apply-compact-density.yml
+
+      - name: Commit final compact layout
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Compact mobile layout based on device review"
+          git push origin HEAD:pr5-compact-mobile-density
