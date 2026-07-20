@@ -48,6 +48,7 @@ jobs:
         continue-on-error: true
         shell: bash
         run: |
+          set -o pipefail
           npm init -y >/dev/null 2>&1
           npm install --no-save playwright@1.54.1 >/dev/null 2>&1
           npx playwright install chromium >/dev/null
@@ -55,7 +56,7 @@ jobs:
           SERVER_PID=$!
           trap 'kill $SERVER_PID || true' EXIT
           sleep 2
-          node /tmp/pr6_browser_audit.cjs 2>&1 | tee /tmp/pr6-browser-audit.log
+          NODE_PATH="$PWD/node_modules" node /tmp/pr6_browser_audit.cjs 2>&1 | tee /tmp/pr6-browser-audit.log
 
       - name: Upload browser audit diagnostics
         if: always()
