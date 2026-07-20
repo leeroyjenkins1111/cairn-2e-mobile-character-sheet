@@ -1,11 +1,15 @@
-name: Validate mobile UI polish
+name: Apply and validate mobile UI polish
 
 on:
-  pull_request:
-    branches: [main]
+  push:
+    branches: [pr4-mobile-ui-polish]
+    paths:
+      - implementation/apply-mobile-ui-polish.py.gz.b64
+      - implementation/mobile-ui-audit.cjs.gz.b64
+      - .github/workflows/apply-mobile-ui-polish-on-branch.yml
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   apply-and-validate:
@@ -17,12 +21,16 @@ jobs:
           ref: pr4-mobile-ui-polish
 
       - name: Apply reviewed UI changes when needed
+        id: apply
         shell: bash
         run: |
           if grep -q "const APP_VERSION = '0.3.0';" index.html; then
             base64 -d implementation/apply-mobile-ui-polish.py.gz.b64 | gzip -d > /tmp/apply-mobile-ui-polish.py
             python3 /tmp/apply-mobile-ui-polish.py
-          elif ! grep -q "const APP_VERSION = '0.4.0';" index.html; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          elif grep -q "const APP_VERSION = '0.4.0';" index.html; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
             echo "Unexpected application version" >&2
             exit 1
           fi
@@ -71,22 +79,23 @@ jobs:
           node --check /tmp/app.js
           node /tmp/app-tests.js
 
-      - name: Upload transformed source
-        uses: actions/upload-artifact@v4
-        with:
-          name: mobile-ui-polish-source
-          path: |
-            index.html
-            .github/workflows/deploy-pages.yml
-          if-no-files-found: error
+      - name: Commit final source changes
+        if: steps.apply.outputs.changed == 'true'
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html .github/workflows/deploy-pages.yml
+          git commit -m "Polish mobile UI and accessibility"
+          git push origin HEAD:pr4-mobile-ui-polish
 
       - name: Run mobile browser audit
         shell: bash
         run: |
           base64 -d implementation/mobile-ui-audit.cjs.gz.b64 | gzip -d > /tmp/mobile-ui-audit.cjs
           mkdir -p /tmp/ui-audit
-          npm install --prefix /tmp/ui-audit --no-save playwright@1.55.0
-          /tmp/ui-audit/node_modules/.bin/playwright install --with-deps chromium
+          npm install --prefix /tmp/ui-audit --no-save playwright@1.55.0 >/tmp/npm-install.log 2>&1
+          /tmp/ui-audit/node_modules/.bin/playwright install --with-deps chromium >/tmp/playwright-install.log 2>&1
           python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/cairn-ui-server.log 2>&1 &
           SERVER_PID=$!
           trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
