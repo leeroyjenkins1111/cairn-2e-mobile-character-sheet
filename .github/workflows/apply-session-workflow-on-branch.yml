@@ -1,0 +1,110 @@
+name: Apply session workflow implementation on branch
+
+on:
+  push:
+    branches: [pr3-session-workflow]
+    paths:
+      - implementation/session-workflow.patch.gz.b64.00
+      - implementation/session-workflow.patch.gz.b64.01
+      - .github/workflows/apply-session-workflow-on-branch.yml
+
+permissions:
+  contents: write
+
+jobs:
+  apply-and-validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout implementation branch
+        uses: actions/checkout@v4
+        with:
+          ref: pr3-session-workflow
+
+      - name: Reconstruct and apply reviewed changes
+        shell: bash
+        run: |
+          test "$(sha256sum index.html | cut -d' ' -f1)" = "5a6a8895210b41ab7d87ddfa1033049fcb7625e86a72ab7b0c44874e035794b3"
+
+          git apply --check hotfix/panic-button.patch
+          git apply hotfix/panic-button.patch
+          test "$(sha256sum index.html | cut -d' ' -f1)" = "e11b888125124f7debd5474817aa869b1de6253ed868e3361122e7b4480e9ea7"
+
+          cat implementation/session-workflow.patch.gz.b64.* | base64 --decode | gzip --decompress > /tmp/session-workflow.patch
+          git apply --check /tmp/session-workflow.patch
+          git apply /tmp/session-workflow.patch
+          test "$(sha256sum index.html | cut -d' ' -f1)" = "2308184fc9dd1535be8d626dfd8798f3dba30c3d9e5a871ac05400765ca5b225"
+
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          path = Path('.github/workflows/deploy-pages.yml')
+          text = path.read_text(encoding='utf-8')
+          text, count = re.subn(
+              r'(test "\$\(sha256sum index\.html \| cut -d\' \' -f1\)" = ")[0-9a-f]{64}("\s*)',
+              r'\g<1>2308184fc9dd1535be8d626dfd8798f3dba30c3d9e5a871ac05400765ca5b225\g<2>',
+              text,
+              count=1,
+          )
+          if count != 1:
+              raise SystemExit('Could not update the deployment integrity hash.')
+          path.write_text(text, encoding='utf-8')
+          PY
+
+      - name: Validate JavaScript and embedded domain tests
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          text = Path('index.html').read_text(encoding='utf-8')
+          scripts = re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>', text, flags=re.S | re.I)
+          if len(scripts) != 1:
+              raise SystemExit(f'Expected one inline script, found {len(scripts)}')
+
+          script = scripts[0]
+          marker = '  initialize();'
+          if script.count(marker) != 1:
+              raise SystemExit('Could not locate the single initialization call.')
+
+          prefix = """globalThis.document={querySelector:()=>null,querySelectorAll:()=>[],documentElement:{dataset:{}},body:{append:()=>{}},addEventListener:()=>{},visibilityState:'visible'};globalThis.window={addEventListener:()=>{}};globalThis.navigator={};globalThis.location={search:''};globalThis.localStorage={getItem:()=>null,setItem:()=>{},removeItem:()=>{}};globalThis.requestAnimationFrame=(fn)=>fn();globalThis.HTMLElement=class{};globalThis.HTMLInputElement=class{};globalThis.HTMLTextAreaElement=class{};globalThis.HTMLSelectElement=class{};globalThis.Blob=class{};globalThis.URL={createObjectURL:()=>'',revokeObjectURL:()=>{}};\n"""
+          runner = """
+          const __results=runDeveloperTests();
+          const __failures=__results.filter(result=>!result.pass);
+          console.log(JSON.stringify({passed:__results.length-__failures.length,total:__results.length,failures:__failures},null,2));
+          if (__results.length !== 44 || __failures.length) process.exit(1);
+          """
+          Path('/tmp/app.js').write_text(script, encoding='utf-8')
+          Path('/tmp/app-tests.js').write_text(prefix + script.replace(marker, runner, 1), encoding='utf-8')
+
+          required = [
+              "const APP_VERSION = '0.3.0';",
+              'function performFirstRoundDexSave',
+              'function performUnarmedAttack',
+              'function openBlastAttackSheet',
+              'function openUseItemSheet',
+              'function getScarGuide',
+          ]
+          for value in required:
+              if value not in text:
+                  raise SystemExit(f'Missing expected implementation marker: {value}')
+          PY
+
+          node --check /tmp/app.js
+          node /tmp/app-tests.js
+
+      - name: Commit final reviewable source
+        shell: bash
+        run: |
+          rm -f hotfix/panic-button.patch
+          rm -f implementation/session-workflow.patch.gz.b64.00 implementation/session-workflow.patch.gz.b64.01
+          rm -f .github/workflows/apply-panic-hotfix-on-main.yml
+          rm -f .github/workflows/apply-session-workflow-on-branch.yml
+          rmdir hotfix implementation 2>/dev/null || true
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Implement session workflow helpers"
+          git push origin HEAD:pr3-session-workflow
