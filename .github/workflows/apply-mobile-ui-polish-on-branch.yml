@@ -1,50 +1,34 @@
-name: Apply and validate mobile UI polish
+name: Validate mobile UI polish
 
 on:
-  push:
-    branches: [pr4-mobile-ui-polish]
-    paths:
-      - implementation/apply-mobile-ui-polish.py.gz.b64
-      - implementation/mobile-ui-audit.cjs.gz.b64
-      - .github/workflows/apply-mobile-ui-polish-on-branch.yml
+  pull_request:
+    branches: [main]
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  apply-and-validate:
+  validate:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout implementation branch
+      - name: Checkout pull request
         uses: actions/checkout@v4
-        with:
-          ref: pr4-mobile-ui-polish
 
-      - name: Apply reviewed UI changes when needed
-        id: apply
-        shell: bash
-        run: |
-          if grep -q "const APP_VERSION = '0.3.0';" index.html; then
-            base64 -d implementation/apply-mobile-ui-polish.py.gz.b64 | gzip -d > /tmp/apply-mobile-ui-polish.py
-            python3 /tmp/apply-mobile-ui-polish.py
-            echo "changed=true" >> "$GITHUB_OUTPUT"
-          elif grep -q "const APP_VERSION = '0.4.0';" index.html; then
-            echo "changed=false" >> "$GITHUB_OUTPUT"
-          else
-            echo "Unexpected application version" >&2
-            exit 1
-          fi
-
-      - name: Validate inline JavaScript and embedded tests
+      - name: Validate final source and embedded tests
         shell: bash
         run: |
           python3 - <<'PY'
           from pathlib import Path
+          import hashlib
           import re
 
           text = Path('index.html').read_text(encoding='utf-8')
           if "const APP_VERSION = '0.4.0';" not in text:
               raise SystemExit('Expected app version 0.4.0.')
+          digest = hashlib.sha256(Path('index.html').read_bytes()).hexdigest()
+          workflow = Path('.github/workflows/deploy-pages.yml').read_text(encoding='utf-8')
+          if digest not in workflow:
+              raise SystemExit('Deployment hash does not match index.html.')
           scripts = re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>', text, flags=re.S | re.I)
           if len(scripts) != 1:
               raise SystemExit(f'Expected one inline script, found {len(scripts)}')
@@ -74,17 +58,7 @@ jobs:
           node --check /tmp/app.js
           node /tmp/app-tests.js
 
-      - name: Commit final source changes
-        if: steps.apply.outputs.changed == 'true'
-        shell: bash
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add index.html
-          git commit -m "Polish mobile UI and accessibility"
-          git push origin HEAD:pr4-mobile-ui-polish
-
-      - name: Run mobile browser audit
+      - name: Run final mobile browser audit
         shell: bash
         run: |
           base64 -d implementation/mobile-ui-audit.cjs.gz.b64 | gzip -d > /tmp/mobile-ui-audit.cjs
