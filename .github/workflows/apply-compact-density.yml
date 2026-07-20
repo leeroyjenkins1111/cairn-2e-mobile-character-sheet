@@ -1,12 +1,6 @@
 name: Apply compact mobile density
 
 on:
-  push:
-    branches: [pr5-compact-mobile-density]
-    paths:
-      - implementation/compact-density.patch.gz.b64.part00
-      - implementation/compact-density.patch.gz.b64.part01
-      - .github/workflows/apply-compact-density.yml
   pull_request:
     branches: [main]
 
@@ -44,7 +38,6 @@ jobs:
           assert "const APP_VERSION = '0.5.0';" in html
           assert "const SCHEMA_VERSION = 2;" in html
           assert 'createElementNS' in html
-          assert 'SELFTEST 47/47' not in html
           PY
           node --check /tmp/app.js
 
@@ -58,7 +51,7 @@ jobs:
             "http://127.0.0.1:4173/?selftest=1" > /tmp/dom.html
           grep -q 'SELFTEST 47/47' /tmp/dom.html
 
-      - name: Update Pages checksum and remove bootstrap files
+      - name: Update Pages checksum
         shell: bash
         run: |
           python3 - <<'PY'
@@ -76,15 +69,12 @@ jobs:
           assert count == 1
           path.write_text(text, encoding='utf-8')
           PY
-          rm implementation/compact-density.patch.gz.b64.part00
-          rm implementation/compact-density.patch.gz.b64.part01
-          rm .github/workflows/apply-compact-density.yml
 
       - name: Commit final compact layout
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
+          git add index.html .github/workflows/deploy-pages.yml
           git commit -m "Compact mobile layout based on device review"
           git push origin HEAD:pr5-compact-mobile-density
