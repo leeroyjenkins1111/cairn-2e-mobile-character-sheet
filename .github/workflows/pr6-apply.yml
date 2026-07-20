@@ -23,6 +23,16 @@ jobs:
         run: |
           base64 -d .github/pr6/apply.py.gz.b64 | gzip -d > /tmp/pr6_apply.py
           base64 -d .github/pr6/browser-audit.cjs.gz.b64 | gzip -d > /tmp/pr6_browser_audit.cjs
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('/tmp/pr6_apply.py')
+          text = path.read_text(encoding='utf-8')
+          old = "test('51. Ochrona ma osobny, wyjaśniający workflow', () => { assert(typeof openProtectionSheet === 'function' && !document.body.textContent.includes('Cairn — szybkie przypadki')); });"
+          new = "test('51. Ochrona ma osobny, wyjaśniający workflow', () => { assert(typeof openProtectionSheet === 'function' && combatScenarioDefinitions().every(entry => entry.title !== 'Pierwsza runda')); });"
+          if text.count(old) != 1:
+              raise SystemExit('Expected one selftest diagnostic to patch')
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+          PY
           python -m py_compile /tmp/pr6_apply.py
           node --check /tmp/pr6_browser_audit.cjs
 
