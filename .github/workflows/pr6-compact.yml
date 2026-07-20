@@ -1,16 +1,15 @@
-# Trigger compact dice dashboard validation after workflow registration.
 name: Apply PR6 compact dice dashboard
 
 on:
-  pull_request:
-    branches: [main]
+  push:
+    branches: [pr6-screen-logic-dice-feedback]
 
 permissions:
   contents: write
 
 jobs:
   apply-and-validate:
-    if: github.head_ref == 'pr6-screen-logic-dice-feedback' && github.actor != 'github-actions[bot]'
+    if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout PR branch
