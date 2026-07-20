@@ -28,7 +28,7 @@ jobs:
       - name: Prepare static site
         shell: bash
         run: |
-          test "$(sha256sum index.html | cut -d' ' -f1)" = "e663ed2782e0da90382fefba51bd5004271978cf87cd04ffb992759741e2c855"
+          test "$(sha256sum index.html | cut -d' ' -f1)" = "50648f4e5d3543fd8da625bdd05f72429c8e1bb542b4e36e7b1340da570bfdeb"
           mkdir -p _site
           cp index.html .nojekyll _site/
 
