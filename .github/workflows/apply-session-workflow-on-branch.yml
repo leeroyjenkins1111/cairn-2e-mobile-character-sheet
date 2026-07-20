@@ -4,8 +4,6 @@ on:
   push:
     branches: [pr3-session-workflow]
     paths:
-      - implementation/session-workflow.patch.gz.b64.00
-      - implementation/session-workflow.patch.gz.b64.01
       - .github/workflows/apply-session-workflow-on-branch.yml
   pull_request:
     branches: [main]
@@ -35,23 +33,6 @@ jobs:
           git apply --check /tmp/session-workflow.patch
           git apply /tmp/session-workflow.patch
           test "$(sha256sum index.html | cut -d' ' -f1)" = "2308184fc9dd1535be8d626dfd8798f3dba30c3d9e5a871ac05400765ca5b225"
-
-          python3 - <<'PY'
-          from pathlib import Path
-          import re
-
-          path = Path('.github/workflows/deploy-pages.yml')
-          text = path.read_text(encoding='utf-8')
-          text, count = re.subn(
-              r'(test "\$\(sha256sum index\.html \| cut -d\' \' -f1\)" = ")[0-9a-f]{64}("\s*)',
-              r'\g<1>2308184fc9dd1535be8d626dfd8798f3dba30c3d9e5a871ac05400765ca5b225\g<2>',
-              text,
-              count=1,
-          )
-          if count != 1:
-              raise SystemExit('Could not update the deployment integrity hash.')
-          path.write_text(text, encoding='utf-8')
-          PY
 
       - name: Validate JavaScript and embedded domain tests
         shell: bash
@@ -96,17 +77,15 @@ jobs:
           node --check /tmp/app.js
           node /tmp/app-tests.js
 
-      - name: Commit final reviewable source
+      - name: Commit source changes without workflow mutations
         shell: bash
         run: |
           rm -f hotfix/panic-button.patch
           rm -f implementation/session-workflow.patch.gz.b64.00 implementation/session-workflow.patch.gz.b64.01
-          rm -f .github/workflows/apply-panic-hotfix-on-main.yml
-          rm -f .github/workflows/apply-session-workflow-on-branch.yml
           rmdir hotfix implementation 2>/dev/null || true
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
+          git add index.html hotfix implementation 2>/dev/null || git add -A
           git commit -m "Implement session workflow helpers"
           git push origin HEAD:pr3-session-workflow
