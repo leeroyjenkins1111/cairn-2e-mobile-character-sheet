@@ -1,0 +1,121 @@
+--- a/index.html
++++ b/index.html
+@@ -563,14 +563,16 @@
+   // 1. Constants
+   // ============================================================
+   const APP_ID = 'cairn-mobile-sheet';
+-  const APP_VERSION = '0.1.0';
+-  const SCHEMA_VERSION = 1;
++  const APP_VERSION = '0.2.0';
++  const SCHEMA_VERSION = 2;
+   const STORAGE_KEY = `${APP_ID}:state`;
+   const RECOVERY_KEY = `${APP_ID}:recovery`;
+   const HISTORY_LIMIT = 50;
+   const DICE_HISTORY_LIMIT = 20;
+   const SAVE_DEBOUNCE_MS = 300;
+   const DICE_SIDES = [4, 6, 8, 10, 12, 20, 100];
++  const DAMAGE_DIE_SIDES = [4, 6, 8, 10, 12];
++  const MAX_DAMAGE_DICE = 4;
+   const ATTRS = {
+     str: { label: 'SIŁ', full: 'Siła' },
+     dex: { label: 'ZRE', full: 'Zręczność' },
+@@ -688,6 +690,61 @@
+   };
+   const jsonEqual = (a, b) => JSON.stringify(a) === JSON.stringify(b);
+ 
++  function parseDamageFormulaNotation(notation, blast = false) {
++    const normalized = trimText(notation).toLowerCase().replace(/\s+/g, '');
++    if (!normalized) return null;
++    const pattern = /^d(?:4|6|8|10|12)(?:\+d(?:4|6|8|10|12)){0,3}$/;
++    if (!pattern.test(normalized)) return null;
++    const dice = normalized.split('+').map(token => toInt(token.slice(1), 0));
++    return { dice, keep: dice.length > 1 ? 'highest' : 'sum', blast: Boolean(blast) };
++  }
++
++  function normalizeDamageFormula(value, fallbackBlast = false) {
++    if (!value) return null;
++    if (typeof value === 'string') return parseDamageFormulaNotation(value, fallbackBlast);
++    if (typeof value !== 'object' || Array.isArray(value)) return null;
++    const dice = safeArray(value.dice).map(side => toInt(side, 0));
++    if (!dice.length || dice.length > MAX_DAMAGE_DICE || dice.some(side => !DAMAGE_DIE_SIDES.includes(side))) return null;
++    const keep = dice.length === 1 ? 'sum' : 'highest';
++    return { dice, keep, blast: Boolean(value.blast ?? fallbackBlast) };
++  }
++
++  function formatDamageFormula(formula) {
++    const normalized = normalizeDamageFormula(formula);
++    return normalized ? normalized.dice.map(side => `d${side}`).join('+') : '';
++  }
++
++  function isDamageFormulaTag(value) {
++    return Boolean(parseDamageFormulaNotation(String(value || '')));
++  }
++
++  function rollDamageFormula(formula, roller = rollDie) {
++    const normalized = normalizeDamageFormula(formula);
++    if (!normalized) throw new Error('Nieprawidłowa formuła obrażeń.');
++    const rolls = normalized.dice.map((sides, index) => {
++      const value = toInt(roller(sides, index), 0);
++      if (value < 1 || value > sides) throw new Error(`Nieprawidłowy wynik k${sides}.`);
++      return { sides, value };
++    });
++    const values = rolls.map(entry => entry.value);
++    const total = normalized.keep === 'highest' ? Math.max(...values) : values.reduce((sum, value) => sum + value, 0);
++    return { formula: normalized, notation: formatDamageFormula(normalized), rolls, total };
++  }
++
++  function polishUsesLabel(value) {
++    const count = Math.max(0, toInt(value, 0));
++    const lastTwo = count % 100;
++    const last = count % 10;
++    const noun = count === 1 ? 'użycie' : last >= 2 && last <= 4 && !(lastTwo >= 12 && lastTwo <= 14) ? 'użycia' : 'użyć';
++    return `${count} ${noun}`;
++  }
++
++  function formatUses(uses) {
++    if (!uses || (uses.current === null && uses.max === null)) return '';
++    if (uses.max === null) return polishUsesLabel(uses.current ?? 0);
++    return `${uses.current ?? 0}/${uses.max}`;
++  }
++
+   // ============================================================
+   // 3. Model and defaults
+   // ============================================================
+@@ -772,7 +829,7 @@
+       gold: 18
+     };
+     demo.inventory.items = [
+-      makeItem({ name: 'Krótki łuk', description: 'Lekki łuk myśliwski.', damageDie: 'd6', slots: 1, carryState: 'held' }),
++      makeItem({ name: 'Krótki łuk', description: 'Lekki łuk myśliwski.', damageFormula: parseDamageFormulaNotation('d6'), slots: 1, carryState: 'held' }),
+       makeItem({ name: 'Skórzany kaftan', description: 'Wytarty, ale nadal użyteczny.', armorValue: 1, slots: 1, carryState: 'worn' }),
+       makeItem({ name: 'Pochodnia', uses: { current: 2, max: 3 }, slots: 1 }),
+       makeItem({ name: 'Suszone racje', uses: { current: 2, max: 3 }, slots: 1 }),
+@@ -783,6 +840,13 @@
+   }
+ 
+   function makeItem(partial = {}) {
++    const rawTraits = Array.from(new Set(safeArray(partial.traits).map(String)));
++    const blastFromTraits = rawTraits.some(trait => trait.toLowerCase() === 'blast');
++    const formulaSource = partial.damageFormula || partial.damageDie || null;
++    const damageFormula = normalizeDamageFormula(formulaSource, blastFromTraits);
++    const sourceExtras = partial.sourceExtras && typeof partial.sourceExtras === 'object' ? deepClone(partial.sourceExtras) : {};
++    if (partial.damageDie && !damageFormula) sourceExtras.legacyDamageDie = String(partial.damageDie);
++    if (partial.damageFormula && !damageFormula) sourceExtras.unparsedDamageFormula = deepClone(partial.damageFormula);
+     return {
+       id: partial.id || makeId(),
+       sourceId: partial.sourceId ?? null,
+@@ -790,16 +854,16 @@
+       description: partial.description || '',
+       slots: clamp(toInt(partial.slots, 1), 0, 10),
+       category: partial.category || 'inne',
+-      damageDie: partial.damageDie || null,
++      damageFormula,
+       armorValue: clamp(toInt(partial.armorValue, 0), 0, 3),
+       uses: partial.uses ? {
+         current: partial.uses.current === null ? null : Math.max(0, toInt(partial.uses.current, 0)),
+-        max: partial.uses.max === null ? null : Math.max(0, toInt(partial.uses.max, 0))
++        max: partial.uses.max === null || partial.uses.max === undefined || partial.uses.max === '' ? null : Math.max(0, toInt(partial.uses.max, 0))
+       } : { current: null, max: null },
+       carryState: partial.carryState || 'stored',
+-      traits: Array.from(new Set(safeArray(partial.traits).map(String))),
++      traits: rawTraits.filter(trait => !(damageFormul
