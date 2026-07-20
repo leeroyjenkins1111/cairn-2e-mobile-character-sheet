@@ -5,7 +5,7 @@ on:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   apply-and-validate:
@@ -16,6 +16,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           ref: pr6-screen-logic-dice-feedback
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Reconstruct implementation and audit scripts
         shell: bash
@@ -51,6 +52,42 @@ jobs:
 
       - name: Apply screen logic and dice feedback changes
         run: python /tmp/pr6_apply.py
+
+      - name: Correct Polish protection copy
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          path = Path('index.html')
+          text = path.read_text(encoding='utf-8')
+          replacements = {
+            'Po wyzdrowieniu 2k6 wyznacza nowe maksymalną Ochronę.': 'Po wyzdrowieniu 2k6 wyznacza nową maksymalną Ochronę.',
+            'Pełny ekwipunek przy Ochrona powyżej 0': 'Pełny ekwipunek przy Ochronie powyżej 0',
+            'ma Ochrona powyżej 0': 'ma Ochronę powyżej 0',
+            'aktualne i maksymalną Ochronę': 'aktualną i maksymalną Ochronę',
+            'Ochrona jest wyższe od 0': 'Ochrona jest wyższa od 0',
+            'ma Ochrona wyższe od 0': 'ma Ochronę wyższą niż 0',
+            'Pełny ekwipunek: Ochrona ustawiono na 0': 'Pełny ekwipunek: Ochronę ustawiono na 0',
+            'Panika: Ochrona ustawiono na 0': 'Panika: Ochronę ustawiono na 0',
+            "'Panika i Ochrona'": "'Panika a Ochrona'",
+            'Oficjalna tabela Blizn obejmuje utratę od 1 do 12 Ochrona.': 'Oficjalna tabela Blizn obejmuje utratę od 1 do 12 punktów Ochrony.',
+            'według liczby utraconej Ochrony': 'według liczby utraconych punktów Ochrony',
+            'nie może odzyskiwać Ochronę': 'nie może odzyskiwać Ochrony',
+            'Blokuje odzyskiwanie Ochrona': 'Blokuje odzyskiwanie Ochrony',
+            'Ochrona nie zostanie przywrócone': 'Ochrona nie zostanie przywrócona',
+            'Obrażenia mniejsze od Ochrona': 'Obrażenia mniejsze od Ochrony',
+            'Obrażenia sprowadzają Ochrona': 'Obrażenia sprowadzają Ochronę',
+            'przy zerowym Ochrona': 'przy zerowej Ochronie',
+            'nie przywraca Ochrona': 'nie przywraca Ochrony',
+          }
+          for old, new in replacements.items():
+              text = text.replace(old, new)
+          old_labels = "body.append(createEl('div', { className: 'form-grid two' }, [field(`${key === 'hp' ? 'Ochrona' : ATTRS[key].label} aktualne`, controls[key].current), field(`${key === 'hp' ? 'Ochrona' : ATTRS[key].label} maksymalne`, controls[key].max)]));"
+          new_labels = "body.append(createEl('div', { className: 'form-grid two' }, [field(key === 'hp' ? 'Ochrona aktualna' : `${ATTRS[key].label} aktualne`, controls[key].current), field(key === 'hp' ? 'Ochrona maksymalna' : `${ATTRS[key].label} maksymalne`, controls[key].max)]));"
+          if text.count(old_labels) != 1:
+              raise SystemExit('Expected one full-stat label row')
+          path.write_text(text.replace(old_labels, new_labels, 1), encoding='utf-8')
+          PY
 
       - name: Validate inline JavaScript
         shell: bash
@@ -95,28 +132,13 @@ jobs:
         if: steps.browser.outcome != 'success'
         run: exit 1
 
-      - name: Update Pages checksum
+      - name: Commit validated application source
         shell: bash
         run: |
-          python - <<'PY'
-          from pathlib import Path
-          import hashlib, re
-          index = Path('index.html').read_bytes()
-          digest = hashlib.sha256(index).hexdigest()
-          path = Path('.github/workflows/deploy-pages.yml')
-          text = path.read_text(encoding='utf-8')
-          updated, count = re.subn(r'test "\$\(sha256sum index\.html \| cut -d\x27 \x27 -f1\)" = "[0-9a-f]{64}"', f'test "$(sha256sum index.html | cut -d\x27 \x27 -f1)" = "{digest}"', text)
-          if count != 1:
-              raise SystemExit(f'Expected one checksum line, found {count}')
-          path.write_text(updated, encoding='utf-8')
-          print(digest)
-          PY
-
-      - name: Upload validated final source
-        uses: actions/upload-artifact@v4
-        with:
-          name: pr6-final-source
-          path: |
-            index.html
-            .github/workflows/deploy-pages.yml
-          if-no-files-found: error
+          rm -f package.json package-lock.json
+          test "$(sha256sum index.html | cut -d' ' -f1)" = "e663ed2782e0da90382fefba51bd5004271978cf87cd04ffb992759741e2c855"
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add index.html
+          git commit -m "Clarify screen logic and animate dice feedback"
+          git push origin HEAD:pr6-screen-logic-dice-feedback
