@@ -51,30 +51,11 @@ jobs:
             "http://127.0.0.1:4173/?selftest=1" > /tmp/dom.html
           grep -q 'SELFTEST 47/47' /tmp/dom.html
 
-      - name: Update Pages checksum
-        shell: bash
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          import re
-
-          path = Path('.github/workflows/deploy-pages.yml')
-          text = path.read_text(encoding='utf-8')
-          text, count = re.subn(
-              r'(?<= = ")[0-9a-f]{64}(?=")',
-              '83f2be1537d1d3a4e3d2827e7b954adeb3239b34ed2c2483f749cd8f286a54f5',
-              text,
-              count=1,
-          )
-          assert count == 1
-          path.write_text(text, encoding='utf-8')
-          PY
-
       - name: Commit final compact layout
         shell: bash
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add index.html .github/workflows/deploy-pages.yml
+          git add index.html
           git commit -m "Compact mobile layout based on device review"
           git push origin HEAD:pr5-compact-mobile-density
