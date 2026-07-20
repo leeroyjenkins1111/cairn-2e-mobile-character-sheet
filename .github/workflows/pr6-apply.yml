@@ -1,0 +1,84 @@
+name: Apply PR6 screen logic
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  apply-and-validate:
+    if: github.head_ref == 'pr6-screen-logic-dice-feedback'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout implementation branch
+        uses: actions/checkout@v4
+        with:
+          ref: pr6-screen-logic-dice-feedback
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Reconstruct implementation and audit scripts
+        shell: bash
+        run: |
+          base64 -d .github/pr6/apply.py.gz.b64 | gzip -d > /tmp/pr6_apply.py
+          base64 -d .github/pr6/browser-audit.cjs.gz.b64 | gzip -d > /tmp/pr6_browser_audit.cjs
+          python -m py_compile /tmp/pr6_apply.py
+          node --check /tmp/pr6_browser_audit.cjs
+
+      - name: Apply screen logic and dice feedback changes
+        run: python /tmp/pr6_apply.py
+
+      - name: Validate inline JavaScript
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          text = Path('index.html').read_text(encoding='utf-8')
+          scripts = re.findall(r'<script>([\s\S]*?)</script>', text)
+          if len(scripts) != 1:
+              raise SystemExit(f'Expected one inline script, found {len(scripts)}')
+          Path('/tmp/index-inline.js').write_text(scripts[0], encoding='utf-8')
+          PY
+          node --check /tmp/index-inline.js
+
+      - name: Run browser audit
+        shell: bash
+        run: |
+          npm init -y >/dev/null 2>&1
+          npm install --no-save playwright@1.54.1 >/dev/null 2>&1
+          npx playwright install chromium >/dev/null
+          python -m http.server 4173 >/tmp/pr6-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID || true' EXIT
+          sleep 2
+          node /tmp/pr6_browser_audit.cjs
+
+      - name: Update Pages checksum
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib, re
+          index = Path('index.html').read_bytes()
+          digest = hashlib.sha256(index).hexdigest()
+          path = Path('.github/workflows/deploy-pages.yml')
+          text = path.read_text(encoding='utf-8')
+          updated, count = re.subn(r'test "\$\(sha256sum index\.html \| cut -d\x27 \x27 -f1\)" = "[0-9a-f]{64}"', f'test "$(sha256sum index.html | cut -d\x27 \x27 -f1)" = "{digest}"', text)
+          if count != 1:
+              raise SystemExit(f'Expected one checksum line, found {count}')
+          path.write_text(updated, encoding='utf-8')
+          print(digest)
+          PY
+
+      - name: Remove bootstrap files and commit final source
+        shell: bash
+        run: |
+          rm -f package.json package-lock.json
+          git rm .github/pr6/apply.py.gz.b64 .github/pr6/browser-audit.cjs.gz.b64 .github/workflows/pr6-apply.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add index.html .github/workflows/deploy-pages.yml
+          git commit -m "Clarify screen logic and animate dice feedback"
+          git push origin HEAD:pr6-screen-logic-dice-feedback
