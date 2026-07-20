@@ -192,7 +192,13 @@
       transition: transform 120ms ease, background 120ms ease, border-color 120ms ease;
       touch-action: manipulation;
     }
-    .btn:active { transform: scale(0.98); }
+    .btn:active, .nav-btn:active { transform: scale(0.96); filter: brightness(1.08); }
+    .tap-feedback { animation: tap-feedback 180ms ease-out; }
+    @keyframes tap-feedback {
+      0% { transform: scale(0.96); }
+      55% { transform: scale(1.015); }
+      100% { transform: scale(1); }
+    }
     .btn-primary {
       color: #22180c;
       background: linear-gradient(180deg, var(--amber-strong), var(--amber));
@@ -1026,6 +1032,99 @@
       .inventory-tool { font-size: 0.58rem; }
     }
 
+    .inventory-tools-focused { grid-template-columns: 1fr 1fr; }
+    .protection-tile .status-meta { color: var(--green-strong); }
+    .protection-explainer { display: grid; gap: 7px; }
+    .protection-explainer strong { font-family: var(--font-display); font-size: 1.02rem; }
+
+    .dice-grid.dice-icon-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+    .die-button {
+      min-width: 0;
+      min-height: 58px;
+      display: grid;
+      place-items: center;
+      gap: 2px;
+      padding: 5px;
+      background: color-mix(in srgb, var(--surface-soft) 88%, transparent);
+    }
+    .die-button span { font-size: 0.68rem; font-weight: 800; }
+    .die-icon { width: 27px; height: 27px; overflow: visible; }
+    .die-icon polygon, .die-icon rect, .die-icon circle, .die-icon path, .die-icon line {
+      fill: none;
+      stroke: currentColor;
+      stroke-width: 1.55;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+    .die-icon text { fill: currentColor; font: 800 7px/1 system-ui, sans-serif; text-anchor: middle; dominant-baseline: central; }
+
+    .scenario-intro { margin: -1px 0 8px; color: var(--muted); font-size: 0.72rem; line-height: 1.35; }
+    .scenario-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 7px; }
+    .scenario-button {
+      min-width: 0;
+      min-height: 72px;
+      display: grid;
+      grid-template-columns: 26px minmax(0, 1fr);
+      align-items: center;
+      gap: 8px;
+      padding: 8px;
+      text-align: left;
+      background: color-mix(in srgb, var(--surface-soft) 86%, transparent);
+    }
+    .scenario-button svg { width: 24px; height: 24px; }
+    .scenario-copy { min-width: 0; display: grid; gap: 2px; }
+    .scenario-copy strong { font-size: 0.78rem; line-height: 1.05; }
+    .scenario-copy small { color: var(--muted); font-size: 0.64rem; line-height: 1.25; font-weight: 620; }
+    .scenario-notation { color: var(--amber-strong); }
+
+    .fate-card { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; }
+    .fate-card p { margin-top: 3px; color: var(--muted); font-size: 0.7rem; line-height: 1.35; }
+    .fate-card .btn { min-width: 92px; }
+
+    .advanced-roll > summary {
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      font-family: var(--font-display);
+      font-weight: 800;
+      list-style: none;
+    }
+    .advanced-roll > summary::-webkit-details-marker { display: none; }
+    .advanced-roll > summary::after { content: '＋'; font-family: system-ui, sans-serif; color: var(--muted); }
+    .advanced-roll[open] > summary::after { content: '−'; }
+    .advanced-roll .form-grid { margin-top: 8px; }
+
+    .animated-dice-result { display: grid; place-items: center; gap: 6px; }
+    .animated-dice-result .die-icon { width: 42px; height: 42px; color: var(--amber-strong); }
+    .animated-dice-result.rolling .die-icon { animation: dice-tumble 420ms cubic-bezier(.2,.8,.2,1); }
+    .animated-dice-result.settled { animation: result-settle 220ms ease-out; }
+    .dice-result { animation: result-reveal 260ms ease-out; }
+    @keyframes dice-tumble {
+      0% { transform: rotate(-18deg) scale(.82); opacity: .62; }
+      45% { transform: rotate(22deg) scale(1.08); opacity: 1; }
+      75% { transform: rotate(-8deg) scale(.96); }
+      100% { transform: rotate(0) scale(1); }
+    }
+    @keyframes result-settle {
+      0% { transform: scale(.94); filter: brightness(1.18); }
+      100% { transform: scale(1); filter: brightness(1); }
+    }
+    @keyframes result-reveal {
+      from { opacity: .55; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 350px) {
+      .dice-grid.dice-icon-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px; }
+      .scenario-grid { gap: 5px; }
+      .scenario-button { grid-template-columns: 22px minmax(0, 1fr); gap: 5px; padding: 6px; }
+      .scenario-button svg { width: 21px; height: 21px; }
+      .scenario-copy strong { font-size: 0.71rem; }
+      .scenario-copy small { font-size: 0.59rem; }
+    }
+
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after {
         animation-duration: 0.001ms !important;
@@ -1045,7 +1144,6 @@
       </div>
       <div class="header-actions">
         <button class="btn btn-icon btn-ghost" id="quickUndoBtn" type="button" aria-label="Cofnij ostatnią zmianę" title="Cofnij"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 7H5v-4"></path><path d="M5.5 7.5a8 8 0 1 1-1.2 7.2"></path></svg></button>
-        <button class="btn btn-icon btn-ghost" id="quickDiceBtn" type="button" aria-label="Otwórz szybki rzut kością" title="Kości"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="4" y="4" width="16" height="16" rx="4"></rect><path d="M9 9h.01M15 15h.01M15 9h.01M9 15h.01"></path></svg></button>
       </div>
     </header>
 
@@ -1091,7 +1189,7 @@
   // 1. Constants
   // ============================================================
   const APP_ID = 'cairn-mobile-sheet';
-  const APP_VERSION = '0.5.0';
+  const APP_VERSION = '0.6.0';
   const SCHEMA_VERSION = 2;
   const STORAGE_KEY = `${APP_ID}:state`;
   const RECOVERY_KEY = `${APP_ID}:recovery`;
@@ -1121,18 +1219,18 @@
     ['delirious', 'Delirium']
   ];
   const SCAR_GUIDE = {
-    1: { title: 'Trwała blizna', summary: 'Rzuć k6, aby wskazać miejsce blizny. Kolejny k6 może podnieść maksymalne OCHR.', helper: 'scar-location' },
-    2: { title: 'Gruchoczący cios', summary: 'Postać jest zdezorientowana. Opisz, jak odzyskuje koncentrację; k6 może podnieść maksymalne OCHR.' },
-    3: { title: 'Powalony', summary: 'Postać odczuwa dyskomfort do kilku godzin odpoczynku, a następnie dodaje wynik k6 do maksymalnego OCHR.' },
-    4: { title: 'Złamana kość', summary: 'Rzuć k6, aby wskazać uraz. Po zrośnięciu 2k6 może podnieść maksymalne OCHR.', helper: 'broken-bone' },
-    5: { title: 'Choroba', summary: 'Po wyzdrowieniu 2k6 może podnieść maksymalne OCHR.' },
+    1: { title: 'Trwała blizna', summary: 'Rzuć k6, aby wskazać miejsce blizny. Kolejny k6 może podnieść maksymalną Ochronę.', helper: 'scar-location' },
+    2: { title: 'Gruchoczący cios', summary: 'Postać jest zdezorientowana. Opisz, jak odzyskuje koncentrację; k6 może podnieść maksymalną Ochronę.' },
+    3: { title: 'Powalony', summary: 'Postać odczuwa dyskomfort do kilku godzin odpoczynku, a następnie dodaje wynik k6 do maksymalnej Ochrony.' },
+    4: { title: 'Złamana kość', summary: 'Rzuć k6, aby wskazać uraz. Po zrośnięciu 2k6 może podnieść maksymalną Ochronę.', helper: 'broken-bone' },
+    5: { title: 'Choroba', summary: 'Po wyzdrowieniu 2k6 może podnieść maksymalną Ochronę.' },
     6: { title: 'Poważna rana głowy', summary: 'Rzuć k6, aby wskazać atrybut; następnie 3k6 może podnieść jego aktualną wartość.', helper: 'head-wound' },
     7: { title: 'Wstrząs', summary: 'Postać ledwo się porusza do czasu poważnej pomocy i odpoczynku. Po wyzdrowieniu 3k6 może podnieść maksymalne ZRE.' },
     8: { title: 'Ogłuszenie', summary: 'Postać nic nie słyszy do czasu wyjątkowej pomocy. Udany rzut WOL pozwala zwiększyć maksymalne WOL o k4.' },
     9: { title: 'Uraz psychiczny', summary: 'Rzut 3k6 może podnieść maksymalne WOL.' },
     10: { title: 'Utrata kończyny', summary: 'Warden wskazuje dotkniętą kończynę. Udany rzut WOL pozwala zwiększyć maksymalne WOL o k6.' },
-    11: { title: 'Śmiertelna rana', summary: 'Postać odczuwa dyskomfort, jest wyłączona z działania i umrze w godzinę bez leczenia. Po wyzdrowieniu 2k6 wyznacza nowe maksymalne OCHR.' },
-    12: { title: 'Skazany na zagładę', summary: 'Następna porażka rzutu przeciw obrażeniom krytycznym oznacza śmierć. Po sukcesie 3k6 może podnieść maksymalne OCHR.' }
+    11: { title: 'Śmiertelna rana', summary: 'Postać odczuwa dyskomfort, jest wyłączona z działania i umrze w godzinę bez leczenia. Po wyzdrowieniu 2k6 wyznacza nową maksymalną Ochronę.' },
+    12: { title: 'Skazany na zagładę', summary: 'Następna porażka rzutu przeciw obrażeniom krytycznym oznacza śmierć. Po sukcesie 3k6 może podnieść maksymalną Ochronę.' }
   };
 
   // ============================================================
@@ -1442,9 +1540,9 @@
     if (candidate?.inventory) {
       const usage = calculateInventoryUsage(candidate.inventory.items || [], candidate.inventory.fatigue || []);
       if (usage.total > 10) errors.push(`Ekwipunek zajmuje ${usage.total}/10 miejsc.`);
-      if (usage.total === 10 && toInt(candidate?.stats?.hp?.current, 0) > 0) warnings.push('Pełny ekwipunek przy OCHR powyżej 0 wymaga rozpatrzenia reguły 0 OCHR.');
+      if (usage.total === 10 && toInt(candidate?.stats?.hp?.current, 0) > 0) warnings.push('Pełny ekwipunek przy Ochronie powyżej 0 wymaga rozpatrzenia reguły 0 Ochrony.');
     }
-    if (candidate?.conditions?.panicked && toInt(candidate?.stats?.hp?.current, 0) > 0) warnings.push('Postać jest spanikowana, ale ma OCHR powyżej 0.');
+    if (candidate?.conditions?.panicked && toInt(candidate?.stats?.hp?.current, 0) > 0) warnings.push('Postać jest spanikowana, ale ma Ochronę powyżej 0.');
     return { valid: errors.length === 0, errors, warnings };
   }
 
@@ -1710,7 +1808,7 @@
       const details = `${result.rolls.join(', ')}${result.keepHighest ? ` → najwyższy ${result.base}` : ''}`;
       const summary = `${label || 'Rzut'}: ${result.total} (${notation})`;
       addDiceHistory({ type: 'dice', label: label || 'Rzut', summary, notation, result: result.total, details });
-      renderDiceResult(result.total, `${label || notation} · ${details}`);
+      renderDiceResult(result.total, `${label || notation} · ${details}`, { sides: result.sides });
       announce(`${summary}. Wyniki kości: ${result.rolls.join(', ')}.`);
       return result;
     } catch (error) {
@@ -1764,7 +1862,7 @@
     const details = [
       `Aktualna WOL: ${result.target}.`,
       result.naturalSuccess ? 'Naturalne 1 zawsze oznacza sukces.' : result.naturalFailure ? 'Naturalne 20 zawsze oznacza porażkę.' : `Wynik ${roll} jest ${result.success ? 'równy lub niższy' : 'wyższy'} od ${result.target}.`,
-      result.success ? `Panika została usunięta. OCHR pozostaje bez zmian (${result.hpAfter}).` : 'Panika pozostaje aktywna.'
+      result.success ? `Panika została usunięta. Ochrona pozostaje bez zmian (${result.hpAfter}).` : 'Panika pozostaje aktywna.'
     ];
     openResultSheet('Spróbuj opanować panikę', roll, result.success ? 'Sukces' : 'Porażka', details, result.success ? 'success' : 'danger');
     announce(summary);
@@ -1965,8 +2063,8 @@
     if (crossesFull && state.stats.hp.current > 0) {
       openConfirmSheet({
         title: 'Pełny ekwipunek',
-        message: 'Ta operacja zapełni wszystkie 10 miejsc. Zgodnie z zasadami postać zostaje sprowadzona do 0 OCHR.',
-        confirmLabel: 'Zatwierdź i ustaw 0 OCHR',
+        message: 'Ta operacja zapełni wszystkie 10 miejsc. Zgodnie z zasadami postać zostaje sprowadzona do 0 Ochrony.',
+        confirmLabel: 'Zatwierdź i ustaw 0 Ochrony',
         danger: true,
         onConfirm: () => apply(true)
       });
@@ -2046,7 +2144,7 @@
     result.scars = trimText(source.scars) ? [{ id: makeId(), text: trimText(source.scars), addedAt: nowIso() }] : [];
     result.notes = trimText(source.notes);
     report.imported.push('imię, tło, opis, cechy, więzi, omeny i notatki');
-    report.imported.push('aktualne i maksymalne OCHR, SIŁ, ZRE i WOL');
+    report.imported.push('aktualną i maksymalną Ochronę, SIŁ, ZRE i WOL');
     report.imported.push('pancerz, złoto oraz stany pozbawienia i paniki');
 
     for (const [key] of Object.entries(source)) {
@@ -2099,8 +2197,8 @@
     const usage = calculateInventoryUsage(result.inventory.items, result.inventory.fatigue);
     report.imported.push(`${result.inventory.items.length} przedmiotów i ${result.inventory.fatigue.length} zmęczenia (${usage.total}/10 miejsc)`);
     if (usage.total > 10) report.errors.push(`Importowany ekwipunek zajmuje ${usage.total}/10 miejsc.`);
-    if (usage.total === 10 && result.stats.hp.current > 0) report.warnings.push('Pełne 10 miejsc, ale OCHR jest wyższe od 0. Import zachowa wartość źródłową i pokaże akcję zastosowania reguły.');
-    if (result.conditions.panicked && result.stats.hp.current > 0) report.warnings.push('Postać jest spanikowana, ale ma OCHR wyższe od 0. Import zachowa wartość źródłową i pokaże ostrzeżenie.');
+    if (usage.total === 10 && result.stats.hp.current > 0) report.warnings.push('Pełne 10 miejsc, ale Ochrona jest wyższa od 0. Import zachowa wartość źródłową i pokaże akcję zastosowania reguły.');
+    if (result.conditions.panicked && result.stats.hp.current > 0) report.warnings.push('Postać jest spanikowana, ale ma Ochronę wyższą niż 0. Import zachowa wartość źródłową i pokaże ostrzeżenie.');
     if (trimText(source.image_url)) report.manual.push(`Portret „${source.image_url}” jest ścieżką Kettlewright i nie zostanie osadzony w pojedynczym pliku HTML.`);
     if (result.source.unmappedPaths.length) report.unrecognized.push(...result.source.unmappedPaths);
     report.manual.push('Stan noszenia/trzymania pozostałych przedmiotów wymaga ręcznego ustawienia.');
@@ -2332,7 +2430,14 @@
       roll: [['path', { d: 'M5 5l14 14M8 4h8l4 4v8l-4 4H8l-4-4V8z' }], ['path', { d: 'M9 9h.01M15 15h.01' }]],
       use: [['path', { d: 'M12 3v9' }], ['path', { d: 'M8 8l4 4 4-4' }], ['path', { d: 'M5 15v5h14v-5' }]],
       more: [['circle', { cx: '5', cy: '12', r: '1.25' }], ['circle', { cx: '12', cy: '12', r: '1.25' }], ['circle', { cx: '19', cy: '12', r: '1.25' }]],
-      arrow: [['path', { d: 'M5 12h14M14 7l5 5-5 5' }]]
+      arrow: [['path', { d: 'M5 12h14M14 7l5 5-5 5' }]],
+      unarmed: [['path', { d: 'M8 12V7a1.5 1.5 0 0 1 3 0v4-6a1.5 1.5 0 0 1 3 0v6-4a1.5 1.5 0 0 1 3 0v7c0 4-2.4 7-6.5 7H10c-2.5 0-4.4-1.4-5.5-3.5L3 14.5a1.6 1.6 0 0 1 2.8-1.6L8 16' }]],
+      impaired: [['path', { d: 'M5 5l14 14M7 17l10-10' }], ['circle', { cx: '12', cy: '12', r: '8' }]],
+      enhanced: [['path', { d: 'M12 3l2.2 5.1 5.5.5-4.2 3.7 1.3 5.4-4.8-2.8-4.8 2.8 1.3-5.4-4.2-3.7 5.5-.5z' }]],
+      blast: [['circle', { cx: '12', cy: '12', r: '3' }], ['path', { d: 'M12 2v4M12 18v4M2 12h4M18 12h4M5 5l3 3M16 16l3 3M19 5l-3 3M8 16l-3 3' }]],
+      dual: [['path', { d: 'M6 4l12 16M18 4L6 20' }], ['path', { d: 'M5 5l3-1-1 3M19 5l-3-1 1 3' }]],
+      group: [['circle', { cx: '8', cy: '9', r: '2.5' }], ['circle', { cx: '16', cy: '9', r: '2.5' }], ['path', { d: 'M3.5 19c.5-3.3 2-5 4.5-5s4 1.7 4.5 5M11.5 19c.5-3.3 2-5 4.5-5s4 1.7 4.5 5' }]],
+      fate: [['path', { d: 'M12 3l7 4v10l-7 4-7-4V7z' }], ['path', { d: 'M9 9h.01M15 15h.01M15 9h.01M9 15h.01' }]]
     };
     for (const [tag, attrs] of paths[name] || paths.more) {
       const node = document.createElementNS(ns, tag);
@@ -2359,6 +2464,130 @@
     }, [uiIcon(icon), createEl('span', { text: label })]);
   }
 
+  function dieIcon(sides) {
+    const ns = 'http://www.w3.org/2000/svg';
+    const value = Number(sides);
+    const svg = document.createElementNS(ns, 'svg');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('aria-hidden', 'true');
+    svg.setAttribute('focusable', 'false');
+    svg.setAttribute('data-die', String(value));
+    svg.classList.add('die-icon');
+    const add = (tag, attrs) => {
+      const node = document.createElementNS(ns, tag);
+      for (const [key, entry] of Object.entries(attrs)) node.setAttribute(key, entry);
+      svg.append(node);
+    };
+    if (value === 4) {
+      add('polygon', { points: '12,2.5 21,20.5 3,20.5' });
+      add('line', { x1: '12', y1: '2.5', x2: '12', y2: '20.5' });
+      add('line', { x1: '3', y1: '20.5', x2: '12', y2: '13' });
+      add('line', { x1: '21', y1: '20.5', x2: '12', y2: '13' });
+    } else if (value === 6) {
+      add('rect', { x: '3', y: '3', width: '18', height: '18', rx: '4' });
+      add('circle', { cx: '8', cy: '8', r: '1' });
+      add('circle', { cx: '16', cy: '16', r: '1' });
+      add('circle', { cx: '16', cy: '8', r: '1' });
+      add('circle', { cx: '8', cy: '16', r: '1' });
+    } else if (value === 8) {
+      add('polygon', { points: '12,2 21,12 12,22 3,12' });
+      add('line', { x1: '3', y1: '12', x2: '21', y2: '12' });
+      add('line', { x1: '12', y1: '2', x2: '8', y2: '12' });
+      add('line', { x1: '12', y1: '2', x2: '16', y2: '12' });
+      add('line', { x1: '12', y1: '22', x2: '8', y2: '12' });
+      add('line', { x1: '12', y1: '22', x2: '16', y2: '12' });
+    } else if (value === 10) {
+      add('polygon', { points: '12,2 20.5,8.5 17,21 7,21 3.5,8.5' });
+      add('line', { x1: '12', y1: '2', x2: '12', y2: '16' });
+      add('line', { x1: '3.5', y1: '8.5', x2: '12', y2: '16' });
+      add('line', { x1: '20.5', y1: '8.5', x2: '12', y2: '16' });
+      add('line', { x1: '7', y1: '21', x2: '12', y2: '16' });
+      add('line', { x1: '17', y1: '21', x2: '12', y2: '16' });
+    } else if (value === 12) {
+      add('polygon', { points: '12,2 18.5,5 22,11 20,18 14,22 7,20 2,15 3,8 7,3' });
+      add('polygon', { points: '12,6.5 17,9 16,15 10.5,18 6.5,13.5 8,8' });
+      add('line', { x1: '12', y1: '2', x2: '12', y2: '6.5' });
+      add('line', { x1: '22', y1: '11', x2: '17', y2: '9' });
+      add('line', { x1: '14', y1: '22', x2: '10.5', y2: '18' });
+      add('line', { x1: '2', y1: '15', x2: '6.5', y2: '13.5' });
+    } else if (value === 20) {
+      add('polygon', { points: '12,2 21,8 18,20 6,20 3,8' });
+      add('polygon', { points: '12,6 17.5,10 15.5,17 8.5,17 6.5,10' });
+      add('line', { x1: '12', y1: '2', x2: '12', y2: '6' });
+      add('line', { x1: '21', y1: '8', x2: '17.5', y2: '10' });
+      add('line', { x1: '18', y1: '20', x2: '15.5', y2: '17' });
+      add('line', { x1: '6', y1: '20', x2: '8.5', y2: '17' });
+      add('line', { x1: '3', y1: '8', x2: '6.5', y2: '10' });
+    } else {
+      add('circle', { cx: '9', cy: '12', r: '7' });
+      add('circle', { cx: '16', cy: '12', r: '7' });
+      add('text', { x: '12', y: '12', textContent: '00' });
+      svg.lastChild.textContent = '00';
+    }
+    return svg;
+  }
+
+  function combatScenarioDefinitions() {
+    return [
+      { id: 'unarmed', title: 'Bez broni', notation: 'k4', description: 'Gdy atakujesz bez broni.', icon: 'unarmed', run: () => performUnarmedAttack() },
+      { id: 'impaired', title: 'Osłabiony', notation: 'k4', description: 'Gdy walczysz z niekorzystnej pozycji.', icon: 'impaired', run: () => performRoll({ count: 1, sides: 4 }, 'Atak osłabiony') },
+      { id: 'enhanced', title: 'Wzmocniony', notation: 'k12', description: 'Gdy masz wyraźną przewagę.', icon: 'enhanced', run: () => performRoll({ count: 1, sides: 12 }, 'Atak wzmocniony') },
+      { id: 'blast', title: 'Podmuch', notation: 'wiele celów', description: 'Osobny rzut dla każdego celu w obszarze.', icon: 'blast', run: () => openBlastAttackSheet() },
+      { id: 'dual', title: 'Dwie bronie', notation: 'wyższa kość', description: 'Rzuć obiema i zachowaj wyższą.', icon: 'dual', run: openDualWeaponsSheet },
+      { id: 'multiple', title: 'Wielu atakujących', notation: 'najwyższa', description: 'Wszystkie kości przeciw jednemu celowi.', icon: 'group', run: openMultipleAttackersSheet }
+    ];
+  }
+
+  function scenarioButton(definition) {
+    return createEl('button', {
+      type: 'button',
+      className: 'btn scenario-button',
+      attrs: { 'aria-label': `${definition.title}. ${definition.description} ${definition.notation}.` },
+      onclick: definition.run
+    }, [
+      uiIcon(definition.icon),
+      createEl('span', { className: 'scenario-copy' }, [
+        createEl('strong', { text: definition.title }),
+        createEl('small', {}, [definition.description, ' ', createEl('span', { className: 'scenario-notation', text: definition.notation })])
+      ])
+    ]);
+  }
+
+  let diceAnimationToken = 0;
+
+  function shouldReduceMotion() {
+    if (state?.settings?.reducedMotionOverride === true) return true;
+    return Boolean(globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
+  }
+
+  function animateDiceResult(container, value, label, sides = 6) {
+    if (!container) return;
+    const token = ++diceAnimationToken;
+    const numericSides = DICE_SIDES.includes(Number(sides)) ? Number(sides) : 6;
+    const icon = dieIcon(numericSides);
+    const number = createEl('strong', { text: shouldReduceMotion() ? value : '—' });
+    const copy = createEl('span', { text: shouldReduceMotion() ? label : 'Kość w ruchu…' });
+    const shell = createEl('div', { className: `animated-dice-result${shouldReduceMotion() ? ' settled' : ' rolling'}` }, [icon, number, copy]);
+    container.replaceChildren(shell);
+    if (shouldReduceMotion()) return;
+    const started = performance.now();
+    const duration = 460;
+    const tick = now => {
+      if (token !== diceAnimationToken || !shell.isConnected) return;
+      const progress = Math.min(1, (now - started) / duration);
+      const frame = Math.floor(progress * 9);
+      number.textContent = progress < 1 ? String(((frame * 7 + numericSides) % numericSides) + 1) : String(value);
+      if (progress < 1) {
+        requestAnimationFrame(tick);
+        return;
+      }
+      copy.textContent = label;
+      shell.classList.remove('rolling');
+      shell.classList.add('settled');
+    };
+    requestAnimationFrame(tick);
+  }
+
   function renderConditionChips(compact = false) {
     const list = createEl('div', { className: 'condition-list' });
     const active = CONDITION_DEFS.filter(([key]) => state.conditions[key]);
@@ -2374,16 +2603,16 @@
     if (usage.total === 10 && state.stats.hp.current > 0) {
       const wrap = createEl('div', { className: 'alert' }, [
         createEl('strong', { text: 'Pełny ekwipunek' }),
-        createEl('p', { className: 'small', text: 'Postać zajmuje 10/10 miejsc, ale ma OCHR powyżej 0.' }),
-        button('Zastosuj regułę: 0 OCHR', () => openConfirmSheet({ title: 'Ustaw 0 OCHR', message: 'Pełne 10 miejsc sprowadza OCHR postaci do 0. Zmianę będzie można cofnąć.', confirmLabel: 'Ustaw 0 OCHR', danger: true, onConfirm: () => commitChange('Pełny ekwipunek: OCHR ustawiono na 0', next => { next.stats.hp.current = 0; }) }), 'btn btn-danger btn-block')
+        createEl('p', { className: 'small', text: 'Postać zajmuje 10/10 miejsc, ale ma Ochronę powyżej 0.' }),
+        button('Zastosuj regułę: 0 Ochrony', () => openConfirmSheet({ title: 'Ustaw 0 Ochrony', message: 'Pełne 10 miejsc sprowadza Ochronę postaci do 0. Zmianę będzie można cofnąć.', confirmLabel: 'Ustaw 0 Ochrony', danger: true, onConfirm: () => commitChange('Pełny ekwipunek: Ochronę ustawiono na 0', next => { next.stats.hp.current = 0; }) }), 'btn btn-danger btn-block')
       ]);
       alerts.push(wrap);
     }
     if (state.conditions.panicked && state.stats.hp.current > 0) {
       const wrap = createEl('div', { className: 'alert' }, [
-        createEl('strong', { text: 'Panika i OCHR' }),
-        createEl('p', { className: 'small', text: 'Spanikowana postać ma zgodnie z zasadami 0 OCHR.' }),
-        button('Ustaw 0 OCHR', () => openConfirmSheet({ title: 'Skutek paniki', message: 'Zastosować 0 OCHR dla spanikowanej postaci?', confirmLabel: 'Zastosuj', danger: true, onConfirm: () => commitChange('Panika: OCHR ustawiono na 0', next => { next.stats.hp.current = 0; }) }), 'btn btn-danger btn-block')
+        createEl('strong', { text: 'Panika a Ochrona' }),
+        createEl('p', { className: 'small', text: 'Spanikowana postać ma zgodnie z zasadami 0 Ochrony.' }),
+        button('Ustaw 0 Ochrony', () => openConfirmSheet({ title: 'Skutek paniki', message: 'Zastosować 0 Ochrony dla spanikowanej postaci?', confirmLabel: 'Zastosuj', danger: true, onConfirm: () => commitChange('Panika: Ochronę ustawiono na 0', next => { next.stats.hp.current = 0; }) }), 'btn btn-danger btn-block')
       ]);
       alerts.push(wrap);
     }
@@ -2444,13 +2673,13 @@
     const statusStrip = createEl('div', { className: 'status-strip' }, [
       createEl('button', {
         type: 'button',
-        className: 'status-tile status-tile-primary',
-        attrs: { 'aria-label': `OCHR ${state.stats.hp.current} z ${state.stats.hp.max}. Edytuj statystyki.` },
-        onclick: openEditStatsSheet
+        className: 'status-tile status-tile-primary protection-tile',
+        attrs: { 'aria-label': `Ochrona ${state.stats.hp.current} z ${state.stats.hp.max}. Ochrona przed trafieniem (OCHR) opisuje zdolność unikania obrażeń. Otwórz wyjaśnienie i edycję.` },
+        onclick: openProtectionSheet
       }, [
-        createEl('span', { className: 'status-label', text: 'OCHR' }),
+        createEl('span', { className: 'status-label', text: 'Ochrona' }),
         createEl('span', { className: 'status-value' }, [String(state.stats.hp.current), createEl('small', { text: ` / ${state.stats.hp.max}` })]),
-        createEl('span', { className: 'status-meta', text: 'Dotknij, aby edytować' })
+        createEl('span', { className: 'status-meta', text: 'unikanie obrażeń' })
       ]),
       createEl('div', { className: 'status-tile' }, [
         createEl('span', { className: 'status-label', text: 'Pancerz' }),
@@ -2472,7 +2701,7 @@
       compactActionButton('Obrażenia', 'damage', openDamageSheet, true),
       compactActionButton('1. runda', 'round', () => performFirstRoundDexSave()),
       compactActionButton('Odpoczynek', 'rest', openRestSheet),
-      compactActionButton('Kości', 'dice', () => setView('dice'))
+      compactActionButton('Zmęczenie', 'fatigue', openAddFatigueSheet)
     ]));
     root.append(actions);
 
@@ -2542,6 +2771,27 @@
   // ============================================================
   // 14. Damage, recovery and stat sheets
   // ============================================================
+  function openProtectionSheet() {
+    const current = numberInput(state.stats.hp.current, 0, 99);
+    const maximum = numberInput(state.stats.hp.max, 0, 99);
+    const explainer = createEl('div', { className: 'report-block protection-explainer' }, [
+      createEl('strong', { text: 'Ochrona przed trafieniem' }),
+      createEl('p', { text: 'Ochrona opisuje zdolność uniknięcia obrażeń dzięki refleksowi, wytrzymałości i szczęściu. Nie jest zdrowiem.' }),
+      createEl('p', { className: 'help', text: 'Pancerz najpierw zmniejsza obrażenia. Pozostała wartość obniża Ochronę, a nadmiar może przejść na SIŁ.' })
+    ]);
+    const body = createEl('div', { className: 'form-grid' }, [
+      explainer,
+      createEl('div', { className: 'form-grid two' }, [field('Aktualna Ochrona', current), field('Maksymalna Ochrona', maximum)])
+    ]);
+    const save = button('Zapisz Ochronę', () => {
+      const max = Math.max(0, toInt(maximum.value, 0));
+      const value = clamp(toInt(current.value, 0), 0, max);
+      closeSheet();
+      commitChange('Zmieniono Ochronę', next => { next.stats.hp = { current: value, max }; });
+    }, 'btn btn-primary btn-block');
+    openSheet({ title: 'Ochrona', body, footer: save });
+  }
+
   function openDamageSheet() {
     const body = createEl('form', { className: 'form-grid', id: 'damageForm' });
     const raw = numberInput(1, 0, 999);
@@ -2553,9 +2803,9 @@
       preview.replaceChildren(
         createEl('h3', { text: 'Podgląd' }),
         createEl('p', { text: `${result.rawDamage} obrażeń − ${result.armor} pancerza = ${result.damageAfterArmor}` }),
-        createEl('p', { text: `OCHR: ${result.hpBefore} → ${result.hpAfter}` }),
+        createEl('p', { text: `Ochrona: ${result.hpBefore} → ${result.hpAfter}` }),
         createEl('p', { text: `SIŁ: ${result.strBefore} → ${result.strAfter}` }),
-        createEl('p', { className: result.scarRequired || result.strengthSaveRequired || result.strengthZero ? 'test-fail' : 'muted', text: result.noEffect ? 'Pancerz zatrzymuje wszystkie obrażenia.' : result.scarRequired ? `Dokładnie 0 OCHR: rozpatrz Bliznę według ${result.hpLost} utraconych OCHR.` : result.strengthZero ? 'SIŁ spada do 0: postać umiera.' : result.strengthSaveRequired ? `Po zatwierdzeniu wykonaj rzut obronny SIŁ przeciw ${result.strengthSaveTarget}.` : 'Obrażenia nie przechodzą na SIŁ.' })
+        createEl('p', { className: result.scarRequired || result.strengthSaveRequired || result.strengthZero ? 'test-fail' : 'muted', text: result.noEffect ? 'Pancerz zatrzymuje wszystkie obrażenia.' : result.scarRequired ? `Dokładnie 0 Ochrony: rozpatrz Bliznę według ${result.hpLost} utraconej Ochrony.` : result.strengthZero ? 'SIŁ spada do 0: postać umiera.' : result.strengthSaveRequired ? `Po zatwierdzeniu wykonaj rzut obronny SIŁ przeciw ${result.strengthSaveTarget}.` : 'Obrażenia nie przechodzą na SIŁ.' })
       );
     };
     raw.addEventListener('input', update);
@@ -2628,7 +2878,7 @@
   function openScarPrompt(hpLost) {
     const guide = getScarGuide(hpLost);
     const body = createEl('div', { className: 'sheet-list' });
-    body.append(createEl('p', { text: `Atak sprowadził OCHR dokładnie do zera po utracie ${hpLost} OCHR.` }));
+    body.append(createEl('p', { text: `Atak sprowadził Ochronę dokładnie do zera po utracie ${hpLost} punktów Ochrony.` }));
     if (guide) {
       body.append(
         createEl('div', { className: 'report-block' }, [
@@ -2638,7 +2888,7 @@
         createEl('p', { className: 'help', text: 'Helper przypomina wpis tabeli, ale nie stosuje trwałych zmian bez decyzji gracza i Wardena.' })
       );
     } else {
-      body.append(createEl('div', { className: 'alert' }, [createEl('strong', { text: 'Brak pozycji w tabeli' }), createEl('p', { className: 'small', text: 'Oficjalna tabela Blizn obejmuje utratę od 1 do 12 OCHR. Warden musi rozstrzygnąć wynik.' })]));
+      body.append(createEl('div', { className: 'alert' }, [createEl('strong', { text: 'Brak pozycji w tabeli' }), createEl('p', { className: 'small', text: 'Oficjalna tabela Blizn obejmuje utratę od 1 do 12 punktów Ochrony. Warden musi rozstrzygnąć wynik.' })]));
     }
     const actions = [];
     actions.push(button('Rozpatrz później', closeSheet, 'btn btn-ghost'));
@@ -2662,7 +2912,7 @@
 
   function openAddScarSheet(hpLost = null, guide = null) {
     const input = textarea(guide ? `${guide.title}: ` : '', 1000);
-    const body = createEl('div', { className: 'form-grid' }, [field('Opis Blizny', input, hpLost ? `Wskazówka: pozycja ${hpLost} według liczby utraconych OCHR.` : '')]);
+    const body = createEl('div', { className: 'form-grid' }, [field('Opis Blizny', input, hpLost ? `Wskazówka: pozycja ${hpLost} według liczby utraconych punktów Ochrony.` : '')]);
     const save = button('Zapisz Bliznę', () => {
       const text = trimText(input.value);
       if (!text) { showToast('Wpisz opis Blizny.', 'error'); return; }
@@ -2699,17 +2949,17 @@
   function openRestSheet() {
     const usage = calculateInventoryUsage();
     const blockers = [];
-    if (state.conditions.deprived) blockers.push('Postać jest pozbawiona kluczowej potrzeby i nie może odzyskiwać OCHR.');
-    if (state.conditions.panicked) blockers.push('Spanikowana postać ma 0 OCHR; najpierw rozpatrz panikę.');
-    if (usage.total === 10) blockers.push('Pełny ekwipunek sprowadza OCHR do 0; najpierw zwolnij miejsce.');
+    if (state.conditions.deprived) blockers.push('Postać jest pozbawiona kluczowej potrzeby i nie może odzyskiwać Ochrony.');
+    if (state.conditions.panicked) blockers.push('Spanikowana postać ma 0 Ochrony; najpierw rozpatrz panikę.');
+    if (usage.total === 10) blockers.push('Pełny ekwipunek sprowadza Ochronę do 0; najpierw zwolnij miejsce.');
     const body = createEl('div', { className: 'sheet-list' }, [
-      createEl('p', { text: 'Krótki odpoczynek i woda mogą przywrócić OCHR, ale wymagają odpowiednich warunków w fikcji. Warden ocenia, czy miejsce i czas są bezpieczne.' }),
+      createEl('p', { text: 'Krótki odpoczynek i woda mogą przywrócić Ochronę, ale wymagają odpowiednich warunków w fikcji. Warden ocenia, czy miejsce i czas są bezpieczne.' }),
       createEl('p', { className: 'help', text: 'Ta akcja nie przywraca atrybutów, nie usuwa zmęczenia, stanów ani użyć przedmiotów.' })
     ]);
     for (const blocker of blockers) body.append(createEl('div', { className: 'alert' }, [createEl('strong', { text: 'Blokada' }), createEl('p', { className: 'small', text: blocker })]));
-    const apply = button(`Przywróć OCHR do ${state.stats.hp.max}`, () => {
+    const apply = button(`Przywróć Ochronę do ${state.stats.hp.max}`, () => {
       closeSheet();
-      commitChange('Krótki odpoczynek: przywrócono OCHR', next => { next.stats.hp.current = next.stats.hp.max; });
+      commitChange('Krótki odpoczynek: przywrócono Ochronę', next => { next.stats.hp.current = next.stats.hp.max; });
     }, 'btn btn-primary btn-block', { disabled: blockers.length > 0 || state.stats.hp.current === state.stats.hp.max });
     openSheet({ title: 'Krótki odpoczynek', body, footer: apply });
   }
@@ -2719,7 +2969,7 @@
     const body = createEl('form', { className: 'form-grid' });
     for (const key of ['hp','str','dex','wil']) {
       controls[key] = { current: numberInput(state.stats[key].current, 0, 99), max: numberInput(state.stats[key].max, 0, 99) };
-      body.append(createEl('div', { className: 'form-grid two' }, [field(`${key === 'hp' ? 'OCHR' : ATTRS[key].label} aktualne`, controls[key].current), field(`${key === 'hp' ? 'OCHR' : ATTRS[key].label} maksymalne`, controls[key].max)]));
+      body.append(createEl('div', { className: 'form-grid two' }, [field(key === 'hp' ? 'Ochrona aktualna' : `${ATTRS[key].label} aktualne`, controls[key].current), field(key === 'hp' ? 'Ochrona maksymalna' : `${ATTRS[key].label} maksymalne`, controls[key].max)]));
     }
     controls.gold = numberInput(state.stats.gold, 0, 999999);
     body.append(field('Złoto', controls.gold));
@@ -2745,7 +2995,7 @@
       const blastText = result.formula.blast ? ' · blast' : '';
       const summary = `${item.name}: ${result.total} (${result.notation}${blastText})`;
       addDiceHistory({ type: 'damage', label: item.name, summary, notation: result.notation, result: result.total, details: `${rollText}${keepText}${blastText}` });
-      renderDiceResult(result.total, `${item.name} · ${rollText}${keepText}${blastText}`);
+      renderDiceResult(result.total, `${item.name} · ${rollText}${keepText}${blastText}`, { sides: result.rolls[0]?.sides || 6 });
       announce(`${summary}. ${rollText}${keepText}.`);
       return result;
     } catch (error) {
@@ -2825,11 +3075,9 @@
     ]));
     overview.append(renderSlotMeter(usage));
     overview.append(createEl('p', { className: 'inventory-legend', text: 'Drobiazg 0 · zwykły 1 · nieporęczny 2 · zmęczenie 1' }));
-    overview.append(createEl('div', { className: 'inventory-tools' }, [
-      createEl('button', { type: 'button', className: 'btn inventory-tool', onclick: () => openItemSheet() }, [uiIcon('plus'), createEl('span', { text: 'Przedmiot' })]),
-      createEl('button', { type: 'button', className: 'btn inventory-tool', onclick: openAddFatigueSheet }, [uiIcon('fatigue'), createEl('span', { text: 'Zmęczenie' })]),
-      createEl('button', { type: 'button', className: 'btn inventory-tool', onclick: openDirectDamageSheet }, [uiIcon('attribute'), createEl('span', { text: 'Atrybut' })]),
-      createEl('button', { type: 'button', className: 'btn inventory-tool', onclick: openArmorSheet }, [uiIcon('armor'), createEl('span', { text: 'Pancerz' })])
+    overview.append(createEl('div', { className: 'inventory-tools inventory-tools-focused' }, [
+      createEl('button', { type: 'button', className: 'btn inventory-tool', onclick: openAddFatigueSheet }, [uiIcon('fatigue'), createEl('span', { text: 'Dodaj zmęczenie' })]),
+      createEl('button', { type: 'button', className: 'btn inventory-tool', onclick: openArmorSheet }, [uiIcon('armor'), createEl('span', { text: 'Ustaw pancerz' })])
     ]));
     root.append(overview);
 
@@ -3087,7 +3335,7 @@
           createEl('p', { text: `Upuszczany przedmiot: ${plan.droppedItem.name} (${plan.droppedItem.slots} ${plan.droppedItem.slots === 1 ? 'miejsce' : 'miejsca'}).` }),
           createEl('p', { text: 'Dodawane: 1 zmęczenie (1 miejsce).' }),
           createEl('p', { text: `Miejsca: ${plan.beforeUsage.total}/10 → ${plan.afterUsage.total}/10.` }),
-          createEl('p', { text: `OCHR: ${plan.hpBefore} → ${plan.hpAfter}.` })
+          createEl('p', { text: `Ochrona: ${plan.hpBefore} → ${plan.hpAfter}.` })
         );
       };
       select.addEventListener('change', updatePreview);
@@ -3153,29 +3401,38 @@
     const root = $('#view-dice');
     if (!root) return;
     root.replaceChildren();
+
     const quick = card([], 'card-pad compact-dice-card');
-    quick.append(sectionHead('Szybki rzut'));
-    const grid = createEl('div', { className: 'dice-grid' });
-    for (const sides of DICE_SIDES) grid.append(button(`k${sides}`, () => performRoll({ count: 1, sides }, `k${sides}`), 'btn die-btn'));
+    quick.append(sectionHead('Jedna kość', createEl('span', { className: 'muted micro', text: 'dotknij, aby rzucić' })));
+    const grid = createEl('div', { className: 'dice-grid dice-icon-grid' });
+    for (const sides of DICE_SIDES) {
+      grid.append(createEl('button', {
+        type: 'button',
+        className: 'btn die-button',
+        attrs: { 'aria-label': `Rzuć kością k${sides}` },
+        onclick: () => performRoll({ count: 1, sides }, `k${sides}`)
+      }, [dieIcon(sides), createEl('span', { text: `k${sides}` })]));
+    }
     quick.append(grid);
     root.append(quick);
 
-    const presets = card([], 'card-pad compact-dice-card dice-presets');
-    presets.append(sectionHead('Cairn — szybkie przypadki'));
-    presets.append(createEl('div', { className: 'button-row' }, [
-      button('Pierwsza runda', () => performFirstRoundDexSave(), 'btn btn-primary'),
-      button('Bez broni · k4', () => performUnarmedAttack(), 'btn'),
-      button('Osłabiony · k4', () => performRoll({ count: 1, sides: 4 }, 'Atak osłabiony'), 'btn'),
-      button('Wzmocniony · k12', () => performRoll({ count: 1, sides: 12 }, 'Atak wzmocniony'), 'btn'),
-      button('Podmuch', () => openBlastAttackSheet(), 'btn'),
-      button('Kość Losu · k6', () => performFateRoll(), 'btn btn-primary'),
-      button('Dwie bronie', openDualWeaponsSheet, 'btn'),
-      button('Wielu atakujących', openMultipleAttackersSheet, 'btn')
+    const scenarios = card([], 'card-pad compact-dice-card combat-scenarios');
+    scenarios.append(sectionHead('Sytuacje w walce'));
+    scenarios.append(createEl('p', { className: 'scenario-intro', text: 'Wybierz helper dopiero wtedy, gdy dana sytuacja wynika z fikcji lub decyzji Wardena.' }));
+    scenarios.append(createEl('div', { className: 'scenario-grid' }, combatScenarioDefinitions().map(scenarioButton)));
+    root.append(scenarios);
+
+    const fate = card([], 'card-pad compact-dice-card fate-card');
+    fate.append(createEl('div', {}, [
+      createEl('h2', { text: 'Kość Losu' }),
+      createEl('p', { text: 'Gdy wynik zdarzenia jest naprawdę niepewny: 4–6 zwykle sprzyja postaciom, 1–3 oznacza pecha.' })
     ]));
-    root.append(presets);
+    fate.append(createEl('button', { type: 'button', className: 'btn btn-primary', onclick: performFateRoll }, [uiIcon('fate'), createEl('span', { text: 'Rzuć k6' })]));
+    root.append(fate);
 
     const custom = card([], 'card-pad compact-form-card');
-    custom.append(sectionHead('Rzut własny'));
+    const disclosure = createEl('details', { className: 'advanced-roll' });
+    disclosure.append(createEl('summary', { text: 'Rzut własny' }));
     const count = numberInput(1, 1, 100);
     const sides = selectInput(DICE_SIDES.map(side => [String(side), `k${side}`]), '6');
     const modifier = numberInput(0, -999, 999);
@@ -3186,27 +3443,25 @@
       createEl('label', { className: 'check-row' }, [keep, createEl('span', { text: 'Zachowaj tylko najwyższy wynik' })]),
       button('Rzuć', () => performRoll({ count: count.value, sides: sides.value, modifier: modifier.value, keepHighest: keep.checked }, 'Rzut własny'), 'btn btn-primary btn-block')
     ]);
-    custom.append(form);
+    disclosure.append(form);
+    custom.append(disclosure);
     root.append(custom);
 
     const result = card([], 'card-pad compact-result-card');
     result.append(sectionHead('Ostatni wynik'));
-    result.append(createEl('div', { className: 'dice-result', id: 'diceResult' }, [createEl('div', {}, [createEl('strong', { text: '—' }), createEl('span', { text: 'Wynik pojawi się tutaj.' })])]))
+    result.append(createEl('div', { className: 'dice-result', id: 'diceResult', attrs: { 'aria-live': 'polite', 'aria-atomic': 'true' } }, [createEl('div', {}, [createEl('strong', { text: '—' }), createEl('span', { text: 'Wynik pojawi się tutaj.' })])]))
     root.append(result);
-
   }
 
-  function renderDiceResult(value, label) {
-    const result = $('#diceResult');
-    if (!result) return;
-    result.replaceChildren(createEl('div', {}, [createEl('strong', { text: value }), createEl('span', { text: label })]));
+  function renderDiceResult(value, label, options = {}) {
+    animateDiceResult($('#diceResult'), value, label, options.sides || 6);
   }
 
   function performFateRoll() {
     const result = performRoll({ count: 1, sides: 6 }, 'Kość Losu');
     if (!result) return;
     const verdict = result.total >= 4 ? 'Wynik zwykle sprzyja postaciom.' : 'Wynik zwykle oznacza niepomyślny obrót.';
-    renderDiceResult(result.total, `Kość Losu · ${verdict}`);
+    renderDiceResult(result.total, `Kość Losu · ${verdict}`, { sides: 6 });
     announce(`Kość Losu: ${result.total}. ${verdict}`);
   }
 
@@ -3281,10 +3536,9 @@
     root.append(conditions);
 
     const recovery = card([], 'card-pad');
-    recovery.append(sectionHead('Regeneracja i korekty'));
+    recovery.append(sectionHead('Korekty i skutki'));
     recovery.append(createEl('div', { className: 'button-row' }, [
-      button('Przywróć OCHR', openRestSheet, 'btn'),
-      button('Zmień statystyki', openEditStatsSheet, 'btn'),
+      button('Edytuj wszystkie statystyki', openEditStatsSheet, 'btn'),
       button('Obrażenia atrybutu', openDirectDamageSheet, 'btn'),
       button('Dodaj Bliznę', () => openAddScarSheet(), 'btn'),
       button('Stabilizuj', () => handleStabilize(), 'btn', { disabled: !state.conditions.criticalDamage || state.conditions.stabilized })
@@ -3380,8 +3634,8 @@
 
   function conditionHelp(key) {
     return {
-      deprived: 'Blokuje odzyskiwanie OCHR, atrybutów i zmęczenia.',
-      panicked: '0 OCHR; brak działania w 1. rundzie; ataki osłabione.',
+      deprived: 'Blokuje odzyskiwanie Ochrony, atrybutów i zmęczenia.',
+      panicked: '0 Ochrony; brak działania w 1. rundzie; ataki osłabione.',
       criticalDamage: 'Tylko pełzanie; bez pomocy śmierć w ciągu godziny.',
       stabilized: 'Zatrzymuje śmierć, nie usuwa obrażeń krytycznych.',
       paralyzed: 'Skutek ZRE sprowadzonej do 0.',
@@ -3398,8 +3652,8 @@
     if (key === 'panicked' && enabled) {
       openConfirmSheet({
         title: 'Oznacz panikę',
-        message: 'Spanikowana postać ma 0 OCHR, nie działa w pierwszej rundzie walki, a jej ataki są osłabione. Zastosować stan i ustawić 0 OCHR?',
-        confirmLabel: 'Oznacz panikę i 0 OCHR',
+        message: 'Spanikowana postać ma 0 Ochrony, nie działa w pierwszej rundzie walki, a jej ataki są osłabione. Zastosować stan i ustawić 0 Ochrony?',
+        confirmLabel: 'Oznacz panikę i 0 Ochrony',
         danger: true,
         onConfirm: () => commitChange('Oznaczono panikę', next => { next.conditions.panicked = true; next.stats.hp.current = 0; })
       });
@@ -3408,7 +3662,7 @@
     if (key === 'panicked' && !enabled) {
       openConfirmSheet({
         title: 'Usuń panikę ręcznie',
-        message: 'Zwykle panikę usuwa udany rzut obronny WOL jako akcja. Potwierdź ręczne usunięcie tylko wtedy, gdy Warden rozstrzygnął sytuację inaczej. OCHR nie zostanie przywrócone.',
+        message: 'Zwykle panikę usuwa udany rzut obronny WOL jako akcja. Potwierdź ręczne usunięcie tylko wtedy, gdy Warden rozstrzygnął sytuację inaczej. Ochrona nie zostanie przywrócona.',
         confirmLabel: 'Warden rozstrzygnął — usuń panikę',
         onConfirm: () => commitChange('Ręcznie usunięto panikę decyzją Wardena', next => { next.conditions.panicked = false; })
       });
@@ -3471,7 +3725,7 @@
     const str = numberInput(10, 0, 99);
     const dex = numberInput(10, 0, 99);
     const wil = numberInput(10, 0, 99);
-    const body = createEl('div', { className: 'form-grid' }, [field('Imię', name), field('Tło / profesja', background), createEl('div', { className: 'form-grid two' }, [field('OCHR', hp), field('SIŁ', str)]), createEl('div', { className: 'form-grid two' }, [field('ZRE', dex), field('WOL', wil)])]);
+    const body = createEl('div', { className: 'form-grid' }, [field('Imię', name), field('Tło / profesja', background), createEl('div', { className: 'form-grid two' }, [field('Ochrona', hp), field('SIŁ', str)]), createEl('div', { className: 'form-grid two' }, [field('ZRE', dex), field('WOL', wil)])]);
     const create = button('Utwórz postać', () => {
       const value = trimText(name.value);
       if (!value) { showToast('Imię jest wymagane.', 'error'); name.focus(); return; }
@@ -3573,10 +3827,10 @@
     };
 
     test('1. Pancerz zatrzymuje wszystkie obrażenia', () => { const r = calculateDamage(base, 2, 3); assert(r.damageAfterArmor === 0 && r.hpAfter === 5 && r.strAfter === 10); });
-    test('2. Obrażenia mniejsze od OCHR', () => { const r = calculateDamage(base, 3, 0); assert(r.hpAfter === 2 && r.strAfter === 10); });
-    test('3. Obrażenia sprowadzają OCHR dokładnie do zera', () => { const r = calculateDamage(base, 5, 0); assert(r.hpAfter === 0 && r.scarRequired && !r.strengthSaveRequired); });
+    test('2. Obrażenia mniejsze od Ochrony', () => { const r = calculateDamage(base, 3, 0); assert(r.hpAfter === 2 && r.strAfter === 10); });
+    test('3. Obrażenia sprowadzają Ochronę dokładnie do zera', () => { const r = calculateDamage(base, 5, 0); assert(r.hpAfter === 0 && r.scarRequired && !r.strengthSaveRequired); });
     test('4. Obrażenia przechodzą na SIŁ', () => { const r = calculateDamage(base, 8, 0); assert(r.hpAfter === 0 && r.strAfter === 7 && r.strengthSaveRequired); });
-    test('5. Kolejne obrażenia przy zerowym OCHR', () => { const fixture = deepClone(base); fixture.stats.hp.current = 0; const r = calculateDamage(fixture, 3, 0); assert(r.strAfter === 7 && r.strengthSaveRequired); });
+    test('5. Kolejne obrażenia przy zerowej Ochronie', () => { const fixture = deepClone(base); fixture.stats.hp.current = 0; const r = calculateDamage(fixture, 3, 0); assert(r.strAfter === 7 && r.strengthSaveRequired); });
     test('6. SIŁ sprowadzona do zera', () => { const r = calculateDamage(base, 15, 0); assert(r.strAfter === 0 && r.strengthZero); });
     test('7. Naturalne 1 w rzucie obronnym', () => { assert(resolveSave(0, 1).success); });
     test('8. Naturalne 20 w rzucie obronnym', () => { assert(!resolveSave(20, 20).success); });
@@ -3584,7 +3838,7 @@
     test('9. Sukces wychodzenia z paniki', () => { const fixture = createDefaultState(); fixture.conditions.panicked = true; fixture.stats.wil.current = 12; const r = resolvePanicRecovery(fixture, 8); assert(r.success && !r.panickedAfter); });
     test('10. Porażka wychodzenia z paniki', () => { const fixture = createDefaultState(); fixture.conditions.panicked = true; fixture.stats.wil.current = 8; const r = resolvePanicRecovery(fixture, 15); assert(!r.success && r.panickedAfter); });
     test('11. Naturalne 1 i 20 przy panice', () => { const fixture = createDefaultState(); fixture.conditions.panicked = true; fixture.stats.wil.current = 10; assert(resolvePanicRecovery(fixture, 1).success); assert(!resolvePanicRecovery(fixture, 20).success); });
-    test('12. Opanowanie paniki nie przywraca OCHR', () => { const fixture = createDefaultState(); fixture.conditions.panicked = true; fixture.stats.hp.current = 0; fixture.stats.wil.current = 12; const r = resolvePanicRecovery(fixture, 5); applyPanicRecoveryMutation(fixture, r); assert(!fixture.conditions.panicked && fixture.stats.hp.current === 0); });
+    test('12. Opanowanie paniki nie przywraca Ochrony', () => { const fixture = createDefaultState(); fixture.conditions.panicked = true; fixture.stats.hp.current = 0; fixture.stats.wil.current = 12; const r = resolvePanicRecovery(fixture, 5); applyPanicRecoveryMutation(fixture, r); assert(!fixture.conditions.panicked && fixture.stats.hp.current === 0); });
 
     test('13. Pełne 10 miejsc', () => { const usage = calculateInventoryUsage(Array.from({ length: 10 }, (_, index) => makeItem({ id:`i${index}`, slots:1 })), []); assert(usage.total === 10); });
     test('14. Przedmiot nieporęczny zajmuje dwa miejsca', () => { assert(calculateInventoryUsage([makeItem({ slots:2 })], []).total === 2); });
@@ -3621,8 +3875,13 @@
     test('43. Aktywny ekwipunek obejmuje tylko noszone i trzymane przedmioty', () => { const fixture = createDefaultState(); fixture.inventory.items = [makeItem({ id:'held', carryState:'held' }), makeItem({ id:'worn', carryState:'worn' }), makeItem({ id:'stored', carryState:'stored' }), makeItem({ id:'spent', carryState:'spent' })]; assert(activeEquipmentItems(fixture).map(item => item.id).join(',') === 'held,worn'); });
     test('44. Helper Blizn wskazuje właściwy wpis i bezpiecznie odrzuca brak wpisu', () => { assert(getScarGuide(3).title === 'Powalony'); assert(getScarGuide(13) === null); assert(resolveScarHelperRoll('broken-bone', 6) === 'Czaszka'); });
     test('45. Karta przedmiotu nie duplikuje akcji użycia', () => { const item = makeItem({ damageFormula:parseDamageFormulaNotation('d6'), uses:{current:2,max:3} }); assert(getItemPrimaryActionKinds(item).join(',') === 'roll,use,more'); assert(getItemPrimaryActionKinds(makeItem()).join(',') === 'more'); });
-    test('46. Kompaktowy pulpit zachowuje cztery podstawowe akcje', () => { const labels = ['Obrażenia','Pierwsza runda','Odpoczynek','Kości']; assert(labels.length === 4 && new Set(labels).size === 4); });
+    test('46. Pulpit nie duplikuje nawigacji do Kości', () => { const labels = ['Obrażenia','Pierwsza runda','Odpoczynek','Zmęczenie']; assert(labels.length === 4 && !labels.includes('Kości') && !document.querySelector('#quickDiceBtn')); });
     test('47. Dynamiczne ikony używają przestrzeni nazw SVG', () => { assert(uiIcon('plus').namespaceURI === 'http://www.w3.org/2000/svg'); });
+    test('48. Każdy typ kości ma własną ikonę', () => { const signatures = DICE_SIDES.map(side => dieIcon(side).innerHTML); assert(new Set(signatures).size === DICE_SIDES.length); });
+    test('49. Sytuacje w walce mają opis użycia', () => { const definitions = combatScenarioDefinitions(); assert(definitions.length === 6 && definitions.every(entry => entry.description && entry.notation)); });
+    test('50. Sytuacje w walce nie są oznaczone jako główne akcje', () => { renderDiceView(); assert(!$('#view-dice .combat-scenarios .btn-primary')); });
+    test('51. Ochrona ma osobny, wyjaśniający workflow', () => { assert(typeof openProtectionSheet === 'function' && combatScenarioDefinitions().every(entry => entry.title !== 'Pierwsza runda')); });
+    test('52. Wspólny animator kości respektuje reduced motion', () => { assert(typeof animateDiceResult === 'function' && typeof shouldReduceMotion === 'function'); });
     return results;
   }
 
@@ -3652,8 +3911,15 @@
   // ============================================================
   function bindEvents() {
     for (const nav of $$('[data-nav]')) nav.addEventListener('click', () => setView(nav.dataset.nav));
+    document.addEventListener('click', event => {
+      const target = event.target.closest('button');
+      if (!target || target.disabled || shouldReduceMotion()) return;
+      target.classList.remove('tap-feedback');
+      void target.offsetWidth;
+      target.classList.add('tap-feedback');
+      setTimeout(() => target.classList.remove('tap-feedback'), 190);
+    });
     $('#quickUndoBtn').addEventListener('click', undoLastChange);
-    $('#quickDiceBtn').addEventListener('click', () => { setView('dice'); performRoll({ count: 1, sides: 20 }, 'Szybki k20'); });
     $('#sheetCloseBtn').addEventListener('click', closeSheet);
     $('#sheetBackdrop').addEventListener('click', event => { if (event.target === $('#sheetBackdrop')) closeSheet(); });
     $('#sheet').addEventListener('keydown', trapSheetFocus);
