@@ -75,6 +75,16 @@ jobs:
           node --check /tmp/app.js
           node /tmp/app-tests.js
 
+      - name: Commit final source changes
+        if: steps.apply.outputs.changed == 'true'
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add index.html .github/workflows/deploy-pages.yml
+          git commit -m "Polish mobile UI and accessibility"
+          git push origin HEAD:pr4-mobile-ui-polish
+
       - name: Run mobile browser audit
         shell: bash
         run: |
@@ -90,13 +100,3 @@ jobs:
             sleep 1
           done
           NODE_PATH=/tmp/ui-audit/node_modules node /tmp/mobile-ui-audit.cjs
-
-      - name: Commit final source changes
-        if: steps.apply.outputs.changed == 'true'
-        shell: bash
-        run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add index.html .github/workflows/deploy-pages.yml
-          git commit -m "Polish mobile UI and accessibility"
-          git push origin HEAD:pr4-mobile-ui-polish
