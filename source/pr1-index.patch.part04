@@ -1,0 +1,77 @@
+==================================================
+@@ -1880,7 +2059,8 @@
+     head.append(createEl('span', { className: 'tag', text: `${item.slots} ${item.slots === 1 ? 'miejsce' : 'miejsca'}` }));
+     wrap.append(head);
+     const meta = createEl('div', { className: 'item-meta' });
+-    if (item.damageDie) meta.append(createEl('span', { className: 'tag', text: `obrażenia ${item.damageDie}` }));
++    if (item.damageFormula) meta.append(createEl('span', { className: 'tag', text: `obrażenia ${formatDamageFormula(item.damageFormula)}` }));
++    if (item.damageFormula?.blast) meta.append(createEl('span', { className: 'tag', text: 'blast' }));
+     if (item.armorValue) meta.append(createEl('span', { className: 'tag', text: `pancerz +${item.armorValue}` }));
+     meta.append(createEl('span', { className: 'tag', text: CARRY_STATES[item.carryState] || item.carryState }));
+     for (const trait of item.traits) meta.append(createEl('span', { className: 'tag', text: trait }));
+@@ -1888,13 +2068,13 @@
+     if (item.uses.current !== null || item.uses.max !== null) {
+       const uses = createEl('div', { className: 'uses-control', attrs: { 'aria-label': `Użycia przedmiotu ${item.name}` } }, [
+         button('−', () => adjustItemUses(item.id, -1), 'btn btn-ghost', { 'aria-label': `Zmniejsz użycia ${item.name}` }),
+-        createEl('span', { className: 'uses-value', text: `${item.uses.current ?? 0}/${item.uses.max ?? '?'}` }),
++        createEl('span', { className: 'uses-value', text: formatUses(item.uses) }),
+         button('+', () => adjustItemUses(item.id, 1), 'btn btn-ghost', { 'aria-label': `Zwiększ użycia ${item.name}` })
+       ]);
+       wrap.append(uses);
+     }
+     const actions = createEl('div', { className: 'item-actions' });
+-    if (item.damageDie) actions.append(button(`Rzuć ${item.damageDie}`, () => performRoll({ count: 1, sides: toInt(item.damageDie.slice(1), 6) }, item.name), 'btn btn-quiet'));
++    if (item.damageFormula) actions.append(button(`Rzuć ${formatDamageFormula(item.damageFormula)}`, () => performDamageFormulaRoll(item), 'btn btn-quiet'));
+     actions.append(
+       button(item.carryState === 'spent' ? 'Przywróć' : 'Oznacz zużyty', () => toggleItemSpent(item.id), 'btn btn-quiet btn-ghost'),
+       button('Edytuj', () => openItemSheet(item.id), 'btn btn-quiet'),
+@@ -1924,11 +2104,12 @@
+     const description = textarea(item.description, 2000);
+     const slots = selectInput([['0','0 — drobiazg'],['1','1 — zwykły'],['2','2 — nieporęczny']], String(item.slots));
+     const category = textInput(item.category, 80);
+-    const damage = selectInput([['','Brak'],['d4','k4'],['d6','k6'],['d8','k8'],['d10','k10'],['d12','k12']], item.damageDie || '');
++    const damage = textInput(formatDamageFormula(item.damageFormula), 40);
++    const blast = createEl('input', { type: 'checkbox', checked: Boolean(item.damageFormula?.blast) });
+     const armor = selectInput([['0','0'],['1','1'],['2','2'],['3','3']], String(item.armorValue));
+     const carry = selectInput(Object.entries(CARRY_STATES), item.carryState);
+     const usesCurrent = numberInput(item.uses.current ?? 0, 0, 999);
+-    const usesMax = numberInput(item.uses.max ?? 0, 0, 999);
++    const usesMax = numberInput(item.uses.max ?? '', 0, 999);
+     const hasUses = createEl('input', { type: 'checkbox', checked: item.uses.current !== null || item.uses.max !== null });
+     const traits = textInput(item.traits.join(', '), 300);
+     const notes = textarea(item.notes, 1000);
+@@ -1936,7 +2117,8 @@
+       field('Nazwa', name),
+       field('Opis', description),
+       createEl('div', { className: 'form-grid two' }, [field('Zajmowane miejsca', slots), field('Kategoria', category)]),
+-      createEl('div', { className: 'form-grid two' }, [field('Kość obrażeń', damage), field('Wartość pancerza', armor)]),
++      createEl('div', { className: 'form-grid two' }, [field('Formuła obrażeń', damage, 'Do 4 kości: d4, d6, d8, d10 lub d12, np. d6+d6. Przy wielu kościach zachowywany jest najwyższy wynik.'), field('Wartość pancerza', armor)]),
++      createEl('label', { className: 'check-row' }, [blast, createEl('span', { text: 'Atak ma cechę blast' })]),
+       field('Stan', carry),
+       createEl('label', { className: 'check-row' }, [hasUses, createEl('span', { text: 'Przedmiot ma liczbę użyć' })]),
+       createEl('div', { className: 'form-grid two' }, [field('Aktualne użycia', usesCurrent), field('Maksymalne użycia', usesMax)]),
+@@ -1946,17 +2128,21 @@
+     const save = button(existing ? 'Zapisz przedmiot' : 'Dodaj przedmiot', () => {
+       const itemName = trimText(name.value);
+       if (!itemName) { showToast('Nazwa przedmiotu jest wymagana.', 'error'); name.focus(); return; }
++      const damageNotation = trimText(damage.value);
++      const damageFormula = damageNotation ? parseDamageFormulaNotation(damageNotation, blast.checked) : null;
++      if (damageNotation && !damageFormula) { showToast('Nieprawidłowa formuła. Użyj np. d6 albo d6+d6.', 'error'); damage.focus(); return; }
++      const enteredTraits = traits.value.split(',').map(value => value.trim()).filter(Boolean).filter(value => value.toLowerCase() !== 'blast');
+       const nextItem = makeItem({
+         ...item,
+         name: itemName,
+         description: description.value,
+         slots: toInt(slots.value, 1),
+         category: trimText(category.value, 'inne'),
+-        damageDie: damage.value || null,
++        damageFormula,
+         armorValue: toInt(armor.value, 0),
+         carryState: carry.value,
+-        uses: hasUses.checked ? { current: toInt(usesCurrent.value, 0), max: toInt(usesMax.value, 0) } : { current: null, max: null },
+-        traits: traits.value.split(',').map(value => value.trim()).filter(Boolean),
++        uses: hasUses.checked ? { current: toInt(usesCurrent.value, 0), max: trimText(usesMax.value) === '' ? null : toInt(usesMax.value, 0) } : { current: null, max: null },
++        traits: enteredTraits,
+         notes: notes.value
+       });
+       c
