@@ -1,32 +1,53 @@
-name: Debug PR7 final audit
+name: Apply PR7 compact dice dashboard
 
 on:
   pull_request:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  debug:
+  apply-and-validate:
     if: github.head_ref == 'pr7-compact-dice-screen' && github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
-    env:
-      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - name: Print compact audit metrics
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: pr7-compact-dice-screen
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Apply compact dice dashboard
+        run: python .github/pr7-compact/apply.py
+
+      - name: Validate inline JavaScript
         shell: bash
         run: |
-          git clone --quiet --depth 1 --branch pr7-compact-dice-screen "https://x-access-token:${GH_TOKEN}@github.com/leeroyjenkins1111/cairn-2e-mobile-character-sheet.git" repo
-          cd repo
-          python .github/pr7-compact/apply.py
+          python - <<'PY'
+          from pathlib import Path
+          import re
+          text = Path('index.html').read_text(encoding='utf-8')
+          scripts = re.findall(r'<script>([\s\S]*?)</script>', text)
+          if len(scripts) != 1:
+              raise SystemExit(f'Expected one inline script, found {len(scripts)}')
+          Path('/tmp/index-inline.js').write_text(scripts[0], encoding='utf-8')
+          PY
+          node --check /tmp/index-inline.js
+
+      - name: Run compact layout browser audit
+        shell: bash
+        run: |
           npm init -y >/dev/null 2>&1
           npm install --no-save playwright@1.54.1 >/dev/null 2>&1
-          npx playwright install chromium >/dev/null 2>&1
-          python -m http.server 4173 >/dev/null 2>&1 &
+          npx playwright install chromium >/dev/null
+          python -m http.server 4173 >/tmp/pr7-http.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill $SERVER_PID || true' EXIT
           sleep 2
-          cat > /tmp/audit.cjs <<'JS'
+          cat > /tmp/pr7-audit.cjs <<'JS'
           const { chromium } = require('playwright');
+          const assert = (condition, message) => { if (!condition) throw new Error(message); };
           (async () => {
             const browser = await chromium.launch({ headless: true });
             const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
@@ -37,20 +58,53 @@ jobs:
             await page.getByRole('button', { name: 'Wczytaj demo' }).click();
             await page.getByRole('button', { name: 'Kości', exact: true }).click();
             await page.waitForSelector('.dice-dashboard-compact');
-            const output = { scenarios: await page.locator('.scenario-button').count(), primaryScenarios: await page.locator('.combat-scenarios .btn-primary').count(), oldResult: await page.locator('.compact-result-card').count(), viewports: [] };
+            const tests = await page.evaluate(() => runDeveloperTests().map(result => ({ name: result.name, pass: result.pass, error: result.error || '' })));
+            assert(tests.length === 54, `Expected 54 tests, got ${tests.length}`);
+            assert(tests.every(result => result.pass), `Domain failures: ${JSON.stringify(tests.filter(result => !result.pass))}`);
+            const fit = await page.evaluate(() => {
+              const dashboard = document.querySelector('.dice-dashboard-compact').getBoundingClientRect();
+              const nav = document.querySelector('.bottom-nav').getBoundingClientRect();
+              return { dashboardBottom: Math.round(dashboard.bottom), navTop: Math.round(nav.top), overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth };
+            });
+            assert(fit.dashboardBottom <= fit.navTop + 1, `Dashboard does not fit: ${JSON.stringify(fit)}`);
+            assert(fit.overflow <= 1, `Horizontal overflow: ${fit.overflow}`);
+            assert(await page.locator('.scenario-button').count() === 6, 'Expected six combat scenarios');
+            assert(await page.locator('.compact-result-card').count() === 0, 'Separate result card remains');
             await page.getByRole('button', { name: 'Rzuć kością k20' }).click();
             await page.waitForTimeout(560);
-            output.k20 = await page.locator('#diceResult strong').innerText();
-            await page.emulateMedia({ reducedMotion: 'reduce' });
-            await page.getByRole('button', { name: 'Rzuć kością k6' }).first().click();
-            output.reduced = await page.locator('#diceResult strong').innerText();
-            for (const viewport of [{ width: 320, height: 568 }, { width: 375, height: 812 }, { width: 390, height: 844 }, { width: 414, height: 896 }]) {
-              await page.setViewportSize(viewport);
-              output.viewports.push(await page.evaluate(v => ({ ...v, overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth, heights: [...document.querySelectorAll('#view-dice button')].filter(button => button.offsetParent !== null).map(button => Math.round(button.getBoundingClientRect().height)), dashboardBottom: Math.round(document.querySelector('.dice-dashboard-compact').getBoundingClientRect().bottom), navTop: Math.round(document.querySelector('.bottom-nav').getBoundingClientRect().top) }), viewport));
-            }
-            output.errors = errors;
-            console.log(JSON.stringify(output));
+            const result = Number(await page.locator('#diceResult strong').innerText());
+            assert(result >= 1 && result <= 20, `Unexpected result: ${result}`);
+            await page.setViewportSize({ width: 320, height: 568 });
+            const narrow = await page.evaluate(() => ({
+              overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+              heights: [...document.querySelectorAll('#view-dice button')].filter(button => button.offsetParent !== null).map(button => Math.round(button.getBoundingClientRect().height))
+            }));
+            assert(narrow.overflow <= 1, `Horizontal overflow at 320px: ${narrow.overflow}`);
+            assert(narrow.heights.every(height => height >= 44), `Touch target below 44px: ${JSON.stringify(narrow.heights)}`);
+            assert(errors.length === 0, `Browser errors: ${errors.join('\n')}`);
             await browser.close();
           })().catch(error => { console.error(error); process.exit(1); });
           JS
-          NODE_PATH="$PWD/node_modules" node /tmp/audit.cjs
+          NODE_PATH="$PWD/node_modules" node /tmp/pr7-audit.cjs
+
+      - name: Update Pages checksum and commit
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import hashlib, re
+          digest = hashlib.sha256(Path('index.html').read_bytes()).hexdigest()
+          path = Path('.github/workflows/deploy-pages.yml')
+          text = path.read_text(encoding='utf-8')
+          updated, count = re.subn(r'test "\$\(sha256sum index\.html \| cut -d\x27 \x27 -f1\)" = "[0-9a-f]{64}"', f'test "$(sha256sum index.html | cut -d\x27 \x27 -f1)" = "{digest}"', text)
+          if count != 1:
+              raise SystemExit(f'Expected one checksum line, found {count}')
+          path.write_text(updated, encoding='utf-8')
+          print(digest)
+          PY
+          rm -f package.json package-lock.json
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add index.html .github/workflows/deploy-pages.yml
+          git commit -m "Fit dice dashboard within mobile viewport"
+          git push origin HEAD:pr7-compact-dice-screen
