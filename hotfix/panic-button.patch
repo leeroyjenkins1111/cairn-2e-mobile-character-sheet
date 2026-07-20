@@ -1,0 +1,48 @@
+--- a/index.html
++++ b/index.html
+@@ -563,7 +563,7 @@
+   // 1. Constants
+   // ============================================================
+   const APP_ID = 'cairn-mobile-sheet';
+-  const APP_VERSION = '0.2.0';
++  const APP_VERSION = '0.2.1';
+   const SCHEMA_VERSION = 2;
+   const STORAGE_KEY = `${APP_ID}:state`;
+   const RECOVERY_KEY = `${APP_ID}:recovery`;
+@@ -1195,13 +1195,18 @@
+     return result;
+   }
+ 
++  function normalizeForcedD20(value) {
++    return Number.isInteger(value) && value >= 1 && value <= 20 ? value : null;
++  }
++
+   function attemptRecoverFromPanic(forcedRoll = null) {
+     if (!state.conditions.panicked) {
+       showToast('Postać nie jest obecnie spanikowana.');
+       return null;
+     }
++    const forcedD20 = normalizeForcedD20(forcedRoll);
+     let roll;
+-    try { roll = forcedRoll ?? rollDie(20); }
++    try { roll = forcedD20 ?? rollDie(20); }
+     catch (error) { showToast(error.message, 'error'); return null; }
+     const result = resolvePanicRecovery(state, roll);
+     const natural = result.naturalSuccess ? ' — naturalne 1' : result.naturalFailure ? ' — naturalne 20' : '';
+@@ -1765,7 +1770,7 @@
+       const conditionsCard = card([], 'card-pad');
+       conditionsCard.append(sectionHead('Aktywne stany', button('Zmień', () => setView('more'), 'btn btn-quiet btn-ghost')));
+       conditionsCard.append(renderConditionChips());
+-      if (state.conditions.panicked) conditionsCard.append(button('Spróbuj opanować panikę — rzut WOL', attemptRecoverFromPanic, 'btn btn-primary btn-block'));
++      if (state.conditions.panicked) conditionsCard.append(button('Spróbuj opanować panikę — rzut WOL', () => attemptRecoverFromPanic(), 'btn btn-primary btn-block'));
+       root.append(conditionsCard);
+     }
+ 
+@@ -2728,6 +2733,7 @@
+     test('33. Długie i niebezpieczne teksty są zachowywane jako dane', () => { const payload = '<img src=x onerror=alert(1)>'.repeat(20); const fixture = { name:payload, hp:1, hp_max:1, strength:1, strength_max:1, dexterity:1, dexterity_max:1, willpower:1, willpower_max:1, items:[] }; const r = normalizeKettlewright(fixture); assert(r.candidate.identity.name === payload); });
+     test('34. Dokument nie ładuje zewnętrznych skryptów ani styli', () => { const external = $$('script[src], link[rel="stylesheet"][href]').filter(el => /^https?:/i.test(el.src || el.href)); assert(external.length === 0); });
+     test('35. Efektywny pancerz jest ograniczony do 3', () => { const fixture = createDemoState(); fixture.inventory.items = [makeItem({ armorValue:2, carryState:'worn' }), makeItem({ armorValue:2, carryState:'held' })]; assert(deriveArmor(fixture).effective === 3); });
++    test('36. Zdarzenie kliknięcia nie jest traktowane jako wymuszony wynik k20', () => { assert(normalizeForcedD20({ type: 'click' }) === null); assert(normalizeForcedD20(1) === 1); assert(normalizeForcedD20(20) === 20); assert(normalizeForcedD20(21) === null); });
+     return results;
+   }
+ 
