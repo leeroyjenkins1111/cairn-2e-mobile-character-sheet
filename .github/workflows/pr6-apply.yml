@@ -113,11 +113,10 @@ jobs:
           print(digest)
           PY
 
-      - name: Remove bootstrap files and commit final source
+      - name: Commit final source
         shell: bash
         run: |
           rm -f package.json package-lock.json
-          git rm .github/pr6/apply.py.gz.b64 .github/pr6/browser-audit.cjs.gz.b64 .github/workflows/pr6-apply.yml
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add index.html .github/workflows/deploy-pages.yml
