@@ -14,7 +14,7 @@ jobs:
     env:
       GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - name: Apply validated compact layout and commit index
+      - name: Apply validated compact layout and commit
         shell: bash
         run: |
           set -euo pipefail
@@ -30,11 +30,24 @@ jobs:
           if len(scripts) != 1:
               raise SystemExit(f'Expected one inline script, found {len(scripts)}')
           Path('/tmp/index-inline.js').write_text(scripts[0], encoding='utf-8')
-          print(hashlib.sha256(Path('index.html').read_bytes()).hexdigest())
+          digest = hashlib.sha256(Path('index.html').read_bytes()).hexdigest()
+          workflow = Path('.github/workflows/deploy-pages.yml')
+          lines = workflow.read_text(encoding='utf-8').splitlines()
+          matches = [i for i, line in enumerate(lines) if 'sha256sum index.html' in line and 'test ' in line]
+          if len(matches) != 1:
+              raise SystemExit(f'Expected one checksum line, found {len(matches)}')
+          indent = lines[matches[0]][:len(lines[matches[0]]) - len(lines[matches[0]].lstrip())]
+          lines[matches[0]] = f'{indent}test "$(sha256sum index.html | cut -d\x27 \x27 -f1)" = "{digest}"'
+          workflow.write_text('\n'.join(lines) + '\n', encoding='utf-8')
+          print(digest)
           PY
           node --check /tmp/index-inline.js
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
-          git add index.html
+          git add index.html .github/workflows/deploy-pages.yml
+          if git diff --cached --quiet; then
+            echo "No application changes to commit."
+            exit 0
+          fi
           git commit -m "Fit dice dashboard within mobile viewport"
           git push origin HEAD:pr7-compact-dice-screen
