@@ -1,0 +1,37 @@
+name: Bootstrap PR8 payload
+
+on:
+  push:
+    branches: [pr8-comprehensive-hardening]
+    paths:
+      - '.github/workflows/bootstrap-pr8.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  unpack:
+    if: ${{ !contains(github.event.head_commit.message, '[bootstrap-cleanup]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout branch
+        uses: actions/checkout@v4
+        with:
+          ref: pr8-comprehensive-hardening
+          fetch-depth: 0
+
+      - name: Reconstruct implementation
+        shell: bash
+        run: |
+          cat .bootstrap/part-* | base64 -d > /tmp/pr8-payload.tar.gz
+          tar -xzf /tmp/pr8-payload.tar.gz
+          rm -rf .bootstrap
+
+      - name: Commit implementation
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "Implement comprehensive product hardening [generated]"
+          git push origin HEAD:pr8-comprehensive-hardening
