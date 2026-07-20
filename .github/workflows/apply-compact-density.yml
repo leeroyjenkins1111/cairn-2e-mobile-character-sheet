@@ -7,6 +7,8 @@ on:
       - implementation/compact-density.patch.gz.b64.part00
       - implementation/compact-density.patch.gz.b64.part01
       - .github/workflows/apply-compact-density.yml
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: write
