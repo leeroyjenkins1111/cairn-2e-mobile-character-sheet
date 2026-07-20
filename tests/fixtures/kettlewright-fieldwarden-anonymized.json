@@ -1,0 +1,87 @@
+{
+  "armor": "1",
+  "background": "Fieldwarden",
+  "bonds": "Anonymized bond text retained only to represent a multiline export.",
+  "containers": [
+    { "id": 0, "name": "Main", "slots": 10 }
+  ],
+  "custom_background": "",
+  "custom_image": false,
+  "custom_name": "",
+  "deprived": true,
+  "description": "Anonymized Fieldwarden description.",
+  "dexterity": 14,
+  "dexterity_max": 14,
+  "gold": 11,
+  "hp": 4,
+  "hp_max": 4,
+  "id": 1001,
+  "image_url": "portrait-placeholder.webp",
+  "items": [
+    {
+      "description": "Anonymized letter.",
+      "id": "fixture-letter",
+      "location": 0,
+      "name": "Letter",
+      "petty": [],
+      "tags": ["petty"]
+    },
+    {
+      "description": "Quickly decays any plant it touches.",
+      "id": "fixture-crop",
+      "location": 0,
+      "name": "Diseased Crop",
+      "tags": ["uses"],
+      "uses": 6
+    },
+    {
+      "description": "-",
+      "id": "fixture-rations",
+      "location": 0,
+      "name": "Rations",
+      "tags": ["uses"],
+      "uses": 3
+    },
+    {
+      "description": "-",
+      "id": "fixture-torch",
+      "location": 0,
+      "name": "Torch",
+      "tags": ["uses"],
+      "uses": 3
+    },
+    {
+      "1 Armor,bulky": [],
+      "description": "",
+      "id": "fixture-brigandine",
+      "location": 0,
+      "name": "Brigandine",
+      "tags": ["1 Armor", "bulky"]
+    },
+    {
+      "d6": [],
+      "description": "",
+      "id": "fixture-sling",
+      "location": 0,
+      "name": "Sling",
+      "tags": ["d6"]
+    },
+    {
+      "editable": false,
+      "id": "fixture-fatigue",
+      "location": 0,
+      "name": "Fatigue",
+      "tags": []
+    }
+  ],
+  "name": "Fixture Fieldwarden",
+  "notes": "Anonymized notes.",
+  "omens": "",
+  "panicked": true,
+  "scars": "",
+  "strength": 14,
+  "strength_max": 14,
+  "traits": "Anonymized traits.",
+  "willpower": 13,
+  "willpower_max": 13
+}
