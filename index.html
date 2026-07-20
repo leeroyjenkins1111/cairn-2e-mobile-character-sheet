@@ -498,6 +498,126 @@
       .app-header { padding-left: 10px; padding-right: 10px; }
     }
 
+
+    /* Mobile UI/UX polish — lightweight, touch-first, no external assets. */
+    h1, h2, h3, .brand-title {
+      font-family: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+      font-weight: 720;
+      letter-spacing: -0.018em;
+    }
+    .view { gap: 10px; }
+    .main { padding: 12px 12px calc(var(--nav-height) + env(safe-area-inset-bottom) + 18px); }
+    .card {
+      border-color: color-mix(in srgb, var(--line) 78%, transparent);
+      background: color-mix(in srgb, var(--surface) 92%, transparent);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.18);
+    }
+    .card-pad { padding: 13px; }
+    .card-flat,
+    .card-flat.card-pad {
+      padding: 0;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+      overflow: visible;
+    }
+    .section-head { margin-bottom: 9px; }
+    .section-head h2, .section-head h3 { font-size: 1.05rem; }
+    .btn { min-height: 46px; }
+    .btn svg, .nav-icon svg, .onboarding-mark svg {
+      width: 1.25rem;
+      height: 1.25rem;
+      display: block;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      pointer-events: none;
+    }
+    .header-actions .btn svg { width: 1.35rem; height: 1.35rem; }
+    .nav-icon { display: grid; place-items: center; }
+    .nav-btn .nav-icon { font-size: 0; }
+    .action-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+    .action-grid .btn { min-height: 68px; padding: 10px; }
+    .action-grid .btn strong { font-family: ui-serif, Georgia, Cambria, "Times New Roman", Times, serif; font-size: 0.96rem; }
+    .active-equipment-list { gap: 0; }
+    .active-equipment-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr);
+      align-items: start;
+      gap: 8px;
+      padding: 11px 0;
+    }
+    .active-equipment-actions { margin: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .active-equipment-actions:empty { display: none; }
+    .inventory-list { gap: 0; }
+    .inventory-item {
+      border: 0;
+      border-top: 1px solid var(--line);
+      border-radius: 0;
+      background: transparent;
+      padding: 14px 0;
+    }
+    .inventory-item:first-child { border-top: 0; }
+    .inventory-item-head { align-items: center; }
+    .uses-control {
+      width: 100%;
+      justify-content: space-between;
+      margin-top: 10px;
+      border: 0;
+      background: var(--surface-soft);
+      padding: 5px;
+    }
+    .uses-value { text-align: left; padding-left: 7px; }
+    .item-actions {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: stretch;
+      gap: 7px;
+    }
+    .item-actions .btn { width: 100%; }
+    .item-warning { margin: 8px 0 0; color: var(--danger); font-size: 0.78rem; font-weight: 750; }
+    .history-disclosure {
+      border-top: 1px solid var(--line);
+      padding: 2px 0;
+    }
+    .history-disclosure:first-of-type { border-top: 0; }
+    .history-disclosure summary {
+      min-height: 52px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      cursor: pointer;
+      font-weight: 800;
+      list-style-position: inside;
+    }
+    .history-disclosure-content { display: grid; gap: 9px; padding: 0 0 12px; }
+    .history-disclosure .history-list,
+    .history-disclosure .dice-history { max-height: 360px; overflow-y: auto; overscroll-behavior: contain; }
+    .sheet { max-height: min(92dvh, 900px); }
+    .sheet-body { scroll-padding-bottom: 24px; }
+    .sheet-open { overscroll-behavior: none; }
+    [inert] { user-select: none; }
+
+    @media (min-width: 420px) {
+      .active-equipment-row { grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
+      .active-equipment-actions { min-width: 156px; }
+    }
+    @media (min-width: 620px) {
+      .action-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    }
+    @media (max-width: 350px) {
+      .action-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .action-grid .btn { min-height: 72px; padding: 9px 8px; }
+      .action-grid .btn span { font-size: 0.71rem; }
+      .main { padding-left: 9px; padding-right: 9px; }
+      .card-pad { padding: 11px; }
+      .item-actions { grid-template-columns: minmax(0, 1fr) auto; }
+    }
+
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after {
         animation-duration: 0.001ms !important;
@@ -516,8 +636,8 @@
         <p class="brand-title" id="headerTitle">Karta Wędrowca</p>
       </div>
       <div class="header-actions">
-        <button class="btn btn-icon btn-ghost" id="quickUndoBtn" type="button" aria-label="Cofnij ostatnią zmianę" title="Cofnij">↶</button>
-        <button class="btn btn-icon btn-ghost" id="quickDiceBtn" type="button" aria-label="Otwórz szybki rzut kością" title="Kości">◇</button>
+        <button class="btn btn-icon btn-ghost" id="quickUndoBtn" type="button" aria-label="Cofnij ostatnią zmianę" title="Cofnij"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 7H5v-4"></path><path d="M5.5 7.5a8 8 0 1 1-1.2 7.2"></path></svg></button>
+        <button class="btn btn-icon btn-ghost" id="quickDiceBtn" type="button" aria-label="Otwórz szybki rzut kością" title="Kości"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="4" y="4" width="16" height="16" rx="4"></rect><path d="M9 9h.01M15 15h.01M15 9h.01M9 15h.01"></path></svg></button>
       </div>
     </header>
 
@@ -529,10 +649,10 @@
     </main>
 
     <nav class="bottom-nav" aria-label="Główna nawigacja">
-      <button class="nav-btn" id="nav-character" type="button" data-nav="character" aria-current="page"><span class="nav-icon" aria-hidden="true">◉</span><span>Postać</span></button>
-      <button class="nav-btn" id="nav-inventory" type="button" data-nav="inventory"><span class="nav-icon" aria-hidden="true">▦</span><span>Ekwipunek</span></button>
-      <button class="nav-btn" id="nav-dice" type="button" data-nav="dice"><span class="nav-icon" aria-hidden="true">◇</span><span>Kości</span></button>
-      <button class="nav-btn" id="nav-more" type="button" data-nav="more"><span class="nav-icon" aria-hidden="true">•••</span><span>Więcej</span></button>
+      <button class="nav-btn" id="nav-character" type="button" data-nav="character" aria-current="page"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="12" cy="8" r="3"></circle><path d="M6.5 19c.8-3.2 2.7-5 5.5-5s4.7 1.8 5.5 5"></path></svg></span><span>Postać</span></button>
+      <button class="nav-btn" id="nav-inventory" type="button" data-nav="inventory"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M5 7h14v12H5z"></path><path d="M8 7V5h8v2M9 11h6"></path></svg></span><span>Ekwipunek</span></button>
+      <button class="nav-btn" id="nav-dice" type="button" data-nav="dice"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><rect x="4" y="4" width="16" height="16" rx="4"></rect><path d="M9 9h.01M15 15h.01M15 9h.01M9 15h.01"></path></svg></span><span>Kości</span></button>
+      <button class="nav-btn" id="nav-more" type="button" data-nav="more"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="5" cy="12" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle></svg></span><span>Więcej</span></button>
     </nav>
   </div>
 
@@ -563,7 +683,7 @@
   // 1. Constants
   // ============================================================
   const APP_ID = 'cairn-mobile-sheet';
-  const APP_VERSION = '0.3.0';
+  const APP_VERSION = '0.4.0';
   const SCHEMA_VERSION = 2;
   const STORAGE_KEY = `${APP_ID}:state`;
   const RECOVERY_KEY = `${APP_ID}:recovery`;
@@ -1681,8 +1801,14 @@
     $('#sheetBody').replaceChildren(body instanceof Node ? body : createEl('p', { text: body }));
     $('#sheetFoot').replaceChildren(...(footer ? (Array.isArray(footer) ? footer : [footer]) : []));
     const backdrop = $('#sheetBackdrop');
+    const appShell = $('.app-shell');
+    if (appShell) {
+      appShell.inert = true;
+      if (!('inert' in HTMLElement.prototype)) appShell.setAttribute('aria-hidden', 'true');
+    }
     backdrop.classList.add('open');
     backdrop.setAttribute('aria-hidden', 'false');
+    document.body.classList.add('sheet-open');
     document.body.style.overflow = 'hidden';
     requestAnimationFrame(() => {
       const focusable = getSheetFocusable();
@@ -1695,6 +1821,12 @@
     if (!backdrop.classList.contains('open')) return;
     backdrop.classList.remove('open');
     backdrop.setAttribute('aria-hidden', 'true');
+    const appShell = $('.app-shell');
+    if (appShell) {
+      appShell.inert = false;
+      appShell.removeAttribute('aria-hidden');
+    }
+    document.body.classList.remove('sheet-open');
     document.body.style.overflow = '';
     const handler = closeHandler;
     closeHandler = null;
@@ -1881,60 +2013,51 @@
       attrGrid.append(btn);
     }
     attrsCard.append(attrGrid);
-    root.append(attrsCard);
 
+    let conditionsCard = null;
     if (renderConditionChips(true).childElementCount) {
-      const conditionsCard = card([], 'card-pad');
+      conditionsCard = card([], 'card-pad');
       conditionsCard.append(sectionHead('Aktywne stany', button('Zmień', () => setView('more'), 'btn btn-quiet btn-ghost')));
       conditionsCard.append(renderConditionChips());
       if (state.conditions.panicked) conditionsCard.append(button('Spróbuj opanować panikę — rzut WOL', () => attemptRecoverFromPanic(), 'btn btn-primary btn-block'));
-      root.append(conditionsCard);
     }
 
     const actions = card([], 'card-pad');
     actions.append(sectionHead('Szybkie akcje', null, 'Przy stole'));
-    const grid = createEl('div', { className: 'action-grid' }, [
-      createEl('button', { type: 'button', className: 'btn btn-primary', onclick: openDamageSheet }, [createEl('strong', { text: 'Otrzymaj obrażenia' }), createEl('span', { text: 'Pancerz → OCHR → SIŁ' })]),
-      createEl('button', { type: 'button', className: 'btn', onclick: () => performFirstRoundDexSave() }, [createEl('strong', { text: 'Pierwsza runda' }), createEl('span', { text: 'Rzut ZRE, aby móc działać' })]),
-      createEl('button', { type: 'button', className: 'btn', onclick: openRestSheet }, [createEl('strong', { text: 'Krótki odpoczynek' }), createEl('span', { text: 'Przywróć OCHR po ocenie warunków' })]),
-      createEl('button', { type: 'button', className: 'btn', onclick: openAddFatigueSheet }, [createEl('strong', { text: 'Dodaj zmęczenie' }), createEl('span', { text: 'Zajmuje jedno miejsce' })]),
-      createEl('button', { type: 'button', className: 'btn', onclick: () => performUnarmedAttack() }, [createEl('strong', { text: 'Atak bez broni' }), createEl('span', { text: 'Automatyczne trafienie · k4' })]),
-      createEl('button', { type: 'button', className: 'btn', onclick: () => setView('dice') }, [createEl('strong', { text: 'Rzuć kośćmi' }), createEl('span', { text: 'Kości, broń i Kość Losu' })])
-    ]);
-    actions.append(grid);
+    actions.append(createEl('div', { className: 'action-grid' }, [
+      createEl('button', { type: 'button', className: 'btn btn-primary', onclick: openDamageSheet }, [createEl('strong', { text: 'Obrażenia' }), createEl('span', { text: 'Pancerz → OCHR → SIŁ' })]),
+      createEl('button', { type: 'button', className: 'btn', onclick: () => performFirstRoundDexSave() }, [createEl('strong', { text: 'Pierwsza runda' }), createEl('span', { text: 'Rzut ZRE' })]),
+      createEl('button', { type: 'button', className: 'btn', onclick: openRestSheet }, [createEl('strong', { text: 'Odpoczynek' }), createEl('span', { text: 'Odzyskaj OCHR' })]),
+      createEl('button', { type: 'button', className: 'btn', onclick: () => setView('dice') }, [createEl('strong', { text: 'Kości' }), createEl('span', { text: 'Broń i rzuty' })])
+    ]));
     root.append(actions);
 
-    const activeItems = activeEquipmentItems().slice(0, 6);
-    const equipmentCard = card([], 'card-pad');
-    equipmentCard.append(sectionHead('Aktywny ekwipunek', button('Ekwipunek', () => setView('inventory'), 'btn btn-quiet btn-ghost')));
-    const equipmentList = createEl('div', { className: 'settings-list' });
+    const allActiveItems = activeEquipmentItems();
+    const activeItems = allActiveItems.slice(0, 4);
+    const equipmentCard = card([], 'card-pad home-equipment');
+    equipmentCard.append(sectionHead('Aktywny ekwipunek', button('Wszystko', () => setView('inventory'), 'btn btn-quiet btn-ghost')));
+    const equipmentList = createEl('div', { className: 'settings-list active-equipment-list' });
     if (!activeItems.length) equipmentList.append(createEl('p', { className: 'muted small', text: 'Brak przedmiotów oznaczonych jako trzymane lub noszone.' }));
     for (const item of activeItems) {
       const metaParts = [CARRY_STATES[item.carryState] || item.carryState];
       if (item.damageFormula) metaParts.push(formatDamageFormula(item.damageFormula));
       if (item.armorValue) metaParts.push(`pancerz +${item.armorValue}`);
       if (item.uses.current !== null) metaParts.push(formatUses(item.uses));
-      const rowActions = createEl('div', { className: 'button-row' });
+      const rowActions = createEl('div', { className: 'item-actions active-equipment-actions' });
       if (item.damageFormula?.blast) rowActions.append(button('Podmuch', () => openBlastAttackSheet(item), 'btn btn-quiet'));
       else if (item.damageFormula) rowActions.append(button('Rzuć', () => performDamageFormulaRoll(item), 'btn btn-quiet'));
       if (item.uses.current !== null) rowActions.append(button('Użyj', () => openUseItemSheet(item.id), 'btn btn-quiet btn-primary', { disabled: item.uses.current <= 0 }));
-      equipmentList.append(createEl('div', { className: 'settings-row' }, [
+      equipmentList.append(createEl('div', { className: 'settings-row active-equipment-row' }, [
         createEl('div', {}, [createEl('strong', { text: item.name }), createEl('p', { className: item.uses.current === 0 ? 'help test-fail' : 'help', text: item.uses.current === 0 ? `${metaParts.join(' · ')} · brak użyć` : metaParts.join(' · ') })]),
         rowActions
       ]));
     }
+    if (allActiveItems.length > activeItems.length) equipmentList.append(button(`Pokaż pozostałe (${allActiveItems.length - activeItems.length})`, () => setView('inventory'), 'btn btn-quiet btn-ghost btn-block'));
     equipmentCard.append(equipmentList);
     root.append(equipmentCard);
 
-
-    const historyCard = card([], 'card-pad');
-    historyCard.append(sectionHead('Ostatnie zmiany', button('Cofnij', undoLastChange, 'btn btn-quiet btn-ghost', { disabled: !safeArray(state.changeHistory).some(entry => entry.undoable) })));
-    const list = createEl('div', { className: 'history-list' });
-    const entries = safeArray(state.changeHistory).slice(-5).reverse();
-    if (!entries.length) list.append(createEl('p', { className: 'muted small', text: 'Historia jest jeszcze pusta.' }));
-    for (const entry of entries) list.append(createEl('div', { className: 'history-item' }, [createEl('p', { text: entry.description }), createEl('time', { text: formatDateTime(entry.time), dateTime: entry.time })]));
-    historyCard.append(list);
-    root.append(historyCard);
+    root.append(attrsCard);
+    if (conditionsCard) root.append(conditionsCard);
   }
 
   // ============================================================
@@ -2228,13 +2351,12 @@
     root.append(armorCard);
 
     const actions = createEl('div', { className: 'button-row' }, [
-      button('Dodaj przedmiot', () => openItemSheet(), 'btn'),
       button('Dodaj zmęczenie', openAddFatigueSheet, 'btn'),
       button('Obrażenia atrybutu', openDirectDamageSheet, 'btn')
     ]);
     root.append(actions);
 
-    const listCard = card([], 'card-pad');
+    const listCard = card([], 'card-pad card-flat');
     listCard.append(sectionHead('Przedmioty', createEl('span', { className: 'muted small', text: `${state.inventory.items.length} wpisów` })));
     const list = createEl('div', { className: 'inventory-list' });
     if (!state.inventory.items.length) list.append(createEl('p', { className: 'muted', text: 'Brak przedmiotów.' }));
@@ -2242,6 +2364,15 @@
     for (const fatigue of state.inventory.fatigue) list.append(renderFatigueCard(fatigue));
     listCard.append(list);
     root.append(listCard);
+  }
+
+  function getItemPrimaryActionKinds(item) {
+    const kinds = [];
+    if (item.damageFormula?.blast) kinds.push('blast');
+    else if (item.damageFormula) kinds.push('roll');
+    if (item.uses.current !== null) kinds.push('use');
+    kinds.push('more');
+    return kinds;
   }
 
   function renderItemCard(item, index) {
@@ -2260,26 +2391,52 @@
     if (item.uses.current !== null || item.uses.max !== null) {
       const uses = createEl('div', { className: 'uses-control', attrs: { 'aria-label': `Użycia przedmiotu ${item.name}` } }, [
         createEl('span', { className: 'uses-value', text: formatUses(item.uses) }),
-        button('Użyj', () => openUseItemSheet(item.id), 'btn btn-primary', { disabled: item.uses.current <= 0, 'aria-label': `Użyj ${item.name}` }),
-        button('+1', () => openRestoreItemUseSheet(item.id), 'btn btn-ghost', { disabled: item.uses.max !== null && item.uses.current >= item.uses.max, 'aria-label': `Przywróć jedno użycie ${item.name}` })
+        button('Użyj', () => openUseItemSheet(item.id), 'btn btn-primary', { disabled: item.uses.current <= 0, 'aria-label': `Użyj ${item.name}` })
       ]);
       wrap.append(uses);
-      if (item.uses.current === 0) wrap.append(createEl('div', { className: 'alert' }, [createEl('strong', { text: 'Brak użyć' }), createEl('p', { className: 'small', text: 'Przedmiot pozostaje w ekwipunku, ale nie można użyć go ponownie bez doładowania lub decyzji Wardena.' })]));
+      if (item.uses.current === 0) wrap.append(createEl('p', { className: 'item-warning', text: 'Brak użyć — przywrócenie jest dostępne w menu „Więcej”.' }));
     }
     const actions = createEl('div', { className: 'item-actions' });
-    if (item.damageFormula?.blast) actions.append(button(`Podmuch ${formatDamageFormula(item.damageFormula)}`, () => openBlastAttackSheet(item), 'btn btn-quiet'));
-    else if (item.damageFormula) actions.append(button(`Rzuć ${formatDamageFormula(item.damageFormula)}`, () => performDamageFormulaRoll(item), 'btn btn-quiet'));
-    if (item.uses.current !== null) actions.append(button('Użyj', () => openUseItemSheet(item.id), 'btn btn-quiet btn-primary', { disabled: item.uses.current <= 0 }));
-    actions.append(
-      button(item.carryState === 'spent' ? 'Przywróć' : 'Oznacz zużyty', () => toggleItemSpent(item.id), 'btn btn-quiet btn-ghost'),
-      button('Edytuj', () => openItemSheet(item.id), 'btn btn-quiet'),
-      button('↑', () => moveItem(item.id, -1), 'btn btn-quiet btn-ghost', { 'aria-label': `Przesuń ${item.name} wyżej`, disabled: index === 0 }),
-      button('↓', () => moveItem(item.id, 1), 'btn btn-quiet btn-ghost', { 'aria-label': `Przesuń ${item.name} niżej`, disabled: index === state.inventory.items.length - 1 }),
-      button('Duplikuj', () => duplicateItem(item.id), 'btn btn-quiet btn-ghost'),
-      button('Usuń', () => confirmDeleteItem(item.id), 'btn btn-quiet btn-danger')
-    );
+    for (const kind of getItemPrimaryActionKinds(item)) {
+      if (kind === 'blast') actions.append(button(`Podmuch ${formatDamageFormula(item.damageFormula)}`, () => openBlastAttackSheet(item), 'btn btn-quiet'));
+      if (kind === 'roll') actions.append(button(`Rzuć ${formatDamageFormula(item.damageFormula)}`, () => performDamageFormulaRoll(item), 'btn btn-quiet'));
+      if (kind === 'more') actions.append(button('Więcej', () => openItemActionsSheet(item.id), 'btn btn-quiet btn-ghost', { 'aria-label': `Więcej akcji dla ${item.name}` }));
+    }
     wrap.append(actions);
     return wrap;
+  }
+
+  function openItemActionsSheet(itemId) {
+    const item = state.inventory.items.find(entry => entry.id === itemId);
+    if (!item) return;
+    const currentIndex = state.inventory.items.findIndex(entry => entry.id === itemId);
+    const carry = selectInput(Object.entries(CARRY_STATES), item.carryState);
+    const body = createEl('div', { className: 'form-grid' }, [
+      createEl('div', { className: 'report-block' }, [
+        createEl('h3', { text: item.name }),
+        createEl('p', { className: 'muted small', text: `${item.slots} ${item.slots === 1 ? 'miejsce' : 'miejsca'}${item.damageFormula ? ` · ${formatDamageFormula(item.damageFormula)}` : ''}${item.uses.current !== null ? ` · ${formatUses(item.uses)}` : ''}` })
+      ]),
+      field('Sposób noszenia', carry),
+      button('Zapisz sposób noszenia', () => {
+        if (carry.value === item.carryState) { showToast('Sposób noszenia nie zmienił się.'); return; }
+        const before = CARRY_STATES[item.carryState] || item.carryState;
+        const after = CARRY_STATES[carry.value] || carry.value;
+        closeSheet();
+        commitChange(`Zmieniono sposób noszenia: ${item.name} (${before} → ${after})`, next => { const target = next.inventory.items.find(entry => entry.id === itemId); target.carryState = carry.value; });
+      }, 'btn btn-primary btn-block')
+    ]);
+    const secondary = createEl('div', { className: 'sheet-list' });
+    secondary.append(button('Edytuj szczegóły', () => { closeSheet(); openItemSheet(itemId); }, 'btn'));
+    if (item.uses.current !== null) secondary.append(button('Przywróć 1 użycie', () => { closeSheet(); openRestoreItemUseSheet(itemId); }, 'btn btn-ghost', { disabled: item.uses.max !== null && item.uses.current >= item.uses.max }));
+    secondary.append(
+      button(item.carryState === 'spent' ? 'Przywróć przedmiot' : 'Oznacz jako zużyty', () => { closeSheet(); toggleItemSpent(itemId); }, 'btn btn-ghost'),
+      button('Przesuń wyżej', () => { closeSheet(); moveItem(itemId, -1); }, 'btn btn-ghost', { disabled: currentIndex <= 0 }),
+      button('Przesuń niżej', () => { closeSheet(); moveItem(itemId, 1); }, 'btn btn-ghost', { disabled: currentIndex < 0 || currentIndex >= state.inventory.items.length - 1 }),
+      button('Duplikuj', () => { closeSheet(); duplicateItem(itemId); }, 'btn btn-ghost'),
+      button('Usuń', () => { closeSheet(); confirmDeleteItem(itemId); }, 'btn btn-danger')
+    );
+    body.append(secondary);
+    openSheet({ title: 'Akcje przedmiotu', body });
   }
 
   function renderFatigueCard(fatigue) {
@@ -2558,13 +2715,6 @@
     result.append(createEl('div', { className: 'dice-result', id: 'diceResult' }, [createEl('div', {}, [createEl('strong', { text: '—' }), createEl('span', { text: 'Wynik pojawi się tutaj.' })])]))
     root.append(result);
 
-    const history = card([], 'card-pad');
-    history.append(sectionHead('Historia rzutów', button('Wyczyść', confirmClearDiceHistory, 'btn btn-quiet btn-ghost', { disabled: !state.diceHistory.length })));
-    const list = createEl('div', { className: 'dice-history' });
-    if (!state.diceHistory.length) list.append(createEl('p', { className: 'muted small', text: 'Brak rzutów.' }));
-    for (const entry of state.diceHistory) list.append(createEl('div', { className: 'dice-history-item' }, [createEl('p', { text: entry.summary }), entry.details ? createEl('p', { className: 'muted small', text: entry.details }) : null, createEl('time', { text: formatDateTime(entry.time), dateTime: entry.time })]));
-    history.append(list);
-    root.append(history);
   }
 
   function renderDiceResult(value, label) {
@@ -2677,6 +2827,36 @@
       for (const scar of state.scars) notes.append(createEl('p', { className: 'small muted wrap-anywhere', text: scar.text }));
     }
     root.append(notes);
+
+    const historyCard = card([], 'card-pad');
+    historyCard.append(sectionHead('Historia', createEl('span', { className: 'muted small', text: `${safeArray(state.changeHistory).length} zmian · ${safeArray(state.diceHistory).length} rzutów` })));
+
+    const changeDetails = createEl('details', { className: 'history-disclosure' });
+    changeDetails.append(createEl('summary', {}, [createEl('span', { text: 'Historia zmian' }), createEl('span', { className: 'tag', text: safeArray(state.changeHistory).length })]));
+    const changeContent = createEl('div', { className: 'history-disclosure-content' });
+    changeContent.append(createEl('div', { className: 'button-row' }, [
+      button('Cofnij ostatnią', undoLastChange, 'btn btn-quiet', { disabled: !safeArray(state.changeHistory).some(entry => entry.undoable) }),
+      button('Wyczyść historię', confirmClearChangeHistory, 'btn btn-quiet btn-ghost', { disabled: !safeArray(state.changeHistory).length })
+    ]));
+    const changeList = createEl('div', { className: 'history-list' });
+    const changeEntries = safeArray(state.changeHistory).slice().reverse();
+    if (!changeEntries.length) changeList.append(createEl('p', { className: 'muted small', text: 'Historia jest jeszcze pusta.' }));
+    for (const entry of changeEntries) changeList.append(createEl('div', { className: 'history-item' }, [createEl('p', { text: entry.description }), createEl('time', { text: formatDateTime(entry.time), dateTime: entry.time })]));
+    changeContent.append(changeList);
+    changeDetails.append(changeContent);
+
+    const diceDetails = createEl('details', { className: 'history-disclosure' });
+    diceDetails.append(createEl('summary', {}, [createEl('span', { text: 'Historia rzutów' }), createEl('span', { className: 'tag', text: safeArray(state.diceHistory).length })]));
+    const diceContent = createEl('div', { className: 'history-disclosure-content' });
+    diceContent.append(button('Wyczyść rzuty', confirmClearDiceHistory, 'btn btn-quiet btn-ghost btn-block', { disabled: !safeArray(state.diceHistory).length }));
+    const diceList = createEl('div', { className: 'dice-history' });
+    if (!safeArray(state.diceHistory).length) diceList.append(createEl('p', { className: 'muted small', text: 'Brak rzutów.' }));
+    for (const entry of safeArray(state.diceHistory)) diceList.append(createEl('div', { className: 'dice-history-item' }, [createEl('p', { text: entry.summary }), entry.details ? createEl('p', { className: 'muted small', text: entry.details }) : null, createEl('time', { text: formatDateTime(entry.time), dateTime: entry.time })]));
+    diceContent.append(diceList);
+    diceDetails.append(diceContent);
+
+    historyCard.append(changeDetails, diceDetails);
+    root.append(historyCard);
 
     const dataCard = card([], 'card-pad');
     dataCard.append(sectionHead('Dane i kopie zapasowe'));
@@ -2961,6 +3141,7 @@
     test('42. Użycie zasobu zmniejsza licznik i nie schodzi poniżej zera', () => { const fixture = createDefaultState(); fixture.inventory.items = [makeItem({ id:'resource', uses:{current:1,max:3} })]; const plan = planItemUse(fixture, 'resource'); assert(plan.valid && plan.after === 0); applyItemUseMutation(fixture, 'resource'); assert(fixture.inventory.items[0].uses.current === 0 && !planItemUse(fixture, 'resource').valid); });
     test('43. Aktywny ekwipunek obejmuje tylko noszone i trzymane przedmioty', () => { const fixture = createDefaultState(); fixture.inventory.items = [makeItem({ id:'held', carryState:'held' }), makeItem({ id:'worn', carryState:'worn' }), makeItem({ id:'stored', carryState:'stored' }), makeItem({ id:'spent', carryState:'spent' })]; assert(activeEquipmentItems(fixture).map(item => item.id).join(',') === 'held,worn'); });
     test('44. Helper Blizn wskazuje właściwy wpis i bezpiecznie odrzuca brak wpisu', () => { assert(getScarGuide(3).title === 'Powalony'); assert(getScarGuide(13) === null); assert(resolveScarHelperRoll('broken-bone', 6) === 'Czaszka'); });
+    test('45. Karta przedmiotu nie duplikuje akcji użycia', () => { const item = makeItem({ damageFormula:parseDamageFormulaNotation('d6'), uses:{current:2,max:3} }); assert(getItemPrimaryActionKinds(item).join(',') === 'roll,use,more'); assert(getItemPrimaryActionKinds(makeItem()).join(',') === 'more'); });
     return results;
   }
 
@@ -2973,8 +3154,8 @@
     body.append(createEl('div', { className: 'report-block' }, [
       createEl('h3', { text: 'Kontrole ręczne' }),
       createEl('ul', {}, [
-        createEl('li', { text: 'szerokość 320 px i 375–390 px' }),
-        createEl('li', { text: 'powiększony tekst systemowy' }),
+        createEl('li', { text: 'viewporty 320, 375, 390 i 414 px bez poziomego overflow' }),
+        createEl('li', { text: 'powiększony tekst 125% bez utraty akcji' }),
         createEl('li', { text: 'iPhone safe areas' }),
         createEl('li', { text: 'klawiatura ekranowa i focus' }),
         createEl('li', { text: 'prefers-reduced-motion' }),
