@@ -1,0 +1,95 @@
+name: Validate mobile UI polish
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout pull request
+        uses: actions/checkout@v4
+
+      - name: Validate final source and embedded tests
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib
+          import re
+
+          text = Path('index.html').read_text(encoding='utf-8')
+          if "const APP_VERSION = '0.4.0';" not in text:
+              raise SystemExit('Expected app version 0.4.0.')
+          digest = hashlib.sha256(Path('index.html').read_bytes()).hexdigest()
+          workflow = Path('.github/workflows/deploy-pages.yml').read_text(encoding='utf-8')
+          if digest not in workflow:
+              raise SystemExit('Deployment hash does not match index.html.')
+          scripts = re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>', text, flags=re.S | re.I)
+          if len(scripts) != 1:
+              raise SystemExit(f'Expected one inline script, found {len(scripts)}')
+          if re.search(r'<(?:script|link)[^>]+(?:src|href)=["\']https?://', text, flags=re.I):
+              raise SystemExit('External scripts or styles are not allowed.')
+          ids = re.findall(r'\bid=["\']([^"\']+)', text)
+          duplicates = sorted({value for value in ids if ids.count(value) > 1})
+          if duplicates:
+              raise SystemExit(f'Duplicate HTML ids: {duplicates}')
+          if text.count('<svg') < 6:
+              raise SystemExit('Expected at least six inline SVG icons.')
+
+          script = scripts[0]
+          marker = '  initialize();'
+          if script.count(marker) != 1:
+              raise SystemExit('Could not locate the initialization call.')
+          prefix = """globalThis.document={querySelector:()=>null,querySelectorAll:()=>[],documentElement:{dataset:{}},body:{append:()=>{},classList:{add:()=>{},remove:()=>{}},style:{}},addEventListener:()=>{},visibilityState:'visible'};globalThis.window={addEventListener:()=>{},scrollTo:()=>{}};globalThis.navigator={};globalThis.location={search:''};globalThis.localStorage={getItem:()=>null,setItem:()=>{},removeItem:()=>{}};globalThis.requestAnimationFrame=(fn)=>fn();globalThis.Node=class{};globalThis.HTMLElement=class{};globalThis.HTMLInputElement=class{};globalThis.HTMLTextAreaElement=class{};globalThis.HTMLSelectElement=class{};globalThis.Blob=class{};globalThis.URL={createObjectURL:()=>'',revokeObjectURL:()=>{}};\n"""
+          runner = """
+          const __results=runDeveloperTests();
+          const __failures=__results.filter(result=>!result.pass);
+          console.log(JSON.stringify({passed:__results.length-__failures.length,total:__results.length,failures:__failures},null,2));
+          if (__results.length !== 45 || __failures.length) process.exit(1);
+          """
+          Path('/tmp/app.js').write_text(script, encoding='utf-8')
+          Path('/tmp/app-tests.js').write_text(prefix + script.replace(marker, runner, 1), encoding='utf-8')
+          PY
+          node --check /tmp/app.js
+          node /tmp/app-tests.js
+
+      - name: Run final mobile browser audit
+        shell: bash
+        run: |
+          base64 -d implementation/mobile-ui-audit.cjs.gz.b64 | gzip -d > /tmp/mobile-ui-audit.cjs
+          mkdir -p /tmp/ui-audit
+          npm install --prefix /tmp/ui-audit --no-save playwright@1.55.0 >/tmp/npm-install.log 2>&1
+          /tmp/ui-audit/node_modules/.bin/playwright install --with-deps chromium >/tmp/playwright-install.log 2>&1
+          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/cairn-ui-server.log 2>&1 &
+          SERVER_PID=$!
+          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
+          for attempt in {1..30}; do
+            curl -fsS http://127.0.0.1:4173/ >/dev/null && break
+            sleep 1
+          done
+          set +e
+          NODE_PATH=/tmp/ui-audit/node_modules node /tmp/mobile-ui-audit.cjs > audit-output.log 2>&1
+          STATUS=$?
+          set -e
+          printf '%s\n' "$STATUS" > audit-status.txt
+
+      - name: Upload browser audit diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: mobile-ui-audit-diagnostics
+          path: |
+            audit-output.log
+            audit-status.txt
+          if-no-files-found: error
+
+      - name: Assert browser audit passed
+        shell: bash
+        run: |
+          cat audit-output.log
+          test "$(cat audit-status.txt)" = "0"
