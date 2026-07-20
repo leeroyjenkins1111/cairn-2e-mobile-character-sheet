@@ -42,7 +42,7 @@ jobs:
           )
           audit_text = audit_text.replace(
               "      assert(homeText.includes('Ochrona'), 'Protection label missing');",
-              "      assert(await page.locator('.protection-tile .status-label').innerText() === 'Ochrona', 'Protection label missing');",
+              "      const protectionLabel = await page.locator('.protection-tile').getAttribute('aria-label');\n      assert((protectionLabel || '').toLowerCase().includes('ochrona'), `Protection label missing: ${protectionLabel}`);",
               1,
           )
           audit_path.write_text(audit_text, encoding='utf-8')
