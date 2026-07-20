@@ -1,0 +1,119 @@
+a?.blast && trait.toLowerCase() === 'blast')),
+       notes: partial.notes || '',
+-      sourceExtras: partial.sourceExtras && typeof partial.sourceExtras === 'object' ? deepClone(partial.sourceExtras) : {}
++      sourceExtras
+     };
+   }
+ 
+@@ -842,11 +906,33 @@
+     return { valid: errors.length === 0, errors, warnings };
+   }
+ 
++  function migrateV1ToV2(candidate) {
++    const migrated = deepClone(candidate);
++    migrated.inventory = { slotLimit: 10, items: [], fatigue: [], ...(migrated.inventory || {}) };
++    migrated.inventory.items = safeArray(migrated.inventory.items).map(rawItem => {
++      const item = rawItem && typeof rawItem === 'object' ? deepClone(rawItem) : {};
++      const traits = safeArray(item.traits).map(String);
++      const formula = normalizeDamageFormula(item.damageFormula || item.damageDie, traits.some(trait => trait.toLowerCase() === 'blast'));
++      item.damageFormula = formula;
++      item.traits = traits.filter(trait => !(formula?.blast && trait.toLowerCase() === 'blast'));
++      if (Object.prototype.hasOwnProperty.call(item, 'damageDie')) {
++        item.sourceExtras = { ...(item.sourceExtras || {}), legacyDamageDie: item.damageDie };
++        delete item.damageDie;
++      }
++      return item;
++    });
++    migrated.schemaVersion = 2;
++    return migrated;
++  }
++
+   function migrateState(candidate) {
+     let migrated = deepClone(candidate);
+     if (!Number.isInteger(migrated.schemaVersion)) throw new Error('Brak schemaVersion.');
+     if (migrated.schemaVersion > SCHEMA_VERSION) throw new Error('Nieobsługiwana nowsza wersja danych.');
+-    // Reserved for future migrations: v1 is the first public schema.
++    while (migrated.schemaVersion < SCHEMA_VERSION) {
++      if (migrated.schemaVersion === 1) migrated = migrateV1ToV2(migrated);
++      else throw new Error(`Brak migracji dla schemaVersion ${migrated.schemaVersion}.`);
++    }
+     migrated.appVersion = APP_VERSION;
+     migrated.schemaVersion = SCHEMA_VERSION;
+     migrated.settings = { theme: 'dark', reducedMotionOverride: null, ...(migrated.settings || {}) };
+@@ -1051,6 +1137,23 @@
+     return { target, roll: natural, success, naturalSuccess: natural === 1, naturalFailure: natural === 20 };
+   }
+ 
++  function resolvePanicRecovery(sourceState, roll) {
++    const save = resolveSave(sourceState?.stats?.wil?.current, roll);
++    const panickedBefore = Boolean(sourceState?.conditions?.panicked);
++    const hpBefore = Math.max(0, toInt(sourceState?.stats?.hp?.current, 0));
++    return {
++      ...save,
++      panickedBefore,
++      panickedAfter: panickedBefore && !save.success,
++      hpBefore,
++      hpAfter: hpBefore
++    };
++  }
++
++  function applyPanicRecoveryMutation(target, result) {
++    if (result?.success) target.conditions.panicked = false;
++  }
++
+   function addDiceHistory(entry) {
+     state.diceHistory = [{ id: makeId(), time: nowIso(), ...entry }, ...safeArray(state.diceHistory)].slice(0, DICE_HISTORY_LIMIT);
+     recordEvent(entry.summary);
+@@ -1092,6 +1195,32 @@
+     return result;
+   }
+ 
++  function attemptRecoverFromPanic(forcedRoll = null) {
++    if (!state.conditions.panicked) {
++      showToast('Postać nie jest obecnie spanikowana.');
++      return null;
++    }
++    let roll;
++    try { roll = forcedRoll ?? rollDie(20); }
++    catch (error) { showToast(error.message, 'error'); return null; }
++    const result = resolvePanicRecovery(state, roll);
++    const natural = result.naturalSuccess ? ' — naturalne 1' : result.naturalFailure ? ' — naturalne 20' : '';
++    const summary = `Opanowanie paniki — WOL: ${roll} vs ${result.target} — ${result.success ? 'sukces' : 'porażka'}${natural}`;
++    addDiceHistory({ type: 'save', attr: 'wil', label: 'Opanowanie paniki', summary, notation: '1k20', result: roll, success: result.success, details: `Cel: ${result.target}` });
++    if (result.success) {
++      commitChange('Opanowano panikę po udanym rzucie WOL', next => applyPanicRecoveryMutation(next, result), { silent: true });
++    }
++    const details = [
++      `Aktualna WOL: ${result.target}.`,
++      result.naturalSuccess ? 'Naturalne 1 zawsze oznacza sukces.' : result.naturalFailure ? 'Naturalne 20 zawsze oznacza porażkę.' : `Wynik ${roll} jest ${result.success ? 'równy lub niższy' : 'wyższy'} od ${result.target}.`,
++      result.success ? `Panika została usunięta. OCHR pozostaje bez zmian (${result.hpAfter}).` : 'Panika pozostaje aktywna.'
++    ];
++    openResultSheet('Spróbuj opanować panikę', roll, result.success ? 'Sukces' : 'Porażka', details, result.success ? 'success' : 'danger');
++    announce(summary);
++    return result;
++  }
++
++
+   // ============================================================
+   // 8. Cairn rules
+   // ============================================================
+@@ -1136,6 +1265,37 @@
+     return { itemSlots, fatigueSlots, total: itemSlots + fatigueSlots, limit: 10 };
+   }
+ 
++  function droppableInventoryItems(sourceState = state) {
++    return safeArray(sourceState?.inventory?.items).filter(item => clamp(toInt(item.slots, 0), 0, 10) >= 1);
++  }
++
++  function planFatigueWithDroppedItem(sourceState, itemId, fatigue = makeFatigue()) {
++    const beforeUsage = calculateInventoryUsage(sourceState?.inventory?.items, sourceState?.inventory?.fatigue);
++    const droppedItem = safeArray(sourceState?.inventory?.items).find(item => item.id === itemId);
++    if (!droppedItem || toInt(droppedItem.slots, 0) < 1) {
++      return { valid: false, reason: 'Wybierz przedmiot zajmujący co najmniej jedno miejsce.', beforeUsage };
++    }
++    const next = deepClone(sourceState);
++    next.inventory.items = next.inventory.items.filter(item => item.id !== itemId);
++    next.inventory.fatigue.push(makeFatigue(fatigue));
++    const afterUsage = calculateInventoryUsage(next.inventory.items, next.inventory.fatigue);
++    if (afterUsage.total > next.inventory.slotLimit) {
++      return { valid: false, reason: `Operacja zajęłaby ${afterUsage.total}/${next.inventory.slotLimit} miejsc.`, b
