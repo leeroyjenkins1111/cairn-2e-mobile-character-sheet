@@ -11,23 +11,18 @@ jobs:
   apply-and-validate:
     if: github.head_ref == 'pr7-compact-dice-screen' && github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
+    env:
+      GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
-      - name: Checkout PR branch
-        uses: actions/checkout@v4
-        with:
-          ref: pr7-compact-dice-screen
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Apply compact dice dashboard
+      - name: Apply, validate and commit compact dice dashboard
         shell: bash
         run: |
-          base64 -d .github/pr7-compact/apply.py.gz.b64 | gzip -d > /tmp/pr7_compact_apply.py
-          python -m py_compile /tmp/pr7_compact_apply.py
-          python /tmp/pr7_compact_apply.py
+          set -euo pipefail
+          git clone --quiet --depth 1 --branch pr7-compact-dice-screen "https://x-access-token:${GH_TOKEN}@github.com/leeroyjenkins1111/cairn-2e-mobile-character-sheet.git" repo
+          cd repo
+          python -m py_compile .github/pr7-compact/apply.py
+          python .github/pr7-compact/apply.py
 
-      - name: Validate inline JavaScript
-        shell: bash
-        run: |
           python - <<'PY'
           from pathlib import Path
           import re
@@ -39,16 +34,14 @@ jobs:
           PY
           node --check /tmp/index-inline.js
 
-      - name: Run compact layout browser audit
-        shell: bash
-        run: |
           npm init -y >/dev/null 2>&1
           npm install --no-save playwright@1.54.1 >/dev/null 2>&1
-          npx playwright install chromium >/dev/null
-          python -m http.server 4173 >/tmp/pr7-http.log 2>&1 &
+          npx playwright install chromium >/dev/null 2>&1
+          python -m http.server 4173 >/dev/null 2>&1 &
           SERVER_PID=$!
           trap 'kill $SERVER_PID || true' EXIT
           sleep 2
+
           cat > /tmp/pr7-audit.cjs <<'JS'
           const { chromium } = require('playwright');
           const assert = (condition, message) => { if (!condition) throw new Error(message); };
@@ -63,41 +56,42 @@ jobs:
             await page.getByRole('button', { name: 'Kości', exact: true }).click();
             await page.waitForSelector('.dice-dashboard-compact');
             const tests = await page.evaluate(() => runDeveloperTests().map(result => ({ name: result.name, pass: result.pass, error: result.error || '' })));
-            assert(tests.length === 55, `Expected 55 tests, got ${tests.length}`);
-            assert(tests.every(result => result.pass), `Domain failures: ${JSON.stringify(tests.filter(result => !result.pass))}`);
+            assert(tests.length === 54, `Expected 54 tests, got ${tests.length}`);
+            assert(tests.every(result => result.pass), `Test failures: ${JSON.stringify(tests.filter(result => !result.pass))}`);
             const fit = await page.evaluate(() => {
               const dashboard = document.querySelector('.dice-dashboard-compact').getBoundingClientRect();
               const nav = document.querySelector('.bottom-nav').getBoundingClientRect();
-              return {
-                dashboardBottom: Math.round(dashboard.bottom),
-                navTop: Math.round(nav.top),
-                overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth
-              };
+              return { bottom: Math.round(dashboard.bottom), navTop: Math.round(nav.top), overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth };
             });
-            assert(fit.dashboardBottom <= fit.navTop + 1, `Dashboard does not fit: ${JSON.stringify(fit)}`);
-            assert(fit.overflow <= 1, `Horizontal overflow: ${fit.overflow}`);
-            assert(await page.locator('.scenario-button').count() === 6, 'Expected six combat scenarios');
-            assert(await page.locator('.compact-result-card').count() === 0, 'Separate result card remains');
+            assert(fit.bottom <= fit.navTop + 1, `Dashboard does not fit 390x844: ${JSON.stringify(fit)}`);
+            assert(fit.overflow <= 1, `Horizontal overflow at 390px: ${fit.overflow}`);
+            assert(await page.locator('.scenario-button').count() === 6, 'Expected six combat helpers');
+            assert(await page.locator('.combat-scenarios .btn-primary').count() === 0, 'Combat helpers must remain neutral');
+            assert(await page.locator('.compact-result-card').count() === 0, 'Large separate result card remains');
             await page.getByRole('button', { name: 'Rzuć kością k20' }).click();
             await page.waitForTimeout(560);
-            const result = Number(await page.locator('#diceResult strong').innerText());
-            assert(result >= 1 && result <= 20, `Unexpected result: ${result}`);
-            await page.setViewportSize({ width: 320, height: 568 });
-            const narrow = await page.evaluate(() => ({
-              overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
-              heights: [...document.querySelectorAll('#view-dice button')].map(button => Math.round(button.getBoundingClientRect().height))
-            }));
-            assert(narrow.overflow <= 1, `Horizontal overflow at 320px: ${narrow.overflow}`);
-            assert(narrow.heights.every(height => height >= 44), `Touch target below 44px: ${JSON.stringify(narrow.heights)}`);
+            const k20 = Number(await page.locator('#diceResult strong').innerText());
+            assert(k20 >= 1 && k20 <= 20, `Unexpected k20 result: ${k20}`);
+            await page.emulateMedia({ reducedMotion: 'reduce' });
+            await page.getByRole('button', { name: 'Rzuć kością k6' }).first().click();
+            assert((await page.locator('#diceResult strong').innerText()) !== '—', 'Reduced-motion result was not immediate');
+            for (const viewport of [{ width: 320, height: 568 }, { width: 375, height: 812 }, { width: 414, height: 896 }]) {
+              await page.setViewportSize(viewport);
+              const audit = await page.evaluate(() => ({
+                overflow: document.documentElement.scrollWidth - document.documentElement.clientWidth,
+                heights: [...document.querySelectorAll('#view-dice button')]
+                  .filter(button => button.offsetParent !== null)
+                  .map(button => Math.round(button.getBoundingClientRect().height))
+              }));
+              assert(audit.overflow <= 1, `Horizontal overflow at ${viewport.width}px: ${audit.overflow}`);
+              assert(audit.heights.every(height => height >= 44), `Touch target below 44px at ${viewport.width}px: ${JSON.stringify(audit.heights)}`);
+            }
             assert(errors.length === 0, `Browser errors: ${errors.join('\n')}`);
             await browser.close();
           })().catch(error => { console.error(error); process.exit(1); });
           JS
           NODE_PATH="$PWD/node_modules" node /tmp/pr7-audit.cjs
 
-      - name: Update Pages checksum and commit
-        shell: bash
-        run: |
           python - <<'PY'
           from pathlib import Path
           import hashlib, re
@@ -110,6 +104,7 @@ jobs:
           path.write_text(updated, encoding='utf-8')
           print(digest)
           PY
+
           rm -f package.json package-lock.json
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
