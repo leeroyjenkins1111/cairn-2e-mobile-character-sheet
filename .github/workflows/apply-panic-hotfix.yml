@@ -41,8 +41,8 @@ jobs:
                   "  function normalizeForcedD20(value) {\n    return Number.isInteger(value) && value >= 1 && value <= 20 ? value : null;\n  }\n\n  function attemptRecoverFromPanic(forcedRoll = null) {\n    if (!state.conditions.panicked) {",
               ),
               (
-                  "    let roll;\n    try { roll = forcedRoll ?? rollDie(20); }",
-                  "    const forcedD20 = normalizeForcedD20(forcedRoll);\n    let roll;\n    try { roll = forcedD20 ?? rollDie(20); }",
+                  "      return null;\n    }\n    let roll;\n    try { roll = forcedRoll ?? rollDie(20); }\n    catch (error) { showToast(error.message, 'error'); return null; }\n    const result = resolvePanicRecovery(state, roll);",
+                  "      return null;\n    }\n    const forcedD20 = normalizeForcedD20(forcedRoll);\n    let roll;\n    try { roll = forcedD20 ?? rollDie(20); }\n    catch (error) { showToast(error.message, 'error'); return null; }\n    const result = resolvePanicRecovery(state, roll);",
               ),
               (
                   "    test('35. Efektywny pancerz jest ograniczony do 3', () => { const fixture = createDemoState(); fixture.inventory.items = [makeItem({ armorValue:2, carryState:'worn' }), makeItem({ armorValue:2, carryState:'held' })]; assert(deriveArmor(fixture).effective === 3); });\n    return results;",
