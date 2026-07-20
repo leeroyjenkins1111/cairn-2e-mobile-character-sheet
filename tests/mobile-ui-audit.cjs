@@ -65,7 +65,7 @@ async function auditViews(page, suffix) {
   const svgCount = await page.locator('svg[aria-hidden="true"], .nav-icon svg').count();
   assert.ok(svgCount >= 6, `expected inline SVG icons, found ${svgCount}`);
 
-  await page.getByRole('button', { name: 'Obrażenia', exact: true }).click();
+  await page.getByRole('button', { name: /^Obrażenia/ }).click();
   assert.equal(await page.locator('.app-shell').evaluate((node) => node.inert), true, 'app shell should be inert behind sheet');
   assert.equal(await page.locator('#sheet').evaluate((node) => node.contains(document.activeElement)), true, 'focus should move into sheet');
   await page.keyboard.press('Escape');
