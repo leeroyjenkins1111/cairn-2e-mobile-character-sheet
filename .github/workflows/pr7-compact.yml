@@ -1,3 +1,4 @@
+# Trigger after PR creation.
 name: Apply PR7 compact dice dashboard
 
 on:
