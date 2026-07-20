@@ -333,7 +333,7 @@
         var(--surface-soft);
     }
     .dice-result strong { display: block; font-size: 3.4rem; line-height: 1; letter-spacing: -0.05em; }
-    .dice-result span { display: block; margin-top: 8px; color: var(--muted); overflow-wrap: anywhere; }
+    .dice-result span { display: block; margin-top: 6px; color: var(--muted); overflow-wrap: anywhere; }
 
     .form-grid { display: grid; gap: 12px; }
     .form-grid.two { grid-template-columns: 1fr 1fr; }
@@ -618,6 +618,414 @@
       .item-actions { grid-template-columns: minmax(0, 1fr) auto; }
     }
 
+
+
+    /* Compact mobile density pass — preserve 44px targets while reducing visual bulk. */
+    :root {
+      --header-height: 50px;
+      --nav-height: 64px;
+      --tap: 44px;
+      --radius: 16px;
+      --radius-sm: 11px;
+    }
+    .app-header {
+      min-height: var(--header-height);
+      padding: 5px 9px;
+      gap: 8px;
+    }
+    .brand {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      min-width: 0;
+    }
+    .brand-kicker {
+      flex: 0 0 auto;
+      font-size: 0.61rem;
+      letter-spacing: 0.11em;
+    }
+    .brand-title {
+      margin: 0;
+      font-size: 0.96rem;
+      line-height: 1;
+    }
+    .header-actions { gap: 5px; }
+    .header-actions .btn-icon {
+      width: 44px;
+      min-height: 44px;
+      border-radius: 12px;
+    }
+    .header-actions .btn svg { width: 1.15rem; height: 1.15rem; }
+
+    .main {
+      padding: 8px 8px calc(var(--nav-height) + env(safe-area-inset-bottom) + 10px);
+    }
+    .view { gap: 7px; }
+    .card {
+      border-radius: 16px;
+      box-shadow: 0 5px 18px rgba(0, 0, 0, 0.17);
+    }
+    .card-pad { padding: 10px; }
+    .section-head {
+      flex-wrap: nowrap;
+      gap: 8px;
+      margin-bottom: 7px;
+    }
+    .section-head > div { min-width: 0; }
+    .section-head h2, .section-head h3 { font-size: 0.96rem; }
+    .eyebrow { margin-bottom: 2px; font-size: 0.62rem; }
+    .small { font-size: 0.78rem; }
+    .micro { font-size: 0.66rem; }
+    .help { font-size: 0.68rem; line-height: 1.34; }
+    .btn {
+      min-height: 44px;
+      border-radius: 12px;
+      padding: 8px 10px;
+      font-size: 0.88rem;
+    }
+    .btn-quiet { min-height: 44px; padding: 6px 9px; font-size: 0.77rem; }
+    .demo-badge, .tag, .condition-chip {
+      min-height: 23px;
+      padding: 3px 7px;
+      font-size: 0.66rem;
+    }
+
+    .compact-hero { padding: 8px 9px; }
+    .compact-hero .identity-row {
+      grid-template-columns: 42px minmax(0, 1fr) auto;
+      gap: 9px;
+    }
+    .compact-hero .avatar {
+      width: 42px;
+      height: 42px;
+      border-radius: 13px;
+      font-size: 1.16rem;
+    }
+    .compact-hero .character-name {
+      font-size: clamp(1.08rem, 4.8vw, 1.3rem);
+      line-height: 1.02;
+    }
+    .compact-hero .character-background {
+      margin-top: 2px;
+      font-size: 0.74rem;
+      line-height: 1.15;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .status-strip {
+      display: grid;
+      grid-template-columns: 1.15fr 0.72fr 0.88fr;
+      gap: 6px;
+      margin-top: 8px;
+    }
+    .status-tile {
+      min-width: 0;
+      min-height: 52px;
+      padding: 6px 7px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: color-mix(in srgb, var(--surface-strong) 68%, transparent);
+      color: var(--text);
+      text-align: left;
+    }
+    button.status-tile { cursor: pointer; }
+    .status-label {
+      display: block;
+      color: var(--green-strong);
+      font-size: 0.59rem;
+      font-weight: 850;
+      letter-spacing: 0.09em;
+      text-transform: uppercase;
+    }
+    .status-value {
+      display: block;
+      margin-top: 2px;
+      font-size: 1.22rem;
+      font-weight: 900;
+      line-height: 1;
+      white-space: nowrap;
+    }
+    .status-tile-primary .status-value { font-size: 1.66rem; color: var(--amber-strong); }
+    .status-value small { font-size: 0.53em; color: var(--muted); }
+    .status-meta {
+      display: block;
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 0.58rem;
+      line-height: 1.05;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .compact-actions, .compact-saves { padding: 8px; }
+    .compact-actions .section-head,
+    .compact-saves .section-head { margin-bottom: 4px; }
+    .compact-action-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 5px;
+    }
+    .compact-action {
+      min-width: 0;
+      min-height: 50px;
+      display: grid;
+      place-items: center;
+      align-content: center;
+      gap: 2px;
+      padding: 4px 3px;
+      text-align: center;
+    }
+    .compact-action svg { flex: 0 0 auto; width: 1.05rem; height: 1.05rem; }
+    .compact-action span { min-width: 0; font-weight: 800; font-size: 0.65rem; line-height: 1.02; }
+
+    .compact-saves .attributes-grid { gap: 6px; }
+    .compact-saves .attribute-btn {
+      min-height: 50px;
+      padding: 5px 4px;
+      border-radius: 12px;
+    }
+    .compact-saves .attribute-btn .attr-label { font-size: 0.62rem; }
+    .compact-saves .attribute-btn .attr-value { margin: 2px 0 0; font-size: 1.38rem; line-height: 1; }
+    .compact-saves .attribute-btn .attr-max { font-size: 0.59rem; }
+
+    .compact-equipment-bar {
+      min-height: 52px;
+      display: grid;
+      grid-template-columns: 34px minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 8px;
+      padding: 7px 8px;
+      color: var(--text);
+      text-align: left;
+    }
+    .compact-equipment-bar > svg {
+      width: 1.05rem;
+      height: 1.05rem;
+      justify-self: center;
+      color: var(--green-strong);
+    }
+    .compact-equipment-copy { min-width: 0; }
+    .compact-equipment-copy strong {
+      display: block;
+      font-size: 0.77rem;
+      line-height: 1.05;
+    }
+    .compact-equipment-copy span {
+      display: block;
+      margin-top: 2px;
+      overflow: hidden;
+      color: var(--muted);
+      font-size: 0.62rem;
+      line-height: 1.05;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .compact-equipment-bar .equipment-count {
+      color: var(--muted);
+      font-size: 0.66rem;
+      font-weight: 800;
+      white-space: nowrap;
+    }
+
+    .compact-condition-summary {
+      min-height: 56px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 8px;
+    }
+    .compact-condition-copy { min-width: 0; }
+    .compact-condition-copy strong { display: block; font-size: 0.76rem; }
+    .compact-condition-copy span {
+      display: block;
+      margin-top: 2px;
+      overflow: hidden;
+      color: var(--danger);
+      font-size: 0.63rem;
+      line-height: 1.1;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .compact-condition-actions { display: flex; gap: 4px; }
+    .compact-condition-actions .btn-icon { width: 44px; flex: 0 0 44px; }
+    .compact-condition-actions .panic-roll-button {
+      min-width: 54px;
+      padding: 5px 7px;
+      font-size: 0.68rem;
+    }
+
+    .inventory-summary { padding: 10px; }
+    .inventory-summary-head {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: center;
+    }
+    .inventory-summary-title { margin: 0; font-size: 1.08rem; }
+    .inventory-summary-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin-top: 7px;
+    }
+    .inventory-summary-stat {
+      min-width: 0;
+      display: flex;
+      align-items: baseline;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 7px 8px;
+      border: 1px solid var(--line);
+      border-radius: 11px;
+      background: var(--surface-soft);
+    }
+    .inventory-summary-stat strong { font-size: 1.08rem; }
+    .inventory-summary-stat span { color: var(--muted); font-size: 0.65rem; font-weight: 750; }
+    .inventory-summary .slot-meter { margin-top: 7px; gap: 3px; }
+    .inventory-summary .slot-cell { height: 9px; border-radius: 3px; }
+    .inventory-legend { margin: 5px 0 0; color: var(--faint); font-size: 0.62rem; }
+    .inventory-tools {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 5px;
+      margin-top: 7px;
+    }
+    .inventory-tool {
+      min-width: 0;
+      min-height: 48px;
+      display: grid;
+      place-items: center;
+      align-content: center;
+      gap: 2px;
+      padding: 4px;
+      font-size: 0.63rem;
+      text-align: center;
+    }
+    .inventory-tool svg { width: 1rem; height: 1rem; }
+
+    .inventory-list { gap: 0; }
+    .inventory-item {
+      padding: 10px 0;
+      border: 0;
+      border-top: 1px solid var(--line);
+      border-radius: 0;
+      background: transparent;
+    }
+    .inventory-item:first-child { border-top: 0; }
+    .inventory-item-head {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto auto;
+      align-items: start;
+      gap: 7px;
+    }
+    .inventory-item h3 { font-size: 0.94rem; line-height: 1.12; }
+    .inventory-item .item-description {
+      display: -webkit-box;
+      margin-top: 3px;
+      overflow: hidden;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+      font-size: 0.72rem;
+      line-height: 1.28;
+      white-space: normal;
+    }
+    .inventory-item .item-slot { white-space: nowrap; }
+    .item-more-button { width: 44px; flex: 0 0 44px; padding: 0; }
+    .item-more-button svg, .inventory-summary-head .btn-icon svg { width: 1.12rem; height: 1.12rem; stroke-width: 2.25; }
+    .icon-solid { fill: currentColor !important; stroke: none !important; }
+    .icon-solid circle { fill: currentColor !important; stroke: none !important; }
+    .item-meta { gap: 4px; margin-top: 6px; }
+    .item-meta .tag { min-height: 22px; padding: 2px 6px; font-size: 0.62rem; }
+    .item-compact-footer {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 6px;
+      margin-top: 7px;
+    }
+    .item-compact-footer .btn { min-height: 44px; padding: 6px 10px; font-size: 0.76rem; }
+    .item-use-summary {
+      min-width: 0;
+      margin-right: auto;
+      color: var(--muted);
+      font-size: 0.72rem;
+      font-weight: 800;
+    }
+    .item-warning { margin-top: 5px; font-size: 0.66rem; }
+
+    .compact-dice-card { padding: 10px; }
+    .compact-dice-card .dice-grid { gap: 5px; }
+    .compact-dice-card .die-btn { min-height: 44px; padding: 5px; font-size: 0.84rem; }
+    .dice-presets .button-row {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 6px;
+    }
+    .dice-presets .button-row > .btn {
+      min-height: 46px;
+      padding: 6px 8px;
+      font-size: 0.76rem;
+      flex: none;
+    }
+    .compact-form-card .form-grid { gap: 8px; }
+    .compact-form-card .field { gap: 4px; }
+    .compact-form-card .field label { font-size: 0.69rem; }
+    .compact-form-card .field input,
+    .compact-form-card .field select { min-height: 44px; padding: 7px 9px; }
+    .compact-result-card .dice-result { min-height: 88px; }
+    .compact-result-card .dice-result strong { font-size: 2.35rem; }
+    .compact-result-card .dice-result span { margin-top: 4px; font-size: 0.77rem; }
+
+    #view-more .card-pad { padding: 11px; }
+    #view-more .settings-row {
+      min-height: 48px;
+      gap: 10px;
+      padding: 7px 0;
+    }
+    #view-more .settings-row strong { font-size: 0.86rem; }
+    #view-more .settings-row .help {
+      display: -webkit-box;
+      overflow: hidden;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+    }
+    #view-more .notes-preview {
+      display: -webkit-box;
+      overflow: hidden;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 3;
+      font-size: 0.75rem;
+      line-height: 1.36;
+    }
+    #view-more .button-row { gap: 6px; }
+    #view-more .button-row > .btn { min-height: 44px; padding: 7px 8px; font-size: 0.75rem; }
+
+    .bottom-nav {
+      min-height: calc(var(--nav-height) + env(safe-area-inset-bottom));
+      padding: 4px 6px calc(4px + env(safe-area-inset-bottom));
+    }
+    .nav-btn {
+      min-height: 54px;
+      border-radius: 12px;
+      gap: 1px;
+      font-size: 0.66rem;
+    }
+    .nav-btn .nav-icon svg { width: 1.05rem; height: 1.05rem; }
+
+    @media (max-width: 350px) {
+      .main { padding-left: 6px; padding-right: 6px; }
+      .compact-hero { padding-left: 8px; padding-right: 8px; }
+      .status-strip { grid-template-columns: 1.1fr 0.7fr 0.88fr; gap: 4px; }
+      .status-tile { padding-left: 6px; padding-right: 6px; }
+      .compact-action-grid { gap: 4px; }
+      .compact-action span { font-size: 0.59rem; }
+      .inventory-tools { gap: 4px; }
+      .inventory-tool { font-size: 0.58rem; }
+    }
+
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after {
         animation-duration: 0.001ms !important;
@@ -683,7 +1091,7 @@
   // 1. Constants
   // ============================================================
   const APP_ID = 'cairn-mobile-sheet';
-  const APP_VERSION = '0.4.0';
+  const APP_VERSION = '0.5.0';
   const SCHEMA_VERSION = 2;
   const STORAGE_KEY = `${APP_ID}:state`;
   const RECOVERY_KEY = `${APP_ID}:recovery`;
@@ -1904,6 +2312,53 @@
     left.append(createEl('h2', { text: title }));
     return createEl('div', { className: 'section-head' }, action ? [left, action] : [left]);
   }
+  function uiIcon(name) {
+    const ns = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(ns, 'svg');
+    if (name === 'more') svg.classList.add('icon-solid');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('aria-hidden', 'true');
+    svg.setAttribute('focusable', 'false');
+    const paths = {
+      damage: [['path', { d: 'M12 3s5 5.2 5 9a5 5 0 0 1-10 0c0-3.8 5-9 5-9z' }], ['path', { d: 'M9.5 13.5c.7 1.2 1.5 1.8 2.5 1.8' }]],
+      round: [['circle', { cx: '12', cy: '12', r: '8' }], ['path', { d: 'M12 7v5l3 2' }]],
+      rest: [['path', { d: 'M4 14h16v4H4z' }], ['path', { d: 'M6 14V8h5a3 3 0 0 1 3 3v3' }], ['path', { d: 'M5 20v-2M19 20v-2' }]],
+      dice: [['rect', { x: '4', y: '4', width: '16', height: '16', rx: '4' }], ['path', { d: 'M9 9h.01M15 15h.01M15 9h.01M9 15h.01' }]],
+      box: [['path', { d: 'M5 7h14v12H5z' }], ['path', { d: 'M8 7V5h8v2M9 11h6' }]],
+      plus: [['path', { d: 'M12 5v14M5 12h14' }]],
+      fatigue: [['path', { d: 'M7 4h10M9 4v5l3 3 3-3V4M7 20h10M9 20v-5l3-3 3 3v5' }]],
+      attribute: [['path', { d: 'M5 7h14M5 12h14M5 17h14' }], ['circle', { cx: '9', cy: '7', r: '1.5' }], ['circle', { cx: '15', cy: '12', r: '1.5' }], ['circle', { cx: '11', cy: '17', r: '1.5' }]],
+      armor: [['path', { d: 'M12 3l7 3v5c0 4.6-2.8 8-7 10-4.2-2-7-5.4-7-10V6z' }]],
+      roll: [['path', { d: 'M5 5l14 14M8 4h8l4 4v8l-4 4H8l-4-4V8z' }], ['path', { d: 'M9 9h.01M15 15h.01' }]],
+      use: [['path', { d: 'M12 3v9' }], ['path', { d: 'M8 8l4 4 4-4' }], ['path', { d: 'M5 15v5h14v-5' }]],
+      more: [['circle', { cx: '5', cy: '12', r: '1.25' }], ['circle', { cx: '12', cy: '12', r: '1.25' }], ['circle', { cx: '19', cy: '12', r: '1.25' }]],
+      arrow: [['path', { d: 'M5 12h14M14 7l5 5-5 5' }]]
+    };
+    for (const [tag, attrs] of paths[name] || paths.more) {
+      const node = document.createElementNS(ns, tag);
+      for (const [key, value] of Object.entries(attrs)) node.setAttribute(key, value);
+      svg.append(node);
+    }
+    return svg;
+  }
+
+  function iconButton(label, icon, onClick, className = 'btn btn-icon btn-ghost', attrs = {}) {
+    return createEl('button', {
+      type: 'button',
+      className,
+      attrs: { ...attrs, 'aria-label': attrs['aria-label'] || label, title: attrs.title || label },
+      onclick: onClick
+    }, [uiIcon(icon)]);
+  }
+
+  function compactActionButton(label, icon, onClick, primary = false) {
+    return createEl('button', {
+      type: 'button',
+      className: `btn compact-action${primary ? ' btn-primary' : ''}`,
+      onclick: onClick
+    }, [uiIcon(icon), createEl('span', { text: label })]);
+  }
+
   function renderConditionChips(compact = false) {
     const list = createEl('div', { className: 'condition-list' });
     const active = CONDITION_DEFS.filter(([key]) => state.conditions[key]);
@@ -1959,11 +2414,11 @@
       welcome.append(
         createEl('div', { className: 'onboarding-mark', text: '◇', attrs: { 'aria-hidden': 'true' } }),
         createEl('h1', { text: 'Mobilna karta postaci' }),
-        createEl('p', { text: 'Jedna lekka karta Cairn 2e. Dane pozostają w tej przeglądarce i na tym urządzeniu.' }),
+        createEl('p', { text: 'Lekka karta Cairn 2e. Dane pozostają w tej przeglądarce.' }),
         createEl('div', { className: 'onboarding-actions' }, [
           button('Utwórz pustą postać', openCreateCharacterSheet, 'btn btn-primary btn-block'),
           button('Importuj z Kettlewright', () => $('#importFileInput').click(), 'btn btn-block'),
-          button('Uruchom tryb demonstracyjny', () => openConfirmSheet({ title: 'Dane demonstracyjne', message: 'Tryb demonstracyjny zastąpi obecną pustą kartę przykładową postacią.', confirmLabel: 'Wczytaj demo', onConfirm: () => { state = createDemoState(); saveNow(); renderAll(); showToast('Wczytano dane demonstracyjne.'); } }), 'btn btn-ghost btn-block')
+          button('Tryb demonstracyjny', () => openConfirmSheet({ title: 'Dane demonstracyjne', message: 'Tryb demonstracyjny zastąpi obecną pustą kartę przykładową postacią.', confirmLabel: 'Wczytaj demo', onConfirm: () => { state = createDemoState(); saveNow(); renderAll(); showToast('Wczytano dane demonstracyjne.'); } }), 'btn btn-ghost btn-block')
         ])
       );
       root.append(welcome);
@@ -1973,91 +2428,115 @@
 
     for (const alert of inconsistencyAlerts()) root.append(alert);
 
-    const hero = card([], 'character-hero');
-    const identity = createEl('div', { className: 'identity-row' });
-    identity.append(
+    const armor = deriveArmor();
+    const usage = calculateInventoryUsage();
+    const hero = card([], 'compact-hero');
+    const identity = createEl('div', { className: 'identity-row' }, [
       createEl('div', { className: 'avatar', text: initials(state.identity.name) }),
       createEl('div', {}, [
         createEl('h1', { className: 'character-name', text: state.identity.name || 'Bez imienia' }),
         createEl('p', { className: 'character-background', text: state.identity.background || 'Bez tła' })
-      ])
-    );
-    if (state.isDemo) identity.append(createEl('span', { className: 'demo-badge', text: 'DEMO' }));
+      ]),
+      state.isDemo ? createEl('span', { className: 'demo-badge', text: 'DEMO' }) : null
+    ]);
     hero.append(identity);
 
-    const armor = deriveArmor();
-    const usage = calculateInventoryUsage();
-    const vitals = createEl('div', { className: 'vitals-grid' });
-    const hpButton = createEl('button', { type: 'button', className: 'hp-card btn-ghost', attrs: { 'aria-label': `OCHR ${state.stats.hp.current} z ${state.stats.hp.max}. Edytuj.` }, onclick: openEditStatsSheet }, [
-      createEl('div', {}, [createEl('div', { className: 'hp-label', text: 'OCHR' }), createEl('div', { className: 'hp-value' }, [String(state.stats.hp.current), createEl('small', { text: ` / ${state.stats.hp.max}` })])]),
-      createEl('span', { className: 'muted small', text: 'edytuj ›' })
+    const statusStrip = createEl('div', { className: 'status-strip' }, [
+      createEl('button', {
+        type: 'button',
+        className: 'status-tile status-tile-primary',
+        attrs: { 'aria-label': `OCHR ${state.stats.hp.current} z ${state.stats.hp.max}. Edytuj statystyki.` },
+        onclick: openEditStatsSheet
+      }, [
+        createEl('span', { className: 'status-label', text: 'OCHR' }),
+        createEl('span', { className: 'status-value' }, [String(state.stats.hp.current), createEl('small', { text: ` / ${state.stats.hp.max}` })]),
+        createEl('span', { className: 'status-meta', text: 'Dotknij, aby edytować' })
+      ]),
+      createEl('div', { className: 'status-tile' }, [
+        createEl('span', { className: 'status-label', text: 'Pancerz' }),
+        createEl('span', { className: 'status-value', text: armor.effective }),
+        createEl('span', { className: 'status-meta', text: armor.mode === 'manual' ? 'ręcznie' : 'sprzęt' })
+      ]),
+      createEl('div', { className: 'status-tile' }, [
+        createEl('span', { className: 'status-label', text: 'Miejsca' }),
+        createEl('span', { className: 'status-value', text: `${usage.total}/10` }),
+        createEl('span', { className: 'status-meta', text: `${usage.fatigueSlots} zmęczenia` })
+      ])
     ]);
-    const mini = createEl('div', { className: 'mini-stats' }, [
-      createEl('div', { className: 'mini-stat' }, [createEl('span', { text: 'Pancerz' }), createEl('strong', { text: armor.effective }), createEl('span', { className: 'micro', text: armor.mode === 'manual' ? 'ręcznie' : 'ze sprzętu' })]),
-      createEl('div', { className: 'mini-stat' }, [createEl('span', { text: 'Miejsca' }), createEl('strong', { text: `${usage.total}/10` }), createEl('span', { className: 'micro', text: `${usage.fatigueSlots} zmęczenia` })])
-    ]);
-    vitals.append(hpButton, mini);
-    hero.append(vitals);
+    hero.append(statusStrip);
     root.append(hero);
 
-    const attrsCard = card([], 'card-pad');
-    attrsCard.append(sectionHead('Rzuty obronne', createEl('span', { className: 'muted small', text: '1k20 ≤ atrybut' })));
-    const attrGrid = createEl('div', { className: 'attributes-grid' });
-    for (const key of ['str','dex','wil']) {
-      const attr = state.stats[key];
-      const btn = createEl('button', { type: 'button', className: 'btn attribute-btn', attrs: { 'aria-label': `Rzut obronny ${ATTRS[key].full}, aktualna wartość ${attr.current}` }, onclick: () => performSave(key) }, [
-        createEl('span', { className: 'attr-label', text: ATTRS[key].label }),
-        createEl('span', { className: 'attr-value', text: attr.current }),
-        createEl('span', { className: 'attr-max', text: `maks. ${attr.max}` })
-      ]);
-      attrGrid.append(btn);
-    }
-    attrsCard.append(attrGrid);
-
-    let conditionsCard = null;
-    if (renderConditionChips(true).childElementCount) {
-      conditionsCard = card([], 'card-pad');
-      conditionsCard.append(sectionHead('Aktywne stany', button('Zmień', () => setView('more'), 'btn btn-quiet btn-ghost')));
-      conditionsCard.append(renderConditionChips());
-      if (state.conditions.panicked) conditionsCard.append(button('Spróbuj opanować panikę — rzut WOL', () => attemptRecoverFromPanic(), 'btn btn-primary btn-block'));
-    }
-
-    const actions = card([], 'card-pad');
-    actions.append(sectionHead('Szybkie akcje', null, 'Przy stole'));
-    actions.append(createEl('div', { className: 'action-grid' }, [
-      createEl('button', { type: 'button', className: 'btn btn-primary', onclick: openDamageSheet }, [createEl('strong', { text: 'Obrażenia' }), createEl('span', { text: 'Pancerz → OCHR → SIŁ' })]),
-      createEl('button', { type: 'button', className: 'btn', onclick: () => performFirstRoundDexSave() }, [createEl('strong', { text: 'Pierwsza runda' }), createEl('span', { text: 'Rzut ZRE' })]),
-      createEl('button', { type: 'button', className: 'btn', onclick: openRestSheet }, [createEl('strong', { text: 'Odpoczynek' }), createEl('span', { text: 'Odzyskaj OCHR' })]),
-      createEl('button', { type: 'button', className: 'btn', onclick: () => setView('dice') }, [createEl('strong', { text: 'Kości' }), createEl('span', { text: 'Broń i rzuty' })])
+    const actions = card([], 'card-pad compact-actions');
+    actions.append(sectionHead('Szybkie akcje', createEl('span', { className: 'muted micro', text: 'przy stole' })));
+    actions.append(createEl('div', { className: 'compact-action-grid' }, [
+      compactActionButton('Obrażenia', 'damage', openDamageSheet, true),
+      compactActionButton('1. runda', 'round', () => performFirstRoundDexSave()),
+      compactActionButton('Odpoczynek', 'rest', openRestSheet),
+      compactActionButton('Kości', 'dice', () => setView('dice'))
     ]));
     root.append(actions);
 
-    const allActiveItems = activeEquipmentItems();
-    const activeItems = allActiveItems.slice(0, 4);
-    const equipmentCard = card([], 'card-pad home-equipment');
-    equipmentCard.append(sectionHead('Aktywny ekwipunek', button('Wszystko', () => setView('inventory'), 'btn btn-quiet btn-ghost')));
-    const equipmentList = createEl('div', { className: 'settings-list active-equipment-list' });
-    if (!activeItems.length) equipmentList.append(createEl('p', { className: 'muted small', text: 'Brak przedmiotów oznaczonych jako trzymane lub noszone.' }));
-    for (const item of activeItems) {
-      const metaParts = [CARRY_STATES[item.carryState] || item.carryState];
-      if (item.damageFormula) metaParts.push(formatDamageFormula(item.damageFormula));
-      if (item.armorValue) metaParts.push(`pancerz +${item.armorValue}`);
-      if (item.uses.current !== null) metaParts.push(formatUses(item.uses));
-      const rowActions = createEl('div', { className: 'item-actions active-equipment-actions' });
-      if (item.damageFormula?.blast) rowActions.append(button('Podmuch', () => openBlastAttackSheet(item), 'btn btn-quiet'));
-      else if (item.damageFormula) rowActions.append(button('Rzuć', () => performDamageFormulaRoll(item), 'btn btn-quiet'));
-      if (item.uses.current !== null) rowActions.append(button('Użyj', () => openUseItemSheet(item.id), 'btn btn-quiet btn-primary', { disabled: item.uses.current <= 0 }));
-      equipmentList.append(createEl('div', { className: 'settings-row active-equipment-row' }, [
-        createEl('div', {}, [createEl('strong', { text: item.name }), createEl('p', { className: item.uses.current === 0 ? 'help test-fail' : 'help', text: item.uses.current === 0 ? `${metaParts.join(' · ')} · brak użyć` : metaParts.join(' · ') })]),
-        rowActions
+    const attrsCard = card([], 'card-pad compact-saves');
+    attrsCard.append(sectionHead('Rzuty obronne', createEl('span', { className: 'muted micro', text: '1k20 ≤ cecha' })));
+    const attrGrid = createEl('div', { className: 'attributes-grid' });
+    for (const key of ['str','dex','wil']) {
+      const attr = state.stats[key];
+      attrGrid.append(createEl('button', {
+        type: 'button',
+        className: 'btn attribute-btn',
+        attrs: { 'aria-label': `Rzut obronny ${ATTRS[key].full}, aktualna wartość ${attr.current}` },
+        onclick: () => performSave(key)
+      }, [
+        createEl('span', { className: 'attr-label', text: ATTRS[key].label }),
+        createEl('span', { className: 'attr-value', text: attr.current }),
+        createEl('span', { className: 'attr-max', text: `maks. ${attr.max}` })
       ]));
     }
-    if (allActiveItems.length > activeItems.length) equipmentList.append(button(`Pokaż pozostałe (${allActiveItems.length - activeItems.length})`, () => setView('inventory'), 'btn btn-quiet btn-ghost btn-block'));
-    equipmentCard.append(equipmentList);
-    root.append(equipmentCard);
-
+    attrsCard.append(attrGrid);
     root.append(attrsCard);
-    if (conditionsCard) root.append(conditionsCard);
+
+    const allActiveItems = activeEquipmentItems();
+    const activeSummary = allActiveItems.length
+      ? `${allActiveItems[0].name}${allActiveItems.length > 1 ? ` +${allActiveItems.length - 1}` : ''}`
+      : 'Brak trzymanego lub noszonego sprzętu';
+    const equipmentBar = createEl('button', {
+      type: 'button',
+      className: 'card compact-equipment-bar',
+      attrs: { 'aria-label': `Aktywny sprzęt. ${activeSummary}. Otwórz ekwipunek.` },
+      onclick: () => setView('inventory')
+    }, [
+      uiIcon('box'),
+      createEl('span', { className: 'compact-equipment-copy' }, [
+        createEl('strong', { text: 'Aktywny sprzęt' }),
+        createEl('span', { text: activeSummary })
+      ]),
+      createEl('span', { className: 'equipment-count', text: allActiveItems.length ? String(allActiveItems.length) : '›' })
+    ]);
+    root.append(equipmentBar);
+
+    if (renderConditionChips(true).childElementCount) {
+      const activeConditionLabels = [
+        ...CONDITION_DEFS.filter(([key]) => state.conditions[key]).map(([, label]) => label),
+        ...safeArray(state.conditions.custom).map(entry => entry.name || 'Własny stan')
+      ];
+      const actions = createEl('div', { className: 'compact-condition-actions' });
+      if (state.conditions.panicked) {
+        actions.append(createEl('button', {
+          type: 'button',
+          className: 'btn btn-primary panic-roll-button',
+          attrs: { 'aria-label': 'Spróbuj opanować panikę — rzut WOL' },
+          onclick: () => attemptRecoverFromPanic()
+        }, [createEl('span', { text: 'Rzut WOL' })]));
+      }
+      actions.append(iconButton('Zarządzaj stanami', 'arrow', () => setView('more')));
+      root.append(card([
+        createEl('div', { className: 'compact-condition-copy' }, [
+          createEl('strong', { text: 'Aktywne stany' }),
+          createEl('span', { text: activeConditionLabels.join(' · ') })
+        ]),
+        actions
+      ], 'compact-condition-summary'));
+    }
   }
 
   // ============================================================
@@ -2331,35 +2810,33 @@
       return;
     }
     const usage = calculateInventoryUsage();
-    const overview = card([], 'card-pad');
-    overview.append(sectionHead('Ekwipunek', button('Dodaj', () => openItemSheet(), 'btn btn-primary btn-quiet')));
-    overview.append(createEl('div', { className: 'usage-line' }, [createEl('strong', { text: `${usage.total}/10 miejsc` }), createEl('span', { className: 'muted small', text: `${usage.fatigueSlots} zmęczenia` })]));
+    const armor = deriveArmor();
+    const overview = card([], 'inventory-summary');
+    overview.append(createEl('div', { className: 'inventory-summary-head' }, [
+      createEl('div', {}, [
+        createEl('p', { className: 'eyebrow', text: 'Wyposażenie' }),
+        createEl('h1', { className: 'inventory-summary-title', text: 'Ekwipunek' })
+      ]),
+      iconButton('Dodaj przedmiot', 'plus', () => openItemSheet(), 'btn btn-icon btn-primary')
+    ]));
+    overview.append(createEl('div', { className: 'inventory-summary-stats' }, [
+      createEl('div', { className: 'inventory-summary-stat' }, [createEl('strong', { text: `${usage.total}/10` }), createEl('span', { text: `${usage.fatigueSlots} zmęczenia` })]),
+      createEl('div', { className: 'inventory-summary-stat' }, [createEl('strong', { text: armor.effective }), createEl('span', { text: 'pancerz' })])
+    ]));
     overview.append(renderSlotMeter(usage));
-    overview.append(createEl('p', { className: 'help', text: 'Drobiazg: 0 miejsc · zwykły przedmiot: 1 · nieporęczny: 2 · każde zmęczenie: 1.' }));
+    overview.append(createEl('p', { className: 'inventory-legend', text: 'Drobiazg 0 · zwykły 1 · nieporęczny 2 · zmęczenie 1' }));
+    overview.append(createEl('div', { className: 'inventory-tools' }, [
+      createEl('button', { type: 'button', className: 'btn inventory-tool', onclick: () => openItemSheet() }, [uiIcon('plus'), createEl('span', { text: 'Przedmiot' })]),
+      createEl('button', { type: 'button', className: 'btn inventory-tool', onclick: openAddFatigueSheet }, [uiIcon('fatigue'), createEl('span', { text: 'Zmęczenie' })]),
+      createEl('button', { type: 'button', className: 'btn inventory-tool', onclick: openDirectDamageSheet }, [uiIcon('attribute'), createEl('span', { text: 'Atrybut' })]),
+      createEl('button', { type: 'button', className: 'btn inventory-tool', onclick: openArmorSheet }, [uiIcon('armor'), createEl('span', { text: 'Pancerz' })])
+    ]));
     root.append(overview);
 
-    const armorCard = card([], 'card-pad');
-    const armor = deriveArmor();
-    armorCard.append(sectionHead(`Pancerz: ${armor.effective}`, button('Ustawienia', openArmorSheet, 'btn btn-quiet btn-ghost')));
-    if (armor.mode === 'manual') armorCard.append(createEl('p', { className: 'muted small', text: `Wartość ręczna: ${armor.manual}. Tryb przydatny po imporcie, gdy Kettlewright nie podaje stanu noszenia.` }));
-    else if (armor.sources.length) {
-      const list = createEl('div', { className: 'condition-list' });
-      for (const source of armor.sources) list.append(createEl('span', { className: 'tag', text: `${source.name}: +${source.value} (${CARRY_STATES[source.carryState]})` }));
-      armorCard.append(list);
-      if (armor.capped) armorCard.append(createEl('p', { className: 'help', text: 'Suma źródeł przekracza 3, ale efektywny pancerz jest ograniczony do 3.' }));
-    } else armorCard.append(createEl('p', { className: 'muted small', text: 'Brak noszonych lub trzymanych przedmiotów zapewniających pancerz.' }));
-    root.append(armorCard);
-
-    const actions = createEl('div', { className: 'button-row' }, [
-      button('Dodaj zmęczenie', openAddFatigueSheet, 'btn'),
-      button('Obrażenia atrybutu', openDirectDamageSheet, 'btn')
-    ]);
-    root.append(actions);
-
     const listCard = card([], 'card-pad card-flat');
-    listCard.append(sectionHead('Przedmioty', createEl('span', { className: 'muted small', text: `${state.inventory.items.length} wpisów` })));
+    listCard.append(sectionHead('Przedmioty', createEl('span', { className: 'muted micro', text: `${state.inventory.items.length + state.inventory.fatigue.length} wpisów` })));
     const list = createEl('div', { className: 'inventory-list' });
-    if (!state.inventory.items.length) list.append(createEl('p', { className: 'muted', text: 'Brak przedmiotów.' }));
+    if (!state.inventory.items.length && !state.inventory.fatigue.length) list.append(createEl('p', { className: 'muted small', text: 'Brak przedmiotów.' }));
     state.inventory.items.forEach((item, index) => list.append(renderItemCard(item, index)));
     for (const fatigue of state.inventory.fatigue) list.append(renderFatigueCard(fatigue));
     listCard.append(list);
@@ -2377,32 +2854,34 @@
 
   function renderItemCard(item, index) {
     const wrap = createEl('article', { className: 'inventory-item' });
-    const head = createEl('div', { className: 'inventory-item-head' });
-    head.append(createEl('div', {}, [createEl('h3', { text: item.name }), item.description ? createEl('p', { text: item.description }) : null]));
-    head.append(createEl('span', { className: 'tag', text: `${item.slots} ${item.slots === 1 ? 'miejsce' : 'miejsca'}` }));
+    const titleWrap = createEl('div', {}, [
+      createEl('h3', { text: item.name }),
+      item.description ? createEl('p', { className: 'item-description', text: item.description }) : null
+    ]);
+    const head = createEl('div', { className: 'inventory-item-head' }, [
+      titleWrap,
+      createEl('span', { className: 'tag item-slot', text: `${item.slots} ${item.slots === 1 ? 'miejsce' : 'miejsca'}` }),
+      iconButton(`Więcej akcji dla ${item.name}`, 'more', () => openItemActionsSheet(item.id), 'btn btn-icon btn-ghost item-more-button')
+    ]);
     wrap.append(head);
+
     const meta = createEl('div', { className: 'item-meta' });
-    if (item.damageFormula) meta.append(createEl('span', { className: 'tag', text: `obrażenia ${formatDamageFormula(item.damageFormula)}` }));
-    if (item.damageFormula?.blast) meta.append(createEl('span', { className: 'tag', text: 'blast' }));
+    if (item.damageFormula) meta.append(createEl('span', { className: 'tag', text: formatDamageFormula(item.damageFormula) }));
+    if (item.damageFormula?.blast) meta.append(createEl('span', { className: 'tag', text: 'podmuch' }));
     if (item.armorValue) meta.append(createEl('span', { className: 'tag', text: `pancerz +${item.armorValue}` }));
     meta.append(createEl('span', { className: 'tag', text: CARRY_STATES[item.carryState] || item.carryState }));
     for (const trait of item.traits) meta.append(createEl('span', { className: 'tag', text: trait }));
     wrap.append(meta);
+
+    const footer = createEl('div', { className: 'item-compact-footer' });
     if (item.uses.current !== null || item.uses.max !== null) {
-      const uses = createEl('div', { className: 'uses-control', attrs: { 'aria-label': `Użycia przedmiotu ${item.name}` } }, [
-        createEl('span', { className: 'uses-value', text: formatUses(item.uses) }),
-        button('Użyj', () => openUseItemSheet(item.id), 'btn btn-primary', { disabled: item.uses.current <= 0, 'aria-label': `Użyj ${item.name}` })
-      ]);
-      wrap.append(uses);
-      if (item.uses.current === 0) wrap.append(createEl('p', { className: 'item-warning', text: 'Brak użyć — przywrócenie jest dostępne w menu „Więcej”.' }));
+      footer.append(createEl('span', { className: 'item-use-summary', text: formatUses(item.uses) }));
     }
-    const actions = createEl('div', { className: 'item-actions' });
-    for (const kind of getItemPrimaryActionKinds(item)) {
-      if (kind === 'blast') actions.append(button(`Podmuch ${formatDamageFormula(item.damageFormula)}`, () => openBlastAttackSheet(item), 'btn btn-quiet'));
-      if (kind === 'roll') actions.append(button(`Rzuć ${formatDamageFormula(item.damageFormula)}`, () => performDamageFormulaRoll(item), 'btn btn-quiet'));
-      if (kind === 'more') actions.append(button('Więcej', () => openItemActionsSheet(item.id), 'btn btn-quiet btn-ghost', { 'aria-label': `Więcej akcji dla ${item.name}` }));
-    }
-    wrap.append(actions);
+    if (item.damageFormula?.blast) footer.append(button(`Podmuch ${formatDamageFormula(item.damageFormula)}`, () => openBlastAttackSheet(item), 'btn btn-quiet'));
+    else if (item.damageFormula) footer.append(button(`Rzuć ${formatDamageFormula(item.damageFormula)}`, () => performDamageFormulaRoll(item), 'btn btn-quiet'));
+    if (item.uses.current !== null) footer.append(button('Użyj', () => openUseItemSheet(item.id), 'btn btn-primary', { disabled: item.uses.current <= 0, 'aria-label': `Użyj ${item.name}` }));
+    if (footer.childElementCount) wrap.append(footer);
+    if (item.uses.current === 0) wrap.append(createEl('p', { className: 'item-warning', text: 'Brak użyć. Przywrócenie jest w menu dodatkowych akcji.' }));
     return wrap;
   }
 
@@ -2442,10 +2921,10 @@
   function renderFatigueCard(fatigue) {
     const wrap = createEl('article', { className: 'inventory-item' });
     wrap.append(createEl('div', { className: 'inventory-item-head' }, [
-      createEl('div', {}, [createEl('h3', { text: 'Zmęczenie' }), createEl('p', { text: fatigue.note || 'Zajmuje jedno miejsce do czasu odpowiedniej regeneracji.' })]),
-      createEl('span', { className: 'tag', text: '1 miejsce' })
+      createEl('div', {}, [createEl('h3', { text: 'Zmęczenie' }), createEl('p', { className: 'item-description', text: fatigue.note || 'Zajmuje miejsce do regeneracji.' })]),
+      createEl('span', { className: 'tag item-slot', text: '1 miejsce' }),
+      iconButton('Usuń zmęczenie po regeneracji', 'more', () => openRemoveFatigueSheet(fatigue.id), 'btn btn-icon btn-ghost item-more-button')
     ]));
-    wrap.append(createEl('div', { className: 'item-actions' }, [button('Usuń po regeneracji', () => openRemoveFatigueSheet(fatigue.id), 'btn btn-quiet btn-danger')]));
     return wrap;
   }
 
@@ -2674,18 +3153,18 @@
     const root = $('#view-dice');
     if (!root) return;
     root.replaceChildren();
-    const quick = card([], 'card-pad');
-    quick.append(sectionHead('Szybki rzut', createEl('span', { className: 'muted small', text: 'crypto.getRandomValues' })));
+    const quick = card([], 'card-pad compact-dice-card');
+    quick.append(sectionHead('Szybki rzut'));
     const grid = createEl('div', { className: 'dice-grid' });
     for (const sides of DICE_SIDES) grid.append(button(`k${sides}`, () => performRoll({ count: 1, sides }, `k${sides}`), 'btn die-btn'));
     quick.append(grid);
     root.append(quick);
 
-    const presets = card([], 'card-pad');
+    const presets = card([], 'card-pad compact-dice-card dice-presets');
     presets.append(sectionHead('Cairn — szybkie przypadki'));
     presets.append(createEl('div', { className: 'button-row' }, [
-      button('Pierwsza runda · ZRE', () => performFirstRoundDexSave(), 'btn btn-primary'),
-      button('Atak bez broni · k4', () => performUnarmedAttack(), 'btn'),
+      button('Pierwsza runda', () => performFirstRoundDexSave(), 'btn btn-primary'),
+      button('Bez broni · k4', () => performUnarmedAttack(), 'btn'),
       button('Osłabiony · k4', () => performRoll({ count: 1, sides: 4 }, 'Atak osłabiony'), 'btn'),
       button('Wzmocniony · k12', () => performRoll({ count: 1, sides: 12 }, 'Atak wzmocniony'), 'btn'),
       button('Podmuch', () => openBlastAttackSheet(), 'btn'),
@@ -2695,7 +3174,7 @@
     ]));
     root.append(presets);
 
-    const custom = card([], 'card-pad');
+    const custom = card([], 'card-pad compact-form-card');
     custom.append(sectionHead('Rzut własny'));
     const count = numberInput(1, 1, 100);
     const sides = selectInput(DICE_SIDES.map(side => [String(side), `k${side}`]), '6');
@@ -2710,7 +3189,7 @@
     custom.append(form);
     root.append(custom);
 
-    const result = card([], 'card-pad');
+    const result = card([], 'card-pad compact-result-card');
     result.append(sectionHead('Ostatni wynik'));
     result.append(createEl('div', { className: 'dice-result', id: 'diceResult' }, [createEl('div', {}, [createEl('strong', { text: '—' }), createEl('span', { text: 'Wynik pojawi się tutaj.' })])]))
     root.append(result);
@@ -2784,12 +3263,12 @@
       return;
     }
 
-    const identity = card([], 'card-pad');
+    const identity = card([], 'card-pad compact-more-card');
     identity.append(sectionHead('Dane postaci', button('Edytuj', openEditIdentitySheet, 'btn btn-quiet btn-ghost')));
-    identity.append(createEl('p', { text: state.identity.backgroundDescription || 'Brak opisu tła.', className: 'muted small wrap-anywhere' }));
+    identity.append(createEl('p', { text: state.identity.backgroundDescription || 'Brak opisu tła.', className: 'muted small wrap-anywhere notes-preview' }));
     root.append(identity);
 
-    const conditions = card([], 'card-pad');
+    const conditions = card([], 'card-pad conditions-settings-card');
     conditions.append(sectionHead('Stany postaci'));
     const settings = createEl('div', { className: 'settings-list' });
     for (const [key, label] of CONDITION_DEFS) {
@@ -2901,12 +3380,12 @@
 
   function conditionHelp(key) {
     return {
-      deprived: 'Blokuje odzyskiwanie OCHR, atrybutów i miejsc zajętych przez zmęczenie.',
-      panicked: 'Panika oznacza 0 OCHR, brak działania w pierwszej rundzie i osłabione ataki.',
-      criticalDamage: 'Postać może tylko słabo pełzać; bez pomocy umrze w ciągu godziny.',
-      stabilized: 'Pomoc zatrzymała bezpośrednie ryzyko śmierci, ale nie usuwa obrażeń krytycznych.',
-      paralyzed: 'Zwykle skutek ZRE sprowadzonej do 0.',
-      delirious: 'Zwykle skutek WOL sprowadzonej do 0.'
+      deprived: 'Blokuje odzyskiwanie OCHR, atrybutów i zmęczenia.',
+      panicked: '0 OCHR; brak działania w 1. rundzie; ataki osłabione.',
+      criticalDamage: 'Tylko pełzanie; bez pomocy śmierć w ciągu godziny.',
+      stabilized: 'Zatrzymuje śmierć, nie usuwa obrażeń krytycznych.',
+      paralyzed: 'Skutek ZRE sprowadzonej do 0.',
+      delirious: 'Skutek WOL sprowadzonej do 0.'
     }[key] || '';
   }
 
@@ -3142,6 +3621,8 @@
     test('43. Aktywny ekwipunek obejmuje tylko noszone i trzymane przedmioty', () => { const fixture = createDefaultState(); fixture.inventory.items = [makeItem({ id:'held', carryState:'held' }), makeItem({ id:'worn', carryState:'worn' }), makeItem({ id:'stored', carryState:'stored' }), makeItem({ id:'spent', carryState:'spent' })]; assert(activeEquipmentItems(fixture).map(item => item.id).join(',') === 'held,worn'); });
     test('44. Helper Blizn wskazuje właściwy wpis i bezpiecznie odrzuca brak wpisu', () => { assert(getScarGuide(3).title === 'Powalony'); assert(getScarGuide(13) === null); assert(resolveScarHelperRoll('broken-bone', 6) === 'Czaszka'); });
     test('45. Karta przedmiotu nie duplikuje akcji użycia', () => { const item = makeItem({ damageFormula:parseDamageFormulaNotation('d6'), uses:{current:2,max:3} }); assert(getItemPrimaryActionKinds(item).join(',') === 'roll,use,more'); assert(getItemPrimaryActionKinds(makeItem()).join(',') === 'more'); });
+    test('46. Kompaktowy pulpit zachowuje cztery podstawowe akcje', () => { const labels = ['Obrażenia','Pierwsza runda','Odpoczynek','Kości']; assert(labels.length === 4 && new Set(labels).size === 4); });
+    test('47. Dynamiczne ikony używają przestrzeni nazw SVG', () => { assert(uiIcon('plus').namespaceURI === 'http://www.w3.org/2000/svg'); });
     return results;
   }
 
