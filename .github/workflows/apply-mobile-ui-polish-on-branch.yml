@@ -7,6 +7,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: pr4-mobile-ui-polish
+  cancel-in-progress: true
+
 jobs:
   validate:
     runs-on: ubuntu-latest
@@ -61,22 +65,26 @@ jobs:
       - name: Run final mobile browser audit
         shell: bash
         run: |
-          base64 -d implementation/mobile-ui-audit.cjs.gz.b64 | gzip -d > /tmp/mobile-ui-audit.cjs
-          mkdir -p /tmp/ui-audit
-          npm install --prefix /tmp/ui-audit --no-save playwright@1.55.0 >/tmp/npm-install.log 2>&1
-          /tmp/ui-audit/node_modules/.bin/playwright install --with-deps chromium >/tmp/playwright-install.log 2>&1
-          python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/cairn-ui-server.log 2>&1 &
-          SERVER_PID=$!
-          trap 'kill "$SERVER_PID" 2>/dev/null || true' EXIT
-          for attempt in {1..30}; do
-            curl -fsS http://127.0.0.1:4173/ >/dev/null && break
-            sleep 1
-          done
           set +e
-          NODE_PATH=/tmp/ui-audit/node_modules node /tmp/mobile-ui-audit.cjs > audit-output.log 2>&1
+          {
+            base64 -d implementation/mobile-ui-audit.cjs.gz.b64 | gzip -d > /tmp/mobile-ui-audit.cjs
+            mkdir -p /tmp/ui-audit
+            npm install --prefix /tmp/ui-audit --no-save playwright@1.55.0
+            /tmp/ui-audit/node_modules/.bin/playwright install --with-deps chromium
+            python3 -m http.server 4173 --bind 127.0.0.1 > /tmp/cairn-ui-server.log 2>&1 &
+            SERVER_PID=$!
+            for attempt in {1..30}; do
+              curl -fsS http://127.0.0.1:4173/ >/dev/null && break
+              sleep 1
+            done
+            NODE_PATH=/tmp/ui-audit/node_modules node /tmp/mobile-ui-audit.cjs
+            RESULT=$?
+            kill "$SERVER_PID" 2>/dev/null || true
+            exit "$RESULT"
+          } > audit-output.log 2>&1
           STATUS=$?
-          set -e
           printf '%s\n' "$STATUS" > audit-status.txt
+          exit 0
 
       - name: Upload browser audit diagnostics
         if: always()
