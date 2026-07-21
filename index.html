@@ -1674,6 +1674,43 @@
       .dice-recent-item:last-child:nth-child(odd) { grid-column: 1 / -1; }
     }
 
+    /* Local recovery checkpoints v0.12.0. */
+    .recovery-checkpoint-list { display: grid; gap: 8px; }
+    .recovery-checkpoint-item {
+      min-width: 0;
+      display: grid;
+      gap: 8px;
+      padding: 11px;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      background: var(--surface-soft);
+    }
+    .recovery-checkpoint-head {
+      min-width: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 8px;
+      align-items: start;
+    }
+    .recovery-checkpoint-head strong,
+    .recovery-checkpoint-head span { overflow-wrap: anywhere; }
+    .recovery-checkpoint-copy { min-width: 0; display: grid; gap: 3px; }
+    .recovery-checkpoint-copy p { margin: 0; color: var(--muted); font-size: 0.74rem; line-height: 1.35; }
+    .recovery-checkpoint-copy time { color: var(--faint); font-size: 0.66rem; }
+    .recovery-checkpoint-actions {
+      min-width: 0;
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 7px;
+    }
+    .recovery-checkpoint-actions .btn { min-width: 0; padding-inline: 8px; }
+    .recovery-checkpoint-empty { margin: 0; color: var(--muted); font-size: 0.82rem; line-height: 1.45; }
+
+    @media (max-width: 350px) {
+      .recovery-checkpoint-head { grid-template-columns: 1fr; }
+      .recovery-checkpoint-actions { grid-template-columns: 1fr; }
+    }
+
   </style>
 </head>
 <body>
@@ -1731,10 +1768,11 @@
   // 1. Constants
   // ============================================================
   const APP_ID = 'cairn-mobile-sheet';
-  const APP_VERSION = '0.11.0';
+  const APP_VERSION = '0.12.0';
   const SCHEMA_VERSION = 3;
   const STORAGE_KEY = `${APP_ID}:state`;
   const RECOVERY_KEY = `${APP_ID}:recovery`;
+  const CHECKPOINTS_KEY = `${APP_ID}:checkpoints`;
   const BACKUP_META_KEY = `${APP_ID}:backup-meta`;
   const BACKUP_REMINDER_CHANGE_THRESHOLD = 10;
   const BACKUP_REMINDER_DAYS = 14;
@@ -1743,6 +1781,7 @@
   const DICE_HISTORY_LIMIT = 20;
   const SESSION_ARCHIVE_LIMIT = 20;
   const SESSION_EVENT_LIMIT = 500;
+  const CHECKPOINT_LIMIT = 3;
   const SAVE_DEBOUNCE_MS = 300;
   const DICE_SIDES = [4, 6, 8, 10, 12, 20, 100];
   const DAMAGE_DIE_SIDES = [4, 6, 8, 10, 12];
@@ -2318,6 +2357,7 @@
   let loadWarning = '';
   let saveTimer = null;
   let backupMeta = createDefaultBackupMeta();
+  let recoveryCheckpoints = [];
   let deferredInstallPrompt = null;
 
   function canUseStorage() {
@@ -2335,6 +2375,123 @@
     catch { return null; }
   }
 
+
+  function checkpointTimestamp(value) {
+    const timestamp = Date.parse(trimText(value));
+    return Number.isFinite(timestamp) ? timestamp : null;
+  }
+
+  function normalizeRecoveryCheckpoint(value) {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return null;
+    const createdAt = trimText(value.createdAt);
+    if (checkpointTimestamp(createdAt) === null) return null;
+    const rawValidation = validateRawBackupShape(value.payload);
+    if (!rawValidation.valid) return null;
+    try {
+      const candidate = sanitizeLoadedState(value.payload);
+      const validation = validateState(candidate);
+      if (!validation.valid) return null;
+      const payload = deepClone(candidate);
+      payload.appId = APP_ID;
+      payload.schemaVersion = SCHEMA_VERSION;
+      payload.appVersion = APP_VERSION;
+      return {
+        id: trimText(value.id) || makeId(),
+        createdAt,
+        reason: trimText(value.reason, 'Punkt odzyskiwania').slice(0, 200),
+        characterName: trimText(value.characterName, candidate.identity?.name || 'Postać').slice(0, 200),
+        appVersion: trimText(value.appVersion, payload.appVersion),
+        schemaVersion: toInt(value.schemaVersion, payload.schemaVersion),
+        payload
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  function normalizeRecoveryCheckpoints(value, limit = CHECKPOINT_LIMIT) {
+    const seen = new Set();
+    return safeArray(value)
+      .map(normalizeRecoveryCheckpoint)
+      .filter(checkpoint => {
+        if (!checkpoint || seen.has(checkpoint.id)) return false;
+        seen.add(checkpoint.id);
+        return true;
+      })
+      .sort((a, b) => checkpointTimestamp(b.createdAt) - checkpointTimestamp(a.createdAt))
+      .slice(0, clamp(toInt(limit, CHECKPOINT_LIMIT), 1, CHECKPOINT_LIMIT));
+  }
+
+  function createRecoveryCheckpointRecord(sourceState, reason = 'Ręczny punkt odzyskiwania', createdAt = nowIso()) {
+    if (!sourceState?.initialized || checkpointTimestamp(createdAt) === null) return null;
+    return normalizeRecoveryCheckpoint({
+      id: makeId(),
+      createdAt,
+      reason,
+      characterName: sourceState.identity?.name || 'Postać',
+      appVersion: APP_VERSION,
+      schemaVersion: SCHEMA_VERSION,
+      payload: buildBackupPayload(sourceState)
+    });
+  }
+
+  function addRecoveryCheckpointRecord(records, checkpoint) {
+    if (!checkpoint) return normalizeRecoveryCheckpoints(records);
+    return normalizeRecoveryCheckpoints([checkpoint, ...safeArray(records)]);
+  }
+
+  function recoveryCheckpointState(checkpoint) {
+    const normalized = normalizeRecoveryCheckpoint(checkpoint);
+    return normalized ? sanitizeLoadedState(deepClone(normalized.payload)) : null;
+  }
+
+  function loadRecoveryCheckpoints() {
+    if (!canUseStorage()) return [];
+    const raw = safeStorageGet(CHECKPOINTS_KEY);
+    if (!raw) return [];
+    try {
+      return normalizeRecoveryCheckpoints(JSON.parse(raw));
+    } catch {
+      loadWarning = [loadWarning, 'Nie udało się odczytać lokalnych punktów odzyskiwania. Aktywna karta nie została zmieniona.'].filter(Boolean).join(' ');
+      return [];
+    }
+  }
+
+  function persistRecoveryCheckpoints(records) {
+    if (storageBlocked) return null;
+    const normalized = normalizeRecoveryCheckpoints(records);
+    try {
+      localStorage.setItem(CHECKPOINTS_KEY, JSON.stringify(normalized));
+      return normalized;
+    } catch {
+      return null;
+    }
+  }
+
+  function createRecoveryCheckpoint(reason = 'Ręczny punkt odzyskiwania', sourceState = state) {
+    const checkpoint = createRecoveryCheckpointRecord(sourceState, reason);
+    if (!checkpoint) return null;
+    const persisted = persistRecoveryCheckpoints(addRecoveryCheckpointRecord(recoveryCheckpoints, checkpoint));
+    if (!persisted) return null;
+    recoveryCheckpoints = persisted;
+    return recoveryCheckpoints.find(entry => entry.id === checkpoint.id) || checkpoint;
+  }
+
+  function ensureRecoveryCheckpoint(reason, sourceState = state) {
+    if (!sourceState?.initialized) return true;
+    const checkpoint = createRecoveryCheckpoint(reason, sourceState);
+    if (checkpoint) return true;
+    showToast('Nie udało się utworzyć punktu odzyskiwania. Operacja została przerwana, aby nie utracić danych.', 'error');
+    announce('Operacja przerwana: nie udało się zabezpieczyć bieżącej karty.');
+    return false;
+  }
+
+  function deleteRecoveryCheckpointById(checkpointId) {
+    const persisted = persistRecoveryCheckpoints(recoveryCheckpoints.filter(checkpoint => checkpoint.id !== checkpointId));
+    if (!persisted) return false;
+    recoveryCheckpoints = persisted;
+    return true;
+  }
 
 
   function createDefaultBackupMeta() {
@@ -3174,6 +3331,8 @@
 
   function applyPendingImport() {
     if (!pendingImport?.candidate || pendingImport.report.errors.length) return;
+    const checkpointReason = `Przed importem: ${trimText(pendingImport.filename, pendingImport.candidate.identity?.name || 'nowa karta')}`;
+    if (!ensureRecoveryCheckpoint(checkpointReason)) return;
     const importedType = pendingImport.type;
     const imported = deepClone(pendingImport.candidate);
     imported.settings = { ...state.settings, ...imported.settings };
@@ -3186,8 +3345,8 @@
     closeSheet();
     setView('character');
     renderAll();
-    showToast('Zaimportowano postać.');
-    announce('Import postaci zakończony.');
+    showToast('Zaimportowano postać. Poprzednia karta została zachowana jako punkt odzyskiwania.');
+    announce('Import postaci zakończony. Poprzednia karta została zabezpieczona.');
   }
 
   function exportBackup() {
@@ -5202,10 +5361,32 @@
 
   function openResetSheet() {
     const phrase = textInput('', 20);
-    const body = createEl('div', { className: 'form-grid' }, [createEl('p', { text: 'Reset usuwa aktywną kartę, ekwipunek, historię i źródło importu z tej przeglądarki. Najpierw pobierz kopię zapasową.' }), field('Wpisz USUŃ', phrase)]);
+    const body = createEl('div', { className: 'form-grid' }, [
+      createEl('p', { text: 'Reset usuwa aktywną kartę, ekwipunek, historię i źródło importu. Przed resetem aplikacja spróbuje zachować lokalny punkt odzyskiwania.' }),
+      createEl('p', { className: 'help', text: 'Punkt odzyskiwania pozostaje tylko w tej przeglądarce i nie zastępuje pobranej kopii JSON.' }),
+      field('Wpisz USUŃ', phrase)
+    ]);
     const reset = button('Usuń wszystkie dane karty', () => {
       if (phrase.value !== 'USUŃ') { showToast('Wpisz dokładnie: USUŃ', 'error'); return; }
-      openConfirmSheet({ title: 'Ostatnie potwierdzenie', message: 'Czy na pewno całkowicie wyczyścić kartę?', confirmLabel: 'Tak, usuń wszystko', danger: true, onConfirm: () => { try { localStorage.removeItem(STORAGE_KEY); localStorage.removeItem(BACKUP_META_KEY); } catch {} backupMeta = createDefaultBackupMeta(); state = createDefaultState(); saveNow(); setView('character'); renderAll(); showToast('Karta została wyczyszczona.'); } });
+      openConfirmSheet({
+        title: 'Ostatnie potwierdzenie',
+        message: 'Czy na pewno wyczyścić aktywną kartę? Operacja zostanie wykonana tylko wtedy, gdy bieżące dane uda się zapisać jako punkt odzyskiwania.',
+        confirmLabel: 'Tak, zabezpiecz i usuń',
+        danger: true,
+        onConfirm: () => {
+          if (!ensureRecoveryCheckpoint('Przed resetem karty')) return;
+          try {
+            localStorage.removeItem(STORAGE_KEY);
+            localStorage.removeItem(BACKUP_META_KEY);
+          } catch {}
+          backupMeta = createDefaultBackupMeta();
+          state = createDefaultState();
+          saveNow();
+          setView('character');
+          renderAll();
+          showToast('Karta została wyczyszczona. Poprzedni stan zachowano w punktach odzyskiwania.');
+        }
+      });
     }, 'btn btn-danger btn-block');
     openSheet({ title: 'Reset karty', body, footer: reset });
   }
@@ -5345,6 +5526,14 @@
     test('88. Typy historii rozróżniają obronę, obrażenia i podmuch', () => { assert(diceEntryTypeLabel({type:'save'}) === 'Obrona' && diceEntryTypeLabel({type:'damage'}) === 'Obrażenia' && diceEntryTypeLabel({type:'blast'}) === 'Podmuch'); });
     test('89. Pasek ostatnich rzutów zachowuje kolejność i limit trzech', () => { const fixture = createDefaultState(); fixture.diceHistory = [{id:'a'},{id:'b'},{id:'c'},{id:'d'}]; const before = JSON.stringify(fixture.diceHistory); assert(recentDiceEntries(fixture, 3).map(entry => entry.id).join(',') === 'a,b,c' && JSON.stringify(fixture.diceHistory) === before); });
     test('90. Pełna kopia zachowuje metadane bezpiecznego powtórzenia', () => { const fixture = createDemoState(); recordDiceEntry(fixture, { type:'dice', label:'k8', summary:'k8: 4 (1k8)', notation:'1k8', result:4, repeat:{ kind:'roll', label:'k8', config:{ count:1, sides:8, modifier:0, keepHighest:false } } }); const parsed = parseImportText(JSON.stringify(buildBackupPayload(fixture))); assert(parsed.candidate?.diceHistory[0]?.repeat?.kind === 'roll' && parsed.candidate.diceHistory[0].repeat.config.sides === 8); });
+
+    test('91. Punkt odzyskiwania zachowuje pełny stan sesji i historię kości', () => { const fixture = createDemoState(); startSessionOn(fixture, 'Punkt'); recordDiceEntry(fixture, { type:'dice', summary:'k8: 4', repeat:{ kind:'roll', label:'k8', config:{ count:1, sides:8 } } }); const checkpoint = createRecoveryCheckpointRecord(fixture, 'Test', '2026-01-01T10:00:00.000Z'); assert(checkpoint?.payload.sessionLog.active.title === 'Punkt' && checkpoint.payload.diceHistory[0].repeat.config.sides === 8); });
+    test('92. Lista punktów zachowuje trzy najnowsze wpisy', () => { const fixture = createDemoState(); const records = ['01','02','03','04'].reduce((list, day) => addRecoveryCheckpointRecord(list, createRecoveryCheckpointRecord(fixture, `D${day}`, `2026-01-${day}T10:00:00.000Z`)), []); assert(records.length === 3 && records.map(entry => entry.reason).join(',') === 'D04,D03,D02'); });
+    test('93. Uszkodzony punkt odzyskiwania jest odrzucany', () => { assert(normalizeRecoveryCheckpoint({ id:'x', createdAt:'2026-01-01T10:00:00.000Z', payload:{ appId:APP_ID } }) === null); });
+    test('94. Odtworzenie punktu zwraca niezależną i zwalidowaną kopię', () => { const fixture = createDemoState(); const checkpoint = createRecoveryCheckpointRecord(fixture, 'Kopia', '2026-01-01T10:00:00.000Z'); const restored = recoveryCheckpointState(checkpoint); restored.stats.gold = 999; assert(checkpoint.payload.stats.gold !== 999 && validateState(restored).valid); });
+    test('95. Pełna kopia postaci nie osadza lokalnej listy punktów', () => { const payload = buildBackupPayload(createDemoState()); assert(!Object.prototype.hasOwnProperty.call(payload, 'recoveryCheckpoints') && !Object.prototype.hasOwnProperty.call(payload, 'checkpoints')); });
+    test('96. Punkty odzyskiwania nie wymagają zmiany schemaVersion postaci', () => { const checkpoint = createRecoveryCheckpointRecord(createDemoState(), 'Schemat', '2026-01-01T10:00:00.000Z'); assert(SCHEMA_VERSION === 3 && checkpoint.schemaVersion === 3 && checkpoint.payload.schemaVersion === 3); });
+    test('97. Surowa kopia błędnego zapisu i punkty odzyskiwania używają osobnych kluczy', () => { assert(RECOVERY_KEY !== CHECKPOINTS_KEY && CHECKPOINT_LIMIT === 3); });
     return results;
   }
 
@@ -5385,6 +5574,120 @@
     ]);
   }
 
+  function recoveryCheckpointFileStem(checkpoint) {
+    const value = trimText(checkpoint?.characterName, 'postac')
+      .replace(/[^\p{L}\p{N}_-]+/gu, '-')
+      .replace(/^-|-$/g, '')
+      .toLowerCase();
+    return value || 'postac';
+  }
+
+  function downloadRecoveryCheckpoint(checkpointId) {
+    const checkpoint = recoveryCheckpoints.find(entry => entry.id === checkpointId);
+    if (!checkpoint) { showToast('Nie znaleziono punktu odzyskiwania.', 'error'); return; }
+    const date = checkpoint.createdAt.slice(0, 10);
+    downloadTextFile(`cairn-${recoveryCheckpointFileStem(checkpoint)}-punkt-${date}.json`, JSON.stringify(checkpoint.payload, null, 2));
+    showToast('Pobrano punkt odzyskiwania jako pełną kopię JSON.');
+  }
+
+  function reopenRecoveryCheckpointsSheet() {
+    requestAnimationFrame(openRecoveryCheckpointsSheet);
+  }
+
+  function confirmDeleteRecoveryCheckpoint(checkpointId) {
+    const checkpoint = recoveryCheckpoints.find(entry => entry.id === checkpointId);
+    if (!checkpoint) { showToast('Nie znaleziono punktu odzyskiwania.', 'error'); return; }
+    openConfirmSheet({
+      title: 'Usuń punkt odzyskiwania',
+      message: `Usunąć punkt „${checkpoint.characterName}” z ${formatDateTime(checkpoint.createdAt)}? Tej operacji nie można cofnąć.`,
+      confirmLabel: 'Usuń punkt',
+      danger: true,
+      onConfirm: () => {
+        if (!deleteRecoveryCheckpointById(checkpointId)) {
+          showToast('Nie udało się usunąć punktu odzyskiwania.', 'error');
+          return;
+        }
+        showToast('Usunięto punkt odzyskiwania.');
+        reopenRecoveryCheckpointsSheet();
+      }
+    });
+  }
+
+  function confirmRestoreRecoveryCheckpoint(checkpointId) {
+    const checkpoint = recoveryCheckpoints.find(entry => entry.id === checkpointId);
+    if (!checkpoint) { showToast('Nie znaleziono punktu odzyskiwania.', 'error'); return; }
+    openConfirmSheet({
+      title: 'Odtwórz punkt odzyskiwania',
+      message: `Odtworzyć „${checkpoint.characterName}” z ${formatDateTime(checkpoint.createdAt)}? Bieżąca karta zostanie wcześniej zabezpieczona jako nowy punkt.`,
+      confirmLabel: 'Odtwórz punkt',
+      danger: true,
+      onConfirm: () => {
+        if (!ensureRecoveryCheckpoint(`Przed odtworzeniem: ${checkpoint.characterName}`)) return;
+        const restored = recoveryCheckpointState(checkpoint);
+        if (!restored) {
+          showToast('Punkt odzyskiwania jest uszkodzony i nie może zostać odtworzony.', 'error');
+          return;
+        }
+        state = restored;
+        recordMeaningfulChange();
+        saveNow();
+        setView('character');
+        renderAll();
+        showToast(`Odtworzono punkt: ${checkpoint.characterName}.`);
+        announce('Odtworzono lokalny punkt odzyskiwania.');
+      }
+    });
+  }
+
+  function openRecoveryCheckpointsSheet() {
+    const body = createEl('div', { className: 'sheet-list' });
+    body.append(
+      createEl('p', { text: 'Punkty odzyskiwania chronią przed przypadkowym importem, resetem lub błędnym odtworzeniem. Są przechowywane wyłącznie lokalnie.' }),
+      createEl('p', { className: 'help', text: 'Aplikacja zachowuje trzy najnowsze punkty. Wyczyszczenie danych przeglądarki usuwa również je, dlatego nadal pobieraj pełne kopie JSON.' })
+    );
+
+    const createButton = button('Utwórz punkt odzyskiwania', () => {
+      const checkpoint = createRecoveryCheckpoint('Ręczny punkt odzyskiwania');
+      if (!checkpoint) {
+        showToast(state.initialized ? 'Nie udało się utworzyć punktu odzyskiwania.' : 'Najpierw utwórz lub zaimportuj postać.', 'error');
+        return;
+      }
+      closeSheet();
+      showToast('Utworzono lokalny punkt odzyskiwania.');
+      reopenRecoveryCheckpointsSheet();
+    }, 'btn btn-primary btn-block', { disabled: !state.initialized });
+    body.append(createButton);
+
+    const list = createEl('div', { className: 'recovery-checkpoint-list' });
+    if (!recoveryCheckpoints.length) {
+      list.append(createEl('p', { className: 'recovery-checkpoint-empty', text: 'Brak punktów odzyskiwania.' }));
+    }
+    for (const checkpoint of recoveryCheckpoints) {
+      list.append(createEl('article', { className: 'recovery-checkpoint-item', dataset: { checkpointId: checkpoint.id } }, [
+        createEl('div', { className: 'recovery-checkpoint-head' }, [
+          createEl('div', { className: 'recovery-checkpoint-copy' }, [
+            createEl('strong', { text: checkpoint.characterName }),
+            createEl('p', { text: checkpoint.reason }),
+            createEl('time', { text: formatDateTime(checkpoint.createdAt), dateTime: checkpoint.createdAt })
+          ]),
+          createEl('span', { className: 'tag', text: `schemat ${checkpoint.schemaVersion}` })
+        ]),
+        createEl('div', { className: 'recovery-checkpoint-actions' }, [
+          button('Odtwórz', () => confirmRestoreRecoveryCheckpoint(checkpoint.id), 'btn btn-primary', { 'aria-label': `Odtwórz punkt odzyskiwania: ${checkpoint.characterName}` }),
+          button('Pobierz', () => downloadRecoveryCheckpoint(checkpoint.id), 'btn', { 'aria-label': `Pobierz punkt odzyskiwania: ${checkpoint.characterName}` }),
+          button('Usuń', () => confirmDeleteRecoveryCheckpoint(checkpoint.id), 'btn btn-danger', { 'aria-label': `Usuń punkt odzyskiwania: ${checkpoint.characterName}` })
+        ])
+      ]));
+    }
+    body.append(list);
+    openSheet({
+      title: 'Punkty odzyskiwania',
+      body,
+      footer: button('Zamknij', closeSheet, 'btn btn-primary btn-block')
+    });
+  }
+
+
   function openAppSettingsSheet() {
     const body = createEl('div', { className: 'settings-sheet' });
 
@@ -5401,6 +5704,14 @@
       ])
     ];
     body.append(settingsSection('Dane i kopie zapasowe', dataChildren));
+    body.append(settingsSection('Punkty odzyskiwania', [
+      createEl('p', { text: 'Do trzech lokalnych stanów karty przed importem, resetem lub odtworzeniem. Nie zastępują kopii pobranej na urządzenie.' }),
+      createEl('div', { className: 'data-status' }, [
+        createEl('strong', { text: `${recoveryCheckpoints.length}/${CHECKPOINT_LIMIT} punktów` }),
+        createEl('span', { text: recoveryCheckpoints[0] ? `Najnowszy: ${formatDateTime(recoveryCheckpoints[0].createdAt)}` : 'Brak lokalnego punktu odzyskiwania.' })
+      ]),
+      button('Zarządzaj punktami odzyskiwania', openRecoveryCheckpointsSheet, 'btn btn-block')
+    ]));
 
     const themeToggle = createEl('input', { type: 'checkbox', checked: state.settings.theme === 'light', attrs: { 'aria-label': 'Jasny motyw' } });
     themeToggle.addEventListener('change', () => {
@@ -5500,6 +5811,7 @@
   function initialize() {
     state = loadState();
     backupMeta = loadBackupMeta();
+    recoveryCheckpoints = loadRecoveryCheckpoints();
     bindEvents();
     renderAll();
     setView('character');
@@ -5528,6 +5840,13 @@
       recordDiceEntry,
       parseAttackDiceList,
       shouldShowBackupReminder,
+      getRecoveryCheckpoints: () => deepClone(recoveryCheckpoints),
+      normalizeRecoveryCheckpoint,
+      normalizeRecoveryCheckpoints,
+      createRecoveryCheckpointRecord,
+      addRecoveryCheckpointRecord,
+      recoveryCheckpointState,
+      createRecoveryCheckpoint,
       sessionPromptFor,
       normalizeSessionLog,
       startSessionOn,
