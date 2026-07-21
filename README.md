@@ -12,7 +12,7 @@ https://leeroyjenkins1111.github.io/cairn-2e-mobile-character-sheet/
 - rozliczanie obrażeń, Blizn i obrażeń krytycznych;
 - kompaktowy, grupowany ekwipunek według sposobu noszenia, ze zmęczeniem, drobiazgami, przedmiotami nieporęcznymi i użyciami;
 - broń, podmuch, dwie bronie i wielu atakujących;
-- kości, rzuty obronne i Kość Losu, z trzema ostatnimi wynikami, typami rzutów i bezpiecznym powtarzaniem zwykłych rzutów oraz rzutów obronnych;
+- kości, rzuty obronne i Kość Losu, z trzema ostatnimi wynikami, typami rzutów oraz bezpiecznym ponawianiem zwykłych rzutów i rzutów obronnych;
 - import postaci z JSON Kettlewright;
 - pełna, odtwarzalna kopia zapasowa JSON;
 - Undo dla zmian stanu postaci;
