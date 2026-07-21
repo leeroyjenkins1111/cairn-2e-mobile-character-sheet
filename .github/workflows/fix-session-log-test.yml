@@ -1,0 +1,46 @@
+name: Fix session log browser assertion
+
+on:
+  push:
+    branches:
+      - feature/session-log-v0.10.0
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fix-session-log-test
+  cancel-in-progress: false
+
+jobs:
+  fix:
+    if: ${{ !contains(github.event.head_commit.message || '', '[session-log-test-fixed]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/session-log-v0.10.0
+          fetch-depth: 0
+
+      - name: Correct visible dice summary assertion
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('tests/app.spec.mjs')
+          text = path.read_text(encoding='utf-8')
+          old = "await expect(sessionCard.getByText(/Rzut: \\d+ \\(1k6\\)/)).toBeVisible();"
+          new = "await expect(sessionCard.getByText(/k6: \\d+ \\(1k6\\)/)).toBeVisible();"
+          if text.count(old) != 1:
+              raise RuntimeError(f'Expected one stale dice assertion, found {text.count(old)}')
+          path.write_text(text.replace(old, new), encoding='utf-8')
+          PY
+
+      - name: Commit correction
+        shell: bash
+        run: |
+          git add tests/app.spec.mjs
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Fix session log dice assertion [session-log-test-fixed]"
+          git push origin HEAD:feature/session-log-v0.10.0
