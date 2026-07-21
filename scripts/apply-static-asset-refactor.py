@@ -51,8 +51,8 @@ js = replace_once(
 )
 js = replace_once(
     js,
-    "    return results;\n  }",
-    "    test('102. CSS i JavaScript są ładowane z lokalnych plików statycznych', () => { assert(Boolean(document.querySelector('link[rel=\"stylesheet\"][href=\"./styles/app.css\"]')) && Boolean(document.querySelector('script[src=\"./scripts/app.js\"]')) && !document.querySelector('style') && !document.querySelector('script:not([src])')); });\n    return results;\n  }",
+    "  return results;\n}",
+    "  test('102. CSS i JavaScript są ładowane z lokalnych plików statycznych', () => { assert(Boolean(document.querySelector('link[rel=\"stylesheet\"][href=\"./styles/app.css\"]')) && Boolean(document.querySelector('script[src=\"./scripts/app.js\"]')) && !document.querySelector('style') && !document.querySelector('script:not([src])')); });\n  return results;\n}",
     "embedded static asset regression test",
 )
 
