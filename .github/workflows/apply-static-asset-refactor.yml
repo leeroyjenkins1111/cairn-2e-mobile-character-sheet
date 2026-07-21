@@ -1,4 +1,4 @@
-# Temporary bootstrap workflow; it removes itself after the verified refactor.
+# Temporary bootstrap workflow; removed after the generated commit is pushed.
 name: Apply static asset refactor
 
 on:
@@ -92,21 +92,18 @@ jobs:
         if: steps.browser_tests.outcome == 'failure'
         run: exit 1
 
-      - name: Remove bootstrap files
-        run: git rm scripts/apply-static-asset-refactor.py .github/workflows/apply-static-asset-refactor.yml
-
-      - name: Commit and push final refactor
+      - name: Commit and push generated application files
         id: finalize_refactor
         continue-on-error: true
         shell: bash
         run: |
           set -o pipefail
           {
+            rm -rf node_modules test-results playwright-report
             rm -f refactor-apply-output.log playwright-output.log
-            rm -rf test-results playwright-report
             git config user.name "github-actions[bot]"
             git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add -A
+            git add README.md checksums.sha256 index.html package.json package-lock.json service-worker.js tests/app.spec.mjs styles/app.css scripts/app.js
             git status --short
             git commit -m "v0.14.0: extract static application assets"
             git push origin HEAD:${{ github.event.pull_request.head.ref }}
