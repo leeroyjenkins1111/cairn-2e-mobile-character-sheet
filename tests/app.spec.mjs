@@ -25,7 +25,7 @@ test('application loads extracted same-origin CSS and JavaScript', async ({ page
     inlineScripts: document.querySelectorAll('script:not([src])').length,
     stylesheetLoaded: Array.from(document.styleSheets).some(sheet => sheet.href?.endsWith('/styles/app.css'))
   }));
-  expect(result).toEqual({ version: '0.15.0', inlineStyles: 0, inlineScripts: 0, stylesheetLoaded: true });
+  expect(result).toEqual({ version: '0.16.0', inlineStyles: 0, inlineScripts: 0, stylesheetLoaded: true });
 });
 
 test('full and legacy exports round-trip without losing character data', async ({ page }) => {
@@ -237,15 +237,14 @@ test('schema 2 migrates to schema 3 and full backup preserves session log', asyn
   expect(result.markdown).toContain('Rzut obronny WOL');
 });
 
-test('dice dashboard shows recent types and repeats the latest safe roll', async ({ page }) => {
+test('dice dashboard repeats the latest safe roll and owns its history', async ({ page }) => {
   await loadDemo(page);
   await page.getByRole('button', { name: 'Kości', exact: true }).click();
   await page.getByRole('button', { name: 'Rzuć kością k8' }).click();
 
   const first = await page.evaluate(() => globalThis.CairnSheetDev.getState().diceHistory[0]);
   expect(first.notation).toBe('1k8');
-  await expect(page.locator('.dice-recent-strip .dice-recent-item')).toHaveCount(1);
-  await expect(page.locator('.dice-recent-strip .dice-recent-type')).toHaveText('Rzut');
+  await expect(page.locator('.dice-recent-strip')).toHaveCount(0);
 
   await page.getByRole('button', { name: 'Powtórz ostatni rzut: k8' }).click();
   await expect.poll(async () => page.evaluate(() => globalThis.CairnSheetDev.getState().diceHistory.length)).toBe(2);
@@ -254,7 +253,6 @@ test('dice dashboard shows recent types and repeats the latest safe roll', async
   expect(repeated[0].notation).toBe('1k8');
   expect(repeated[0].repeat.kind).toBe('roll');
   expect(repeated[0].id).not.toBe(repeated[1].id);
-  await expect(page.locator('.dice-recent-strip .dice-recent-item')).toHaveCount(2);
 
   await page.locator('#diceResult').click();
   const history = page.locator('#sheet');
@@ -332,7 +330,7 @@ test('confirmed import preserves the overwritten card as a recovery checkpoint',
 test('skip link reaches the main character content before persistent navigation', async ({ page }) => {
   await page.goto('/');
   await page.keyboard.press('Tab');
-  const skip = page.getByRole('link', { name: 'Przejdź do treści karty' });
+  const skip = page.getByRole('link', { name: 'Przejdź do głównego ekranu' });
   await expect(skip).toBeFocused();
   await expect(skip).toBeVisible();
   await page.keyboard.press('Enter');
@@ -383,12 +381,23 @@ test('core screens remain usable with 200 percent root text size', async ({ page
   }
 });
 
-test('session dashboard exposes table context and one-tap d20 flow', async ({ page }) => {
+test('game view keeps current state and core table actions without duplicate summaries', async ({ page }) => {
   await loadDemo(page);
-  await expect(page.getByRole('heading', { name: 'Przy stole' })).toBeVisible();
-  await expect(page.getByRole('button', { name: /Aktywny sprzęt:/ })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Otwórz notatki postaci' })).toBeVisible();
-  await page.getByRole('button', { name: 'Rzut k20', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Rzut kością' })).toBeVisible();
-  await expect(page.locator('#diceResult strong')).not.toHaveText('—');
+  await expect(page.getByRole('heading', { name: 'Przy stole' })).toHaveCount(0);
+  await expect(page.getByText('Ostatni rzut', { exact: true })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Obrażenia', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Rzut obronny', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Odpoczynek', exact: true })).toBeVisible();
+  await expect(page.locator('.gameplay-weapon-card')).toContainText('Krótki łuk');
+
+  await page.getByRole('button', { name: 'Rzut obronny', exact: true }).click();
+  await expect(page.locator('#sheet').getByRole('heading', { name: 'Rzut obronny' })).toBeVisible();
+  await expect(page.locator('#sheet').getByRole('button', { name: /Rzut obronny Siła/ })).toBeVisible();
+  await page.getByRole('button', { name: 'Zamknij panel' }).click();
+
+  await page.getByRole('button', { name: 'Kości', exact: true }).click();
+  await expect(page.locator('.combat-scenarios-disclosure')).not.toHaveAttribute('open', '');
+  await page.getByRole('button', { name: 'Dziennik', exact: true }).click();
+  await expect(page.getByText('Historia rzutów', { exact: true })).toHaveCount(0);
+  await expect(page.getByRole('heading', { name: 'Karta postaci' })).toBeVisible();
 });
