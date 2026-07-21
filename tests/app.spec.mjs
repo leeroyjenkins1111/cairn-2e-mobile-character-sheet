@@ -10,8 +10,8 @@ async function loadDemo(page) {
 test('all embedded domain regression tests pass', async ({ page }) => {
   await page.goto('/?selftest=1');
   const marker = page.locator('#selftestMarker');
-  await expect(marker).toHaveAttribute('data-passed', '64');
-  await expect(marker).toHaveAttribute('data-total', '64');
+  await expect(marker).toHaveAttribute('data-passed', '69');
+  await expect(marker).toHaveAttribute('data-total', '69');
 });
 
 test('full and legacy exports round-trip without losing character data', async ({ page }) => {
@@ -39,7 +39,7 @@ for (const viewport of [{ width: 320, height: 568 }, { width: 375, height: 812 }
   test(`core screens have no horizontal overflow at ${viewport.width}x${viewport.height}`, async ({ page }) => {
     await page.setViewportSize(viewport);
     await loadDemo(page);
-    for (const name of ['Postać', 'Ekwipunek', 'Kości', 'Więcej']) {
+    for (const name of ['Postać', 'Ekwipunek', 'Kości', 'Dziennik']) {
       await page.getByRole('button', { name, exact: true }).click();
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
       expect(overflow).toBeLessThanOrEqual(1);
@@ -78,4 +78,31 @@ test('application shell reloads while offline after Service Worker activation', 
   await page.reload({ waitUntil: 'domcontentloaded' });
   await expect(page.getByText('Mobilna karta postaci')).toBeVisible();
   await context.setOffline(false);
+});
+
+
+test('settings and technical data are separated from the player journal', async ({ page }) => {
+  await loadDemo(page);
+  await page.getByRole('button', { name: 'Dziennik', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Dziennik postaci' })).toBeVisible();
+  await expect(page.getByText('Dane i kopie zapasowe')).toHaveCount(0);
+  await page.getByRole('button', { name: 'Ustawienia i dane' }).click();
+  await expect(page.getByRole('heading', { name: 'Ustawienia i dane' })).toBeVisible();
+  await expect(page.getByText('Dane i kopie zapasowe')).toBeVisible();
+  await expect(page.getByText('Testy deweloperskie')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: 'Jak zainstalować' })).toBeVisible();
+});
+
+test('session prompt appears for urgent character state', async ({ page }) => {
+  await page.goto('/');
+  await page.evaluate(() => {
+    const fixture = globalThis.CairnSheetDev.createDemoState();
+    fixture.conditions.panicked = true;
+    fixture.stats.hp.current = 0;
+    localStorage.setItem('cairn-mobile-sheet:state', JSON.stringify(fixture));
+  });
+  await page.reload();
+  await expect(page.getByText('Co teraz?')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Postać jest spanikowana' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Rzut WOL' })).toBeVisible();
 });

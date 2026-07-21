@@ -1364,6 +1364,69 @@
       .gold-button { min-width: 70px; padding-inline: 7px; font-size: 0.7rem; }
       .backup-actions { grid-template-columns: 1fr; }
     }
+    /* Session mode and journal information architecture. */
+    .session-prompt {
+      padding: 14px;
+      display: grid;
+      gap: 10px;
+      border-color: color-mix(in srgb, var(--amber) 48%, var(--line));
+      background: linear-gradient(145deg, color-mix(in srgb, var(--amber) 10%, var(--surface)), var(--surface));
+    }
+    .session-prompt-danger { border-color: color-mix(in srgb, var(--danger) 64%, var(--line)); }
+    .session-prompt-warning { border-color: color-mix(in srgb, var(--amber) 64%, var(--line)); }
+    .session-prompt-info { border-color: color-mix(in srgb, var(--green) 54%, var(--line)); }
+    .session-prompt-kicker { margin: 0; color: var(--amber-strong); font-size: 0.7rem; font-weight: 850; letter-spacing: 0.12em; text-transform: uppercase; }
+    .session-prompt h2 { margin: 0; font-size: 1.05rem; }
+    .session-prompt p { margin: 0; color: var(--muted); font-size: 0.82rem; line-height: 1.42; }
+    .session-prompt-actions { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+    .session-prompt-actions .btn { min-width: 0; }
+    .session-tools-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .session-tools-grid .btn { min-height: 54px; }
+    .journal-intro { display: grid; gap: 8px; }
+    .journal-disclosure {
+      border-top: 1px solid var(--line);
+    }
+    .journal-disclosure:first-of-type { border-top: 0; }
+    .journal-disclosure summary {
+      min-height: 54px;
+      padding: 11px 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 10px;
+      cursor: pointer;
+      list-style: none;
+    }
+    .journal-disclosure summary::-webkit-details-marker { display: none; }
+    .journal-disclosure summary strong { display: block; font-size: 0.9rem; }
+    .journal-disclosure summary span:last-child { color: var(--muted); font-size: 0.72rem; text-align: right; }
+    .journal-disclosure-content { padding: 0 0 14px; color: var(--muted); font-size: 0.84rem; line-height: 1.5; overflow-wrap: anywhere; }
+    .journal-disclosure-content p { margin: 0; white-space: pre-wrap; }
+    .settings-sheet { display: grid; gap: 14px; }
+    .settings-sheet-section {
+      display: grid;
+      gap: 10px;
+      padding: 13px;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--surface-soft);
+    }
+    .settings-sheet-section h3 { margin: 0; font-size: 0.98rem; }
+    .settings-sheet-section > p { margin: 0; color: var(--muted); font-size: 0.78rem; line-height: 1.42; }
+    .settings-sheet .settings-row { padding-inline: 0; }
+    .settings-sheet .settings-row .btn { min-width: 116px; white-space: normal; overflow-wrap: normal; word-break: normal; }
+    .settings-sheet-danger { border-color: color-mix(in srgb, var(--danger) 48%, var(--line)); }
+    .condition-sheet-list { display: grid; gap: 0; }
+    .condition-sheet-list .settings-row:first-child { border-top: 0; }
+    .header-actions .btn-icon { flex: 0 0 var(--tap); }
+
+    @media (max-width: 359px) {
+      .session-prompt-actions { grid-template-columns: 1fr; }
+      .session-tools-grid { grid-template-columns: 1fr 1fr; }
+      .settings-sheet .settings-row { align-items: flex-start; }
+      .settings-sheet .settings-row .btn { min-width: 104px; }
+    }
+
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after {
         animation-duration: 0.001ms !important;
@@ -1382,6 +1445,7 @@
         <p class="brand-title" id="headerTitle">Karta Wędrowca</p>
       </div>
       <div class="header-actions">
+        <button class="btn btn-icon btn-ghost" id="appSettingsBtn" type="button" aria-label="Ustawienia i dane" title="Ustawienia i dane"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4V21a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14H2.8v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1a1.7 1.7 0 0 0 1.9.3A1.7 1.7 0 0 0 10 3V2.8h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v4H21a1.7 1.7 0 0 0-1.6 1z"></path></svg></button>
         <button class="btn btn-icon btn-ghost" id="quickUndoBtn" type="button" aria-label="Cofnij ostatnią zmianę" title="Cofnij"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 7H5v-4"></path><path d="M5.5 7.5a8 8 0 1 1-1.2 7.2"></path></svg></button>
       </div>
     </header>
@@ -1397,7 +1461,7 @@
       <button class="nav-btn" id="nav-character" type="button" data-nav="character" aria-current="page"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="12" cy="8" r="3"></circle><path d="M6.5 19c.8-3.2 2.7-5 5.5-5s4.7 1.8 5.5 5"></path></svg></span><span>Postać</span></button>
       <button class="nav-btn" id="nav-inventory" type="button" data-nav="inventory"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M5 7h14v12H5z"></path><path d="M8 7V5h8v2M9 11h6"></path></svg></span><span>Ekwipunek</span></button>
       <button class="nav-btn" id="nav-dice" type="button" data-nav="dice"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><rect x="4" y="4" width="16" height="16" rx="4"></rect><path d="M9 9h.01M15 15h.01M15 9h.01M9 15h.01"></path></svg></span><span>Kości</span></button>
-      <button class="nav-btn" id="nav-more" type="button" data-nav="more"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="5" cy="12" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle></svg></span><span>Więcej</span></button>
+      <button class="nav-btn" id="nav-more" type="button" data-nav="more"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="5" cy="12" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle></svg></span><span>Dziennik</span></button>
     </nav>
   </div>
 
@@ -1428,7 +1492,7 @@
   // 1. Constants
   // ============================================================
   const APP_ID = 'cairn-mobile-sheet';
-  const APP_VERSION = '0.7.0';
+  const APP_VERSION = '0.8.0';
   const SCHEMA_VERSION = 2;
   const STORAGE_KEY = `${APP_ID}:state`;
   const RECOVERY_KEY = `${APP_ID}:recovery`;
@@ -2914,9 +2978,9 @@
       { id: 'unarmed', title: 'Bez broni', notation: 'k4', description: 'Gdy atakujesz bez broni.', icon: 'unarmed', run: () => performUnarmedAttack() },
       { id: 'impaired', title: 'Osłabiony', notation: 'k4', description: 'Gdy walczysz z niekorzystnej pozycji.', icon: 'impaired', run: () => performRoll({ count: 1, sides: 4 }, 'Atak osłabiony') },
       { id: 'enhanced', title: 'Wzmocniony', notation: 'k12', description: 'Gdy masz wyraźną przewagę.', icon: 'enhanced', run: () => performRoll({ count: 1, sides: 12 }, 'Atak wzmocniony') },
-      { id: 'blast', title: 'Podmuch', notation: 'wiele celów', description: 'Osobny rzut dla każdego celu w obszarze.', icon: 'blast', run: () => openBlastAttackSheet() },
-      { id: 'dual', title: 'Dwie bronie', notation: 'wyższa kość', description: 'Rzuć obiema i zachowaj wyższą.', icon: 'dual', run: openDualWeaponsSheet },
-      { id: 'multiple', title: 'Wielu atakujących', notation: 'najwyższa', description: 'Wszystkie kości przeciw jednemu celowi.', icon: 'group', run: openMultipleAttackersSheet }
+      { id: 'blast', title: 'Podmuch', notation: 'wiele celów', description: 'Osobny rzut dla każdego celu.', icon: 'blast', run: () => openBlastAttackSheet() },
+      { id: 'dual', title: 'Dwie bronie', notation: 'wyższa kość', description: 'Rzuć obiema. Zachowaj wyższą.', icon: 'dual', run: openDualWeaponsSheet },
+      { id: 'multiple', title: 'Wielu atakujących', notation: 'najwyższa', description: 'Rzuć wszystkie. Zachowaj najwyższą.', icon: 'group', run: openMultipleAttackersSheet }
     ];
   }
 
@@ -3035,6 +3099,87 @@
   // ============================================================
   // 13. Character view
   // ============================================================
+  function sessionPromptFor(sourceState = state) {
+    if (!sourceState?.initialized) return null;
+    const usage = calculateInventoryUsage(sourceState.inventory.items, sourceState.inventory.fatigue);
+    if (sourceState.conditions.criticalDamage && !sourceState.conditions.stabilized) {
+      return {
+        id: 'critical-damage',
+        tone: 'danger',
+        title: 'Obrażenia krytyczne wymagają pomocy',
+        message: 'Postać może tylko pełzać i bez pomocy umrze w ciągu godziny. Stabilizacja zatrzymuje śmierć, ale nie usuwa obrażeń krytycznych.',
+        primaryLabel: 'Stabilizuj',
+        primaryAction: handleStabilize
+      };
+    }
+    if (sourceState.conditions.panicked) {
+      return {
+        id: 'panicked',
+        tone: 'warning',
+        title: 'Postać jest spanikowana',
+        message: 'Nie działa w pierwszej rundzie, a jej ataki są osłabione. Rzut obronny WOL jako akcja może usunąć Panikę.',
+        primaryLabel: 'Rzut WOL',
+        primaryAction: attemptRecoverFromPanic
+      };
+    }
+    if (usage.total === 10 && sourceState.stats.hp.current > 0) {
+      return {
+        id: 'full-inventory',
+        tone: 'warning',
+        title: 'Ekwipunek jest pełny',
+        message: 'Przy 10/10 miejsc Ochrona powinna wynosić 0. Możesz zastosować regułę teraz albo najpierw zwolnić miejsce.',
+        primaryLabel: 'Ustaw Ochronę na 0',
+        primaryAction: applyFullInventoryProtectionRule
+      };
+    }
+    if (sourceState.conditions.deprived) {
+      return {
+        id: 'deprived',
+        tone: 'info',
+        title: 'Odpoczynek jest zablokowany',
+        message: 'Pozbawienie blokuje odzyskiwanie Ochrony, atrybutów i zmęczenia do czasu zaspokojenia kluczowej potrzeby.',
+        primaryLabel: 'Zarządzaj stanem',
+        primaryAction: openConditionsSheet
+      };
+    }
+    return null;
+  }
+
+  function applyFullInventoryProtectionRule() {
+    openConfirmSheet({
+      title: 'Pełny ekwipunek',
+      message: 'Zastosować regułę pełnych 10 miejsc i ustawić Ochronę na 0? Alternatywnie możesz anulować i zwolnić miejsce w Ekwipunku.',
+      confirmLabel: 'Ustaw 0 Ochrony',
+      danger: true,
+      onConfirm: () => commitChange('Pełny ekwipunek: Ochrona spadła do 0', next => { next.stats.hp.current = 0; })
+    });
+  }
+
+  function renderSessionPrompt() {
+    const prompt = sessionPromptFor();
+    if (!prompt) return null;
+    const primary = button(prompt.primaryLabel, prompt.primaryAction, 'btn btn-primary');
+    const conditions = button('Stany', openConditionsSheet, 'btn btn-ghost');
+    return card([
+      createEl('p', { className: 'session-prompt-kicker', text: 'Co teraz?' }),
+      createEl('h2', { text: prompt.title }),
+      createEl('p', { text: prompt.message }),
+      createEl('div', { className: 'session-prompt-actions' }, [primary, conditions])
+    ], `session-prompt session-prompt-${prompt.tone}`);
+  }
+
+  function renderSessionToolsCard() {
+    const tools = card([], 'card-pad session-tools-card');
+    tools.append(sectionHead('Stan i skutki', createEl('span', { className: 'muted micro', text: 'podczas sesji' })));
+    tools.append(createEl('div', { className: 'session-tools-grid' }, [
+      button('Stany postaci', openConditionsSheet, 'btn'),
+      button('Edytuj statystyki', openEditStatsSheet, 'btn'),
+      button('Obrażenia atrybutu', openDirectDamageSheet, 'btn'),
+      button('Dodaj Bliznę', () => openAddScarSheet(), 'btn')
+    ]));
+    return tools;
+  }
+
   function renderCharacterView() {
     const root = $('#view-character');
     if (!root) return;
@@ -3098,6 +3243,9 @@
     hero.append(statusStrip);
     root.append(hero);
 
+    const sessionPrompt = renderSessionPrompt();
+    if (sessionPrompt) root.append(sessionPrompt);
+
     const actions = card([], 'card-pad compact-actions');
     actions.append(sectionHead('Szybkie akcje', createEl('span', { className: 'muted micro', text: 'przy stole' })));
     actions.append(createEl('div', { className: 'compact-action-grid' }, [
@@ -3160,7 +3308,7 @@
           onclick: () => attemptRecoverFromPanic()
         }, [createEl('span', { text: 'Rzut WOL' })]));
       }
-      actions.append(iconButton('Zarządzaj stanami', 'arrow', () => setView('more')));
+      actions.append(iconButton('Zarządzaj stanami', 'arrow', openConditionsSheet));
       root.append(card([
         createEl('div', { className: 'compact-condition-copy' }, [
           createEl('strong', { text: 'Aktywne stany' }),
@@ -3169,6 +3317,8 @@
         actions
       ], 'compact-condition-summary'));
     }
+
+    root.append(renderSessionToolsCard());
   }
 
   // ============================================================
@@ -4025,57 +4175,50 @@
   // ============================================================
   // 17. More view and conditions
   // ============================================================
+  function journalDisclosure(label, text) {
+    const content = trimText(text);
+    const preview = content ? `${content.slice(0, 54)}${content.length > 54 ? '…' : ''}` : 'Brak wpisu';
+    const details = createEl('details', { className: 'journal-disclosure' });
+    details.append(createEl('summary', {}, [
+      createEl('strong', { text: label }),
+      createEl('span', { text: preview })
+    ]));
+    details.append(createEl('div', { className: 'journal-disclosure-content' }, [
+      createEl('p', { text: content || 'Brak dodatkowych informacji.' })
+    ]));
+    return details;
+  }
+
   function renderMoreView() {
     const root = $('#view-more');
     if (!root) return;
     root.replaceChildren();
     if (!state.initialized) {
-      root.append(card([createEl('div', { className: 'card-pad' }, [sectionHead('Więcej'), createEl('p', { className: 'muted', text: 'Najpierw utwórz lub zaimportuj postać.' }), button('Importuj z Kettlewright', () => $('#importFileInput').click(), 'btn btn-primary btn-block')])]))
+      root.append(card([createEl('div', { className: 'card-pad' }, [sectionHead('Dziennik'), createEl('p', { className: 'muted', text: 'Najpierw utwórz lub zaimportuj postać.' }), button('Importuj z Kettlewright', () => $('#importFileInput').click(), 'btn btn-primary btn-block')])]))
       return;
     }
 
-    const identity = card([], 'card-pad compact-more-card');
-    identity.append(sectionHead('Dane postaci', button('Edytuj', openEditIdentitySheet, 'btn btn-quiet btn-ghost')));
+    const identity = card([], 'card-pad compact-more-card journal-intro');
+    identity.append(sectionHead('Dziennik postaci', button('Edytuj dane', openEditIdentitySheet, 'btn btn-quiet btn-ghost')));
+    identity.append(createEl('p', { className: 'eyebrow', text: state.identity.background || 'Bez tła' }));
     identity.append(createEl('p', { text: state.identity.backgroundDescription || 'Brak opisu tła.', className: 'muted small wrap-anywhere notes-preview' }));
     root.append(identity);
 
-    const conditions = card([], 'card-pad conditions-settings-card');
-    conditions.append(sectionHead('Stany postaci'));
-    const settings = createEl('div', { className: 'settings-list' });
-    for (const [key, label] of CONDITION_DEFS) {
-      const toggle = createEl('input', { type: 'checkbox', checked: Boolean(state.conditions[key]), attrs: { 'aria-label': label } });
-      toggle.addEventListener('change', () => handleConditionToggle(key, toggle.checked));
-      settings.append(createEl('label', { className: 'settings-row settings-row-toggle' }, [createEl('div', {}, [createEl('strong', { text: label }), createEl('p', { className: 'help', text: conditionHelp(key) })]), toggle]));
-    }
-    settings.append(createEl('div', { className: 'settings-row' }, [createEl('div', {}, [createEl('strong', { text: 'Własne stany' }), createEl('p', { className: 'help', text: state.conditions.custom.map(entry => entry.name).join(', ') || 'Brak' })]), button('Zarządzaj', openCustomConditionsSheet, 'btn btn-quiet btn-ghost')]));
-    conditions.append(settings);
-    root.append(conditions);
-
-    const recovery = card([], 'card-pad');
-    recovery.append(sectionHead('Korekty i skutki'));
-    recovery.append(createEl('div', { className: 'button-row' }, [
-      button('Edytuj wszystkie statystyki', openEditStatsSheet, 'btn'),
-      button('Obrażenia atrybutu', openDirectDamageSheet, 'btn'),
-      button('Dodaj Bliznę', () => openAddScarSheet(), 'btn'),
-      button('Stabilizuj', () => handleStabilize(), 'btn', { disabled: !state.conditions.criticalDamage || state.conditions.stabilized })
-    ]));
-    root.append(recovery);
-
     const notes = card([], 'card-pad');
     notes.append(sectionHead('Notatki i opis', button('Edytuj', openNotesSheet, 'btn btn-quiet btn-ghost')));
-    const details = [
-      ['Cechy', state.identity.traits], ['Więzi', state.identity.bonds], ['Omeny', state.identity.omens], ['Notatki', state.notes]
-    ];
-    for (const [label, text] of details) {
-      if (!text) continue;
-      notes.append(createEl('p', { className: 'eyebrow', text: label }), createEl('p', { className: 'small muted wrap-anywhere', text }));
-    }
-    if (!details.some(([,text]) => text)) notes.append(createEl('p', { className: 'muted small', text: 'Brak dodatkowych informacji.' }));
-    if (state.scars.length) {
-      notes.append(createEl('p', { className: 'eyebrow', text: 'Blizny' }));
-      for (const scar of state.scars) notes.append(createEl('p', { className: 'small muted wrap-anywhere', text: scar.text }));
-    }
+    notes.append(
+      journalDisclosure('Cechy', state.identity.traits),
+      journalDisclosure('Więzi', state.identity.bonds),
+      journalDisclosure('Omeny', state.identity.omens),
+      journalDisclosure('Notatki', state.notes)
+    );
     root.append(notes);
+
+    const scars = card([], 'card-pad');
+    scars.append(sectionHead('Blizny', button('Dodaj', () => openAddScarSheet(), 'btn btn-quiet btn-ghost')));
+    if (!state.scars.length) scars.append(createEl('p', { className: 'muted small', text: 'Brak zapisanych Blizn.' }));
+    for (const [index, scar] of state.scars.entries()) scars.append(journalDisclosure(`Blizna ${index + 1}`, scar.text));
+    root.append(scars);
 
     const historyCard = card([], 'card-pad');
     historyCard.append(sectionHead('Historia', createEl('span', { className: 'muted small', text: `${safeArray(state.changeHistory).length} zmian · ${safeArray(state.diceHistory).length} rzutów` })));
@@ -4106,50 +4249,26 @@
 
     historyCard.append(changeDetails, diceDetails);
     root.append(historyCard);
+  }
 
-    const dataCard = card([], 'card-pad');
-    dataCard.append(sectionHead('Dane i kopie zapasowe'));
-    dataCard.append(createEl('p', { className: 'help', text: 'Dane są zapisane wyłącznie w tej przeglądarce i na tym urządzeniu. Aplikacja działa offline po pierwszym poprawnym otwarciu, ale wyczyszczenie danych przeglądarki nadal usuwa kartę.' }));
-    dataCard.append(createEl('div', { className: 'data-status' }, [
-      createEl('strong', { text: backupMeta.lastBackupAt ? `Ostatnia pełna kopia: ${formatDateTime(backupMeta.lastBackupAt)}` : 'Brak potwierdzonej kopii zapasowej' }),
-      createEl('span', { text: `${backupMeta.meaningfulChangesSinceBackup} zmian od ostatniej kopii. Eksport zawiera całą aktywną postać i może zostać ponownie zaimportowany.` })
-    ]));
-    dataCard.append(createEl('div', { className: 'button-row' }, [
-      button('Pobierz pełną kopię', exportBackup, 'btn btn-primary'),
-      button('Import Kettlewright', () => $('#importFileInput').click(), 'btn'),
-      button('Odtwórz pełną kopię', () => $('#backupFileInput').click(), 'btn')
-    ]));
-    root.append(dataCard);
-
-    const appCard = card([], 'card-pad');
-    appCard.append(sectionHead('Aplikacja'));
-    const themeToggle = createEl('input', { type: 'checkbox', checked: state.settings.theme === 'light', attrs: { 'aria-label': 'Jasny motyw' } });
-    themeToggle.addEventListener('change', () => { state.settings.theme = themeToggle.checked ? 'light' : 'dark'; scheduleSave(); renderAll(); });
-    const appSettings = createEl('div', { className: 'settings-list' }, [
-      createEl('label', { className: 'settings-row settings-row-toggle' }, [createEl('div', {}, [createEl('strong', { text: 'Jasny motyw' }), createEl('p', { className: 'help', text: 'Ciemny pozostaje domyślny.' })]), themeToggle]),
-      createEl('div', { className: 'settings-row' }, [createEl('div', {}, [createEl('strong', { text: 'Instalacja i offline' }), createEl('p', { className: 'help', text: deferredInstallPrompt ? 'Przeglądarka pozwala zainstalować kartę jako aplikację.' : 'Po pierwszym otwarciu karta jest buforowana do pracy bez sieci. Na iPhonie użyj Udostępnij → Do ekranu początkowego.' })]), button(deferredInstallPrompt ? 'Zainstaluj' : 'Instrukcja', deferredInstallPrompt ? installApp : openInstallHelp, 'btn btn-quiet btn-ghost')]),
-      createEl('div', { className: 'settings-row' }, [createEl('div', {}, [createEl('strong', { text: 'Testy deweloperskie' }), createEl('p', { className: 'help', text: 'Uruchamia testy czystych funkcji bez frameworka.' })]), button('Uruchom', openTestResults, 'btn btn-quiet btn-ghost')]),
-      createEl('div', { className: 'settings-row' }, [createEl('div', {}, [createEl('strong', { text: `Wersja ${APP_VERSION}` }), createEl('p', { className: 'help', text: `Schemat danych ${SCHEMA_VERSION}` })]), createEl('span', { className: 'tag', text: state.source.type })])
-    ]);
-    appCard.append(appSettings);
-    root.append(appCard);
-
-    const recoveryRaw = safeStorageGet(RECOVERY_KEY);
-    if (recoveryRaw) {
-      const recoveryCard = card([], 'card-pad');
-      recoveryCard.append(sectionHead('Kopia odzyskiwania'));
-      recoveryCard.append(createEl('p', { className: 'muted small', text: 'W pamięci przeglądarki znajduje się surowy zapis, którego aplikacja wcześniej nie mogła odczytać.' }));
-      recoveryCard.append(button('Pobierz surowe dane', () => downloadTextFile('cairn-recovery-raw.json', recoveryRaw), 'btn btn-block'));
-      root.append(recoveryCard);
+  function openConditionsSheet() {
+    const body = createEl('div', { className: 'sheet-list' });
+    body.append(createEl('p', { className: 'muted small', text: 'Zaznaczaj tylko stany wynikające z fikcji i rozstrzygnięć przy stole. Aktywne stany są widoczne na ekranie Postaci.' }));
+    const settings = createEl('div', { className: 'condition-sheet-list' });
+    for (const [key, label] of CONDITION_DEFS) {
+      const toggle = createEl('input', { type: 'checkbox', checked: Boolean(state.conditions[key]), attrs: { 'aria-label': label } });
+      toggle.addEventListener('change', () => handleConditionToggle(key, toggle.checked));
+      settings.append(createEl('label', { className: 'settings-row settings-row-toggle' }, [
+        createEl('div', {}, [createEl('strong', { text: label }), createEl('p', { className: 'help', text: conditionHelp(key) })]),
+        toggle
+      ]));
     }
-
-    const danger = card([], 'card-pad');
-    danger.append(sectionHead('Operacje destrukcyjne'));
-    danger.append(createEl('div', { className: 'button-row' }, [
-      button('Wyczyść historię zmian', confirmClearChangeHistory, 'btn btn-danger'),
-      button('Zresetuj kartę', openResetSheet, 'btn btn-danger')
+    settings.append(createEl('div', { className: 'settings-row' }, [
+      createEl('div', {}, [createEl('strong', { text: 'Własne stany' }), createEl('p', { className: 'help', text: state.conditions.custom.map(entry => entry.name).join(', ') || 'Brak' })]),
+      button('Zarządzaj', openCustomConditionsSheet, 'btn btn-quiet btn-ghost')
     ]));
-    root.append(danger);
+    body.append(settings);
+    openSheet({ title: 'Stany postaci', body, footer: button('Gotowe', closeSheet, 'btn btn-primary btn-block') });
   }
 
   function conditionHelp(key) {
@@ -4164,7 +4283,6 @@
   }
 
   function handleConditionToggle(key, enabled) {
-    renderMoreView();
     if (key === 'stabilized' && enabled && !state.conditions.criticalDamage) {
       showToast('Stabilizacja dotyczy postaci z obrażeniami krytycznymi.', 'error');
       return;
@@ -4415,6 +4533,11 @@
     test('62. Dokument deklaruje manifest i ikonę aplikacji', () => { assert(Boolean(document.querySelector('link[rel="manifest"]')) && Boolean(document.querySelector('link[rel="icon"]'))); });
     test('63. Wynik kości udostępnia historię w kontekście', () => { renderDiceView(); assert($('#diceResult')?.tagName === 'BUTTON' && typeof openDiceHistorySheet === 'function'); });
     test('64. Atak przedmiotem przechodzi przez straż paniki', () => { assert(renderItemCard.toString().includes('runItemAttack') && runItemAttack.toString().includes('atak osłabiony')); });
+    test('65. Co teraz priorytetyzuje obrażenia krytyczne przed Paniką', () => { const fixture = createDemoState(); fixture.conditions.criticalDamage = true; fixture.conditions.panicked = true; assert(sessionPromptFor(fixture)?.id === 'critical-damage'); });
+    test('66. Pełny ekwipunek proponuje ustawienie Ochrony na 0', () => { const fixture = createDefaultState(); fixture.initialized = true; fixture.stats.hp.current = 3; fixture.inventory.items = Array.from({ length: 10 }, (_, index) => makeItem({ id:`full-${index}`, slots:1 })); assert(sessionPromptFor(fixture)?.id === 'full-inventory'); });
+    test('67. Dziennik nie zawiera ustawień technicznych', () => { const source = renderMoreView.toString(); assert(source.includes('Dziennik postaci') && !source.includes('Dane i kopie zapasowe') && !source.includes('Testy deweloperskie')); });
+    test('68. Ustawienia i dane są dostępne z nagłówka', () => { assert(Boolean($('#appSettingsBtn')) && typeof openAppSettingsSheet === 'function' && $('#nav-more')?.textContent.includes('Dziennik')); });
+    test('69. Skróty sytuacji w walce są pełnymi zdaniami', () => { const definitions = combatScenarioDefinitions(); assert(definitions.find(entry => entry.id === 'blast').description === 'Osobny rzut dla każdego celu.' && definitions.find(entry => entry.id === 'dual').description === 'Rzuć obiema. Zachowaj wyższą.' && definitions.find(entry => entry.id === 'multiple').description === 'Rzuć wszystkie. Zachowaj najwyższą.'); });
     return results;
   }
 
@@ -4444,6 +4567,78 @@
   // ============================================================
 
 
+  function isDeveloperMode() {
+    return new URLSearchParams(location.search).get('dev') === '1';
+  }
+
+  function settingsSection(title, children, className = '') {
+    return createEl('section', { className: `settings-sheet-section ${className}`.trim() }, [
+      createEl('h3', { text: title }),
+      ...(Array.isArray(children) ? children : [children])
+    ]);
+  }
+
+  function openAppSettingsSheet() {
+    const body = createEl('div', { className: 'settings-sheet' });
+
+    const dataChildren = [
+      createEl('p', { text: 'Dane pozostają wyłącznie w tej przeglądarce i na tym urządzeniu. Pełna kopia JSON jest jedyną kopią poza pamięcią przeglądarki.' }),
+      createEl('div', { className: 'data-status' }, [
+        createEl('strong', { text: backupMeta.lastBackupAt ? `Ostatnia pełna kopia: ${formatDateTime(backupMeta.lastBackupAt)}` : 'Brak potwierdzonej kopii zapasowej' }),
+        createEl('span', { text: `${backupMeta.meaningfulChangesSinceBackup} zmian od ostatniej kopii.` })
+      ]),
+      createEl('div', { className: 'button-row' }, [
+        button('Pobierz pełną kopię', exportBackup, 'btn btn-primary'),
+        button('Import Kettlewright', () => $('#importFileInput').click(), 'btn'),
+        button('Odtwórz kopię', () => $('#backupFileInput').click(), 'btn')
+      ])
+    ];
+    body.append(settingsSection('Dane i kopie zapasowe', dataChildren));
+
+    const themeToggle = createEl('input', { type: 'checkbox', checked: state.settings.theme === 'light', attrs: { 'aria-label': 'Jasny motyw' } });
+    themeToggle.addEventListener('change', () => {
+      state.settings.theme = themeToggle.checked ? 'light' : 'dark';
+      scheduleSave();
+      renderAll();
+    });
+    const appRows = createEl('div', { className: 'settings-list' }, [
+      createEl('label', { className: 'settings-row settings-row-toggle' }, [
+        createEl('div', {}, [createEl('strong', { text: 'Jasny motyw' }), createEl('p', { className: 'help', text: 'Ciemny pozostaje domyślny.' })]),
+        themeToggle
+      ]),
+      createEl('div', { className: 'settings-row' }, [
+        createEl('div', {}, [createEl('strong', { text: 'Instalacja i offline' }), createEl('p', { className: 'help', text: deferredInstallPrompt ? 'Przeglądarka pozwala zainstalować kartę jako aplikację.' : 'Po pierwszym otwarciu karta jest buforowana do pracy bez sieci.' })]),
+        button(deferredInstallPrompt ? 'Zainstaluj' : 'Jak zainstalować', deferredInstallPrompt ? installApp : openInstallHelp, 'btn btn-quiet btn-ghost')
+      ]),
+      createEl('div', { className: 'settings-row' }, [
+        createEl('div', {}, [createEl('strong', { text: `Wersja ${APP_VERSION}` }), createEl('p', { className: 'help', text: `Schemat danych ${SCHEMA_VERSION}` })]),
+        createEl('span', { className: 'tag', text: state.source.type })
+      ])
+    ]);
+    if (isDeveloperMode()) {
+      appRows.append(createEl('div', { className: 'settings-row' }, [
+        createEl('div', {}, [createEl('strong', { text: 'Testy deweloperskie' }), createEl('p', { className: 'help', text: 'Widoczne tylko w trybie ?dev=1.' })]),
+        button('Uruchom', openTestResults, 'btn btn-quiet btn-ghost')
+      ]));
+    }
+    body.append(settingsSection('Aplikacja', appRows));
+
+    const recoveryRaw = safeStorageGet(RECOVERY_KEY);
+    if (recoveryRaw) {
+      body.append(settingsSection('Kopia odzyskiwania', [
+        createEl('p', { text: 'W pamięci znajduje się surowy zapis, którego aplikacja wcześniej nie mogła odczytać.' }),
+        button('Pobierz surowe dane', () => downloadTextFile('cairn-recovery-raw.json', recoveryRaw), 'btn btn-block')
+      ]));
+    }
+
+    body.append(settingsSection('Operacje destrukcyjne', createEl('div', { className: 'button-row' }, [
+      button('Wyczyść historię zmian', confirmClearChangeHistory, 'btn btn-danger'),
+      button('Zresetuj kartę', openResetSheet, 'btn btn-danger')
+    ]), 'settings-sheet-danger'));
+
+    openSheet({ title: 'Ustawienia i dane', body, footer: button('Gotowe', closeSheet, 'btn btn-primary btn-block') });
+  }
+
   function openInstallHelp() {
     const body = createEl('div', { className: 'sheet-list' }, [
       createEl('p', { text: 'Po pierwszym poprawnym otwarciu Service Worker zachowuje pliki aplikacji do ponownego uruchomienia bez sieci.' }),
@@ -4462,7 +4657,7 @@
     deferredInstallPrompt.prompt();
     try { await deferredInstallPrompt.userChoice; } catch {}
     deferredInstallPrompt = null;
-    renderMoreView();
+    renderAll();
   }
 
   function registerServiceWorker() {
@@ -4473,8 +4668,8 @@
     });
   }
   function bindEvents() {
-    window.addEventListener('beforeinstallprompt', event => { event.preventDefault(); deferredInstallPrompt = event; renderMoreView(); });
-    window.addEventListener('appinstalled', () => { deferredInstallPrompt = null; renderMoreView(); showToast('Aplikacja została zainstalowana.'); });
+    window.addEventListener('beforeinstallprompt', event => { event.preventDefault(); deferredInstallPrompt = event; renderAll(); });
+    window.addEventListener('appinstalled', () => { deferredInstallPrompt = null; renderAll(); showToast('Aplikacja została zainstalowana.'); });
     for (const nav of $$('[data-nav]')) nav.addEventListener('click', () => setView(nav.dataset.nav));
     document.addEventListener('click', event => {
       const target = event.target.closest('button');
@@ -4484,6 +4679,7 @@
       target.classList.add('tap-feedback');
       setTimeout(() => target.classList.remove('tap-feedback'), 190);
     });
+    $('#appSettingsBtn').addEventListener('click', openAppSettingsSheet);
     $('#quickUndoBtn').addEventListener('click', undoLastChange);
     $('#sheetCloseBtn').addEventListener('click', closeSheet);
     $('#sheetBackdrop').addEventListener('click', event => { if (event.target === $('#sheetBackdrop')) closeSheet(); });
@@ -4525,6 +4721,7 @@
       recordDiceEntry,
       parseAttackDiceList,
       shouldShowBackupReminder,
+      sessionPromptFor,
       createDemoState
     };
     if (new URLSearchParams(location.search).get('selftest') === '1') {
