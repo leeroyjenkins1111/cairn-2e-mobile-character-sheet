@@ -184,7 +184,7 @@ test('session workflow records changes and dice, then archives a summary', async
   const sessionCard = page.locator('.session-log-card');
   await expect(sessionCard.getByText('Wyprawa do ruin')).toBeVisible();
   await expect(sessionCard.getByText('Użyto: Pochodnia')).toBeVisible();
-  await expect(sessionCard.getByText(/Rzut: \d+ \(1k6\)/)).toBeVisible();
+  await expect(sessionCard.getByText(/k6: \d+ \(1k6\)/)).toBeVisible();
 
   await sessionCard.getByRole('button', { name: 'Zakończ sesję' }).click();
   await page.getByLabel('Podsumowanie').fill('Odnaleziono przejście i wrócono bezpiecznie.');
