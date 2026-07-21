@@ -3433,8 +3433,8 @@
     openSheet({ title: 'Panika: atak osłabiony', body, footer: createEl('div', { className: 'button-row' }, [override, impaired]) });
     return null;
   }
-  function openBlastAttackSheet(sourceItem = null, options = {}) {
-    const impaired = options.impaired === true;
+  function openBlastAttackSheet(sourceItem = null, config = {}) {
+    const impaired = config.impaired === true;
     const blastItems = safeArray(state.inventory.items).filter(item => item.damageFormula?.blast && item.carryState !== 'spent');
     const options = [
       ['manual-d4', 'Ręcznie: k4'], ['manual-d6', 'Ręcznie: k6'], ['manual-d8', 'Ręcznie: k8'], ['manual-d10', 'Ręcznie: k10'], ['manual-d12', 'Ręcznie: k12'],
