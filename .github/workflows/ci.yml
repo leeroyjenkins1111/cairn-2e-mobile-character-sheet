@@ -30,16 +30,8 @@ jobs:
       - name: Verify deployment checksums
         run: sha256sum -c checksums.sha256
 
-      - name: Check inline JavaScript syntax
-        shell: bash
-        run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          html = Path('index.html').read_text(encoding='utf-8')
-          script = html.rsplit('<script>', 1)[1].split('</script>', 1)[0]
-          Path('/tmp/cairn-inline.js').write_text(script, encoding='utf-8')
-          PY
-          node --check /tmp/cairn-inline.js
+      - name: Check application JavaScript syntax
+        run: node --check scripts/app.js
 
       - name: Run browser regression suite
         id: browser_tests
