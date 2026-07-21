@@ -12,7 +12,7 @@ https://leeroyjenkins1111.github.io/cairn-2e-mobile-character-sheet/
 - rozliczanie obrażeń, Blizn i obrażeń krytycznych;
 - kompaktowy, grupowany ekwipunek według sposobu noszenia, ze zmęczeniem, drobiazgami, przedmiotami nieporęcznymi i użyciami;
 - broń, podmuch, dwie bronie i wielu atakujących;
-- kości, rzuty obronne i Kość Losu, z trzema ostatnimi wynikami, typami rzutów oraz bezpiecznym ponawianiem zwykłych rzutów i rzutów obronnych;
+- kości, rzuty obronne i Kość Losu, z historią rzutów oraz bezpiecznym ponawianiem zwykłych rzutów i rzutów obronnych;
 - import postaci z JSON Kettlewright;
 - pełna, odtwarzalna kopia zapasowa JSON;
 - trzy lokalne punkty odzyskiwania przed importem, resetem lub odtworzeniem;
@@ -21,7 +21,6 @@ https://leeroyjenkins1111.github.io/cairn-2e-mobile-character-sheet/
 - instalacja jako lekka PWA i ponowne uruchomienie offline po pierwszym poprawnym otwarciu;
 - kontekstowy tryb sesji z kartą „Co teraz?”, aktywnymi stanami i szybkimi korektami;
 - gameplay-first ekran Postać: bieżący stan, cztery główne akcje i aktywna broń bez powielania notatek oraz historii rzutów;
-- sesyjny ekran główny z Ochroną, ostatnim rzutem, aktywnym sprzętem, notatką i skrótami do najczęstszych akcji;
 - jawny log sesji: rozpoczęcie, aktywny zapis zmian i rzutów, zakończenie, podsumowanie oraz eksport Markdown/JSON;
 - osobny Dziennik postaci, podczas gdy backup, instalacja i operacje techniczne są dostępne w ustawieniach nagłówka.
 
