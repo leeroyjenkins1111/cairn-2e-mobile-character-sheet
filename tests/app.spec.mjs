@@ -10,8 +10,22 @@ async function loadDemo(page) {
 test('all embedded domain regression tests pass', async ({ page }) => {
   await page.goto('/?selftest=1');
   const marker = page.locator('#selftestMarker');
-  await expect(marker).toHaveAttribute('data-passed', '101');
-  await expect(marker).toHaveAttribute('data-total', '101');
+  await expect(marker).toHaveAttribute('data-passed', '102');
+  await expect(marker).toHaveAttribute('data-total', '102');
+});
+
+
+test('application loads extracted same-origin CSS and JavaScript', async ({ page }) => {
+  await page.goto('/');
+  await expect(page.locator('link[rel="stylesheet"][href="./styles/app.css"]')).toHaveCount(1);
+  await expect(page.locator('script[src="./scripts/app.js"]')).toHaveCount(1);
+  const result = await page.evaluate(() => ({
+    version: globalThis.CairnSheetDev?.version,
+    inlineStyles: document.querySelectorAll('style').length,
+    inlineScripts: document.querySelectorAll('script:not([src])').length,
+    stylesheetLoaded: Array.from(document.styleSheets).some(sheet => sheet.href?.endsWith('/styles/app.css'))
+  }));
+  expect(result).toEqual({ version: '0.14.0', inlineStyles: 0, inlineScripts: 0, stylesheetLoaded: true });
 });
 
 test('full and legacy exports round-trip without losing character data', async ({ page }) => {

@@ -27,7 +27,18 @@ https://leeroyjenkins1111.github.io/cairn-2e-mobile-character-sheet/
 
 Dane są zapisywane wyłącznie w `localStorage` tej przeglądarki i urządzenia. Wyczyszczenie danych przeglądarki usuwa kartę. Regularnie używaj przycisku **Pobierz pełną kopię**.
 
-Wersja 0.13.0 nadal używa `schemaVersion: 3`. Trzy najnowsze punkty odzyskiwania są przechowywane osobno w `localStorage` i nie wchodzą do pełnej kopii postaci. Chronią przed przypadkowym importem, resetem lub odtworzeniem, ale znikają po wyczyszczeniu danych przeglądarki i nie zastępują pobranej kopii JSON. Historia rzutów może zawierać opcjonalne metadane bezpiecznego powtórzenia, ale starsze wpisy bez tych danych pozostają czytelne i nie wymagają migracji. Zapisy i kopie ze `schemaVersion: 2` są migrowane automatycznie, a starsze pliki `cairn-*-eksport.json` z wersji 0.6.0 nadal mogą zostać odtworzone. Raport sesji Markdown/JSON jest czytelnym wyciągiem i nie zastępuje pełnej kopii zapasowej.
+Wersja 0.14.0 nadal używa `schemaVersion: 3`. Trzy najnowsze punkty odzyskiwania są przechowywane osobno w `localStorage` i nie wchodzą do pełnej kopii postaci. Chronią przed przypadkowym importem, resetem lub odtworzeniem, ale znikają po wyczyszczeniu danych przeglądarki i nie zastępują pobranej kopii JSON. Historia rzutów może zawierać opcjonalne metadane bezpiecznego powtórzenia, ale starsze wpisy bez tych danych pozostają czytelne i nie wymagają migracji. Zapisy i kopie ze `schemaVersion: 2` są migrowane automatycznie, a starsze pliki `cairn-*-eksport.json` z wersji 0.6.0 nadal mogą zostać odtworzone. Raport sesji Markdown/JSON jest czytelnym wyciągiem i nie zastępuje pełnej kopii zapasowej.
+
+## Struktura aplikacji
+
+Warstwa statyczna jest rozdzielona bez zmiany funkcji lub modelu danych:
+
+- `index.html` zawiera semantyczny szkielet dokumentu;
+- `styles/app.css` zawiera cały styl interfejsu;
+- `scripts/app.js` zawiera logikę aplikacji;
+- Service Worker jawnie buforuje oba zasoby do pracy offline.
+
+Ten etap nie wprowadza bundlera ani modułów runtime. Rozdzielenie logiki JavaScript na mniejsze moduły pozostaje możliwym późniejszym refaktorem, ale nie jest wymagane do korzystania z aplikacji.
 
 ## Uruchomienie lokalne
 
