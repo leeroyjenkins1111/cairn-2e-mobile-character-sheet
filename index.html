@@ -2202,7 +2202,7 @@
     if (migrated.schemaVersion > SCHEMA_VERSION) throw new Error('Nieobsługiwana nowsza wersja danych.');
     while (migrated.schemaVersion < SCHEMA_VERSION) {
       if (migrated.schemaVersion === 1) migrated = migrateV1ToV2(migrated);
-      else if (migrated.schemaVersion === 3) migrated = migrateV2ToV3(migrated);
+      else if (migrated.schemaVersion === 2) migrated = migrateV2ToV3(migrated);
       else throw new Error(`Brak migracji dla schemaVersion ${migrated.schemaVersion}.`);
     }
     migrated.appVersion = APP_VERSION;
