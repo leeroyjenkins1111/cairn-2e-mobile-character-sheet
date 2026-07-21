@@ -1427,6 +1427,85 @@
       .settings-sheet .settings-row .btn { min-width: 104px; }
     }
 
+
+    /* Accessibility and real-device hardening v0.13.0. */
+    :root {
+      --visual-viewport-height: 100dvh;
+      --visual-viewport-offset-top: 0px;
+      -webkit-text-size-adjust: 100%;
+      text-size-adjust: 100%;
+    }
+    .skip-link {
+      position: fixed;
+      top: calc(env(safe-area-inset-top) + 8px);
+      left: 50%;
+      z-index: 300;
+      max-width: calc(100% - 24px);
+      min-height: 44px;
+      padding: 11px 14px;
+      border: 2px solid var(--amber-strong);
+      border-radius: 12px;
+      background: var(--bg-elev);
+      color: var(--text);
+      font-weight: 850;
+      text-decoration: none;
+      transform: translate(-50%, -180%);
+      transition: transform 120ms ease;
+    }
+    .skip-link:focus { transform: translate(-50%, 0); box-shadow: var(--focus); }
+    #main:focus { outline: none; }
+    input, select, textarea { max-width: 100%; }
+    .advanced-roll:not([open]) > :not(summary) { display: none; }
+    .nav-btn > span:last-child { min-width: 0; max-width: 100%; overflow-wrap: anywhere; }
+    .sheet-backdrop {
+      inset: auto 0 auto;
+      top: var(--visual-viewport-offset-top);
+      height: var(--visual-viewport-height);
+    }
+    .sheet { max-height: min(calc(var(--visual-viewport-height) - env(safe-area-inset-top)), 850px); }
+    .sheet-body { scroll-padding-block: 24px 128px; }
+    .sheet-head h2[tabindex="-1"] { border-radius: 8px; }
+    .sheet-head h2[tabindex="-1"]:focus { outline: none; box-shadow: var(--focus); }
+
+    @media (max-width: 430px) {
+      .settings-row,
+      .recovery-checkpoint-head { align-items: flex-start; flex-wrap: wrap; }
+      .settings-row > :first-child,
+      .recovery-checkpoint-copy { flex: 1 1 180px; min-width: 0; }
+      .settings-row > .btn,
+      .settings-row > .tag { flex: 0 1 auto; }
+      .sheet-foot .button-row > .btn { flex-basis: 100%; }
+    }
+
+    @media (prefers-contrast: more) {
+      :root {
+        --line: rgba(255, 255, 255, 0.48);
+        --muted: #ded5df;
+        --faint: #c8bdca;
+        --focus: 0 0 0 4px rgba(255, 222, 164, 0.78);
+      }
+      html[data-theme="light"] {
+        --line: rgba(0, 0, 0, 0.46);
+        --muted: #3f3841;
+        --faint: #514952;
+        --focus: 0 0 0 4px rgba(102, 58, 8, 0.68);
+      }
+      .card, .btn, .sheet, .bottom-nav, .report-block, .settings-sheet-section { box-shadow: none; }
+    }
+
+    @media (forced-colors: active) {
+      .btn, .nav-btn, .card, .sheet, .report-block, .settings-sheet-section, .recovery-checkpoint-item {
+        border: 1px solid CanvasText;
+        forced-color-adjust: auto;
+      }
+      .nav-btn[aria-current="page"] { outline: 2px solid Highlight; outline-offset: -2px; }
+      .skip-link, button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, [tabindex]:focus-visible {
+        outline: 3px solid Highlight;
+        outline-offset: 2px;
+        box-shadow: none;
+      }
+    }
+
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after {
         animation-duration: 0.001ms !important;
@@ -1714,6 +1793,7 @@
   </style>
 </head>
 <body>
+  <a class="skip-link" href="#main">Przejdź do treści karty</a>
   <div class="app-shell">
     <header class="app-header">
       <div class="brand">
@@ -1726,7 +1806,7 @@
       </div>
     </header>
 
-    <main class="main" id="main">
+    <main class="main" id="main" tabindex="-1" aria-label="Treść karty postaci">
       <section class="view" id="view-character" data-view="character" aria-labelledby="nav-character"></section>
       <section class="view" id="view-inventory" data-view="inventory" aria-labelledby="nav-inventory" hidden></section>
       <section class="view" id="view-dice" data-view="dice" aria-labelledby="nav-dice" hidden></section>
@@ -1734,10 +1814,10 @@
     </main>
 
     <nav class="bottom-nav" aria-label="Główna nawigacja">
-      <button class="nav-btn" id="nav-character" type="button" data-nav="character" aria-current="page"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="12" cy="8" r="3"></circle><path d="M6.5 19c.8-3.2 2.7-5 5.5-5s4.7 1.8 5.5 5"></path></svg></span><span>Postać</span></button>
-      <button class="nav-btn" id="nav-inventory" type="button" data-nav="inventory"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M5 7h14v12H5z"></path><path d="M8 7V5h8v2M9 11h6"></path></svg></span><span>Ekwipunek</span></button>
-      <button class="nav-btn" id="nav-dice" type="button" data-nav="dice"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><rect x="4" y="4" width="16" height="16" rx="4"></rect><path d="M9 9h.01M15 15h.01M15 9h.01M9 15h.01"></path></svg></span><span>Kości</span></button>
-      <button class="nav-btn" id="nav-more" type="button" data-nav="more"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="5" cy="12" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle></svg></span><span>Dziennik</span></button>
+      <button class="nav-btn" id="nav-character" type="button" data-nav="character" aria-controls="view-character" aria-current="page"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="12" cy="8" r="3"></circle><path d="M6.5 19c.8-3.2 2.7-5 5.5-5s4.7 1.8 5.5 5"></path></svg></span><span>Postać</span></button>
+      <button class="nav-btn" id="nav-inventory" type="button" data-nav="inventory" aria-controls="view-inventory"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M5 7h14v12H5z"></path><path d="M8 7V5h8v2M9 11h6"></path></svg></span><span>Ekwipunek</span></button>
+      <button class="nav-btn" id="nav-dice" type="button" data-nav="dice" aria-controls="view-dice"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><rect x="4" y="4" width="16" height="16" rx="4"></rect><path d="M9 9h.01M15 15h.01M15 9h.01M9 15h.01"></path></svg></span><span>Kości</span></button>
+      <button class="nav-btn" id="nav-more" type="button" data-nav="more" aria-controls="view-more"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="5" cy="12" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle></svg></span><span>Dziennik</span></button>
     </nav>
   </div>
 
@@ -1746,7 +1826,7 @@
       <div>
         <div class="sheet-handle" aria-hidden="true"></div>
         <div class="sheet-head">
-          <h2 id="sheetTitle">Panel</h2>
+          <h2 id="sheetTitle" tabindex="-1">Panel</h2>
           <button class="btn btn-icon btn-ghost" id="sheetCloseBtn" type="button" aria-label="Zamknij panel">×</button>
         </div>
       </div>
@@ -1757,6 +1837,7 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <div class="sr-only" id="liveRegion" aria-live="assertive" aria-atomic="true"></div>
+  <div class="sr-only" id="viewLiveRegion" aria-live="polite" aria-atomic="true"></div>
 
   <input class="hidden" id="importFileInput" type="file" accept="application/json,.json">
   <input class="hidden" id="backupFileInput" type="file" accept="application/json,.json">
@@ -1768,7 +1849,7 @@
   // 1. Constants
   // ============================================================
   const APP_ID = 'cairn-mobile-sheet';
-  const APP_VERSION = '0.12.0';
+  const APP_VERSION = '0.13.0';
   const SCHEMA_VERSION = 3;
   const STORAGE_KEY = `${APP_ID}:state`;
   const RECOVERY_KEY = `${APP_ID}:recovery`;
@@ -3382,9 +3463,9 @@
     backdrop.setAttribute('aria-hidden', 'false');
     document.body.classList.add('sheet-open');
     document.body.style.overflow = 'hidden';
+    syncVisualViewport();
     requestAnimationFrame(() => {
-      const focusable = getSheetFocusable();
-      (focusable[0] || $('#sheetCloseBtn')).focus();
+      $('#sheetTitle').focus({ preventScroll: true });
     });
   }
 
@@ -3417,7 +3498,8 @@
     if (!focusable.length) return;
     const first = focusable[0];
     const last = focusable[focusable.length - 1];
-    if (event.shiftKey && document.activeElement === first) { event.preventDefault(); last.focus(); }
+    const title = $('#sheetTitle');
+    if (event.shiftKey && (document.activeElement === first || document.activeElement === title)) { event.preventDefault(); last.focus(); }
     else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first.focus(); }
   }
 
@@ -3448,10 +3530,27 @@
   // ============================================================
   // 12. Rendering helpers
   // ============================================================
+  const VIEW_META = Object.freeze({
+    character: { label: 'Postać' },
+    inventory: { label: 'Ekwipunek' },
+    dice: { label: 'Kości' },
+    more: { label: 'Dziennik' }
+  });
   let activeView = 'character';
 
-  function setView(view) {
-    activeView = ['character','inventory','dice','more'].includes(view) ? view : 'character';
+  function updateViewAccessibility(announceChange = false) {
+    const meta = VIEW_META[activeView] || VIEW_META.character;
+    const characterName = state.initialized ? trimText(state.identity.name, 'Karta Wędrowca') : 'Karta Wędrowca';
+    document.title = `${characterName} — ${meta.label} — Cairn 2e`;
+    if (!announceChange) return;
+    const live = $('#viewLiveRegion');
+    if (!live) return;
+    live.textContent = '';
+    requestAnimationFrame(() => { live.textContent = `Widok: ${meta.label}`; });
+  }
+
+  function setView(view, { announceChange = false } = {}) {
+    activeView = VIEW_META[view] ? view : 'character';
     for (const section of $$('[data-view]')) section.hidden = section.dataset.view !== activeView;
     for (const nav of $$('[data-nav]')) {
       if (nav.dataset.nav === activeView) nav.setAttribute('aria-current', 'page');
@@ -3461,6 +3560,7 @@
     if (activeView === 'inventory') renderInventoryView();
     if (activeView === 'dice') renderDiceView();
     if (activeView === 'more') renderMoreView();
+    updateViewAccessibility(announceChange);
     window.scrollTo({ top: 0, behavior: 'auto' });
   }
 
@@ -3472,6 +3572,7 @@
     renderInventoryView();
     renderDiceView();
     renderMoreView();
+    updateViewAccessibility(false);
   }
 
   function card(children, className = '') { return createEl('section', { className: `card ${className}`.trim() }, children); }
@@ -5534,6 +5635,11 @@
     test('95. Pełna kopia postaci nie osadza lokalnej listy punktów', () => { const payload = buildBackupPayload(createDemoState()); assert(!Object.prototype.hasOwnProperty.call(payload, 'recoveryCheckpoints') && !Object.prototype.hasOwnProperty.call(payload, 'checkpoints')); });
     test('96. Punkty odzyskiwania nie wymagają zmiany schemaVersion postaci', () => { const checkpoint = createRecoveryCheckpointRecord(createDemoState(), 'Schemat', '2026-01-01T10:00:00.000Z'); assert(SCHEMA_VERSION === 3 && checkpoint.schemaVersion === 3 && checkpoint.payload.schemaVersion === 3); });
     test('97. Surowa kopia błędnego zapisu i punkty odzyskiwania używają osobnych kluczy', () => { assert(RECOVERY_KEY !== CHECKPOINTS_KEY && CHECKPOINT_LIMIT === 3); });
+
+    test('98. Dokument ma link pomijający nawigację i fokusowalny główny obszar', () => { const skip = $('.skip-link'); assert(skip?.getAttribute('href') === '#main' && $('#main')?.getAttribute('tabindex') === '-1'); });
+    test('99. Dolna nawigacja wskazuje kontrolowane widoki', () => { assert($$('[data-nav]').every(nav => nav.getAttribute('aria-controls') === `view-${nav.dataset.nav}`)); });
+    test('100. Metadane widoku aktualizują tytuł dokumentu', () => { const previous = activeView; setView('dice'); assert(document.title.includes('Kości') && VIEW_META.dice.label === 'Kości'); setView(previous); });
+    test('101. Dialog ma fokusowalny tytuł i obsługę Visual Viewport', () => { assert($('#sheetTitle')?.getAttribute('tabindex') === '-1' && typeof syncVisualViewport === 'function' && trapSheetFocus.toString().includes('document.activeElement === title')); });
     return results;
   }
 
@@ -5785,10 +5891,27 @@
       showToast(loadWarning, 'error');
     });
   }
+
+
+  function syncVisualViewport() {
+    const viewport = globalThis.visualViewport;
+    const height = Math.max(1, Math.round(viewport?.height || window.innerHeight || document.documentElement.clientHeight || 1));
+    const offsetTop = Math.max(0, Math.round(viewport?.offsetTop || 0));
+    document.documentElement.style.setProperty('--visual-viewport-height', `${height}px`);
+    document.documentElement.style.setProperty('--visual-viewport-offset-top', `${offsetTop}px`);
+    return { height, offsetTop };
+  }
+
+  function keepSheetControlVisible(event) {
+    const control = event.target;
+    if (!(control instanceof Element) || !control.matches('input, select, textarea')) return;
+    setTimeout(() => control.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'auto' }), 80);
+  }
+
   function bindEvents() {
     window.addEventListener('beforeinstallprompt', event => { event.preventDefault(); deferredInstallPrompt = event; renderAll(); });
     window.addEventListener('appinstalled', () => { deferredInstallPrompt = null; renderAll(); showToast('Aplikacja została zainstalowana.'); });
-    for (const nav of $$('[data-nav]')) nav.addEventListener('click', () => setView(nav.dataset.nav));
+    for (const nav of $$('[data-nav]')) nav.addEventListener('click', () => setView(nav.dataset.nav, { announceChange: true }));
     document.addEventListener('click', event => {
       const target = event.target.closest('button');
       if (!target || target.disabled || shouldReduceMotion()) return;
@@ -5802,6 +5925,11 @@
     $('#sheetCloseBtn').addEventListener('click', closeSheet);
     $('#sheetBackdrop').addEventListener('click', event => { if (event.target === $('#sheetBackdrop')) closeSheet(); });
     $('#sheet').addEventListener('keydown', trapSheetFocus);
+    $('#sheet').addEventListener('focusin', keepSheetControlVisible);
+    window.addEventListener('resize', syncVisualViewport);
+    globalThis.visualViewport?.addEventListener('resize', syncVisualViewport);
+    globalThis.visualViewport?.addEventListener('scroll', syncVisualViewport);
+    syncVisualViewport();
     $('#importFileInput').addEventListener('change', event => { handleImportFile(event.target.files[0], 'any'); event.target.value = ''; });
     $('#backupFileInput').addEventListener('change', event => { handleImportFile(event.target.files[0], 'backup'); event.target.value = ''; });
     window.addEventListener('pagehide', saveNow);
@@ -5862,6 +5990,8 @@
       groupInventoryEntries,
       moveItemWithinGroup,
       deriveArmor,
+      syncVisualViewport,
+      updateViewAccessibility,
       createDemoState
     };
     if (new URLSearchParams(location.search).get('selftest') === '1') {
