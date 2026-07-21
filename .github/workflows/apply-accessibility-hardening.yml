@@ -20,7 +20,24 @@ jobs:
           fetch-depth: 0
 
       - name: Apply implementation
-        run: python3 scripts/apply-accessibility-hardening.py
+        id: apply
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          python3 scripts/apply-accessibility-hardening.py 2>&1 | tee apply-output.log
+
+      - name: Upload apply diagnostics
+        if: steps.apply.outcome == 'failure'
+        uses: actions/upload-artifact@v4
+        with:
+          name: accessibility-apply-diagnostics
+          path: apply-output.log
+          if-no-files-found: error
+
+      - name: Stop when implementation cannot be applied
+        if: steps.apply.outcome == 'failure'
+        run: exit 1
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -62,6 +79,7 @@ jobs:
         with:
           name: accessibility-hardening-diagnostics
           path: |
+            apply-output.log
             playwright-output.log
             test-results
             playwright-report
