@@ -1,0 +1,61 @@
+name: Apply local recovery checkpoints
+
+on:
+  push:
+    branches: [feature/local-recovery-checkpoints-v0.12.0]
+
+permissions:
+  contents: write
+
+jobs:
+  apply-and-verify:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Apply implementation
+        run: python3 scripts/apply-recovery-checkpoints.py
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install browser engines
+        run: npx playwright install --with-deps chromium webkit
+
+      - name: Verify deployment checksums
+        run: sha256sum -c checksums.sha256
+
+      - name: Check inline JavaScript syntax
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          html = Path('index.html').read_text(encoding='utf-8')
+          script = html.rsplit('<script>', 1)[1].split('</script>', 1)[0]
+          Path('/tmp/cairn-inline.js').write_text(script, encoding='utf-8')
+          PY
+          node --check /tmp/cairn-inline.js
+
+      - name: Run browser regression suite
+        run: npm run test:ci
+
+      - name: Remove bootstrap files
+        run: git rm scripts/apply-recovery-checkpoints.py .github/workflows/apply-recovery-checkpoints.yml
+
+      - name: Commit final implementation
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add README.md checksums.sha256 index.html package.json package-lock.json service-worker.js tests/app.spec.mjs
+          git commit -m "v0.12.0: add local recovery checkpoints"
+          git push origin HEAD:feature/local-recovery-checkpoints-v0.12.0
