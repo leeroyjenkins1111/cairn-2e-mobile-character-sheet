@@ -49,7 +49,27 @@ jobs:
           node --check /tmp/cairn-inline.js
 
       - name: Run browser regression suite
-        run: npm run test:ci
+        id: browser_tests
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          npm run test:ci 2>&1 | tee recovery-playwright-output.log
+
+      - name: Upload recovery test diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: recovery-checkpoint-diagnostics
+          path: |
+            recovery-playwright-output.log
+            test-results
+            playwright-report
+          if-no-files-found: warn
+
+      - name: Stop when browser tests fail
+        if: steps.browser_tests.outcome == 'failure'
+        run: exit 1
 
       - name: Remove bootstrap files
         run: git rm scripts/apply-recovery-checkpoints.py .github/workflows/apply-recovery-checkpoints.yml
