@@ -26,7 +26,10 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          python3 scripts/apply-session-first-ux.py 2>&1 | tee ux-apply-output.log
+          {
+            python3 scripts/apply-session-first-ux.py
+            python3 scripts/fix-session-first-ux-tests.py
+          } 2>&1 | tee ux-apply-output.log
 
       - name: Upload apply diagnostics
         if: always()
@@ -47,6 +50,7 @@ jobs:
           grep -q "session-glance-card" scripts/app.js
           grep -q "Session-first UX v0.15.0" styles/app.css
           grep -q "cairn-mobile-sheet-v0.15.0" service-worker.js
+          grep -q "version: '0.15.0'" tests/app.spec.mjs
           git diff --check
 
       - name: Setup Node
@@ -91,7 +95,7 @@ jobs:
         run: exit 1
 
       - name: Remove bootstrap files
-        run: git rm scripts/apply-session-first-ux.py .github/workflows/apply-session-first-ux.yml
+        run: git rm scripts/apply-session-first-ux.py scripts/fix-session-first-ux-tests.py .github/workflows/apply-session-first-ux.yml
 
       - name: Commit generated UX changes
         shell: bash
