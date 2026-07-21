@@ -4,19 +4,16 @@ on:
   push:
     branches:
       - feature/session-log-v0.10.0
-  pull_request:
-    branches:
-      - main
 
 permissions:
   contents: write
 
 concurrency:
-  group: bootstrap-session-log-finalize
+  group: bootstrap-session-log-commit
   cancel-in-progress: false
 
 jobs:
-  apply-finalize:
+  apply-commit:
     if: ${{ !contains(github.event.head_commit.message || '', '[session-log-result]') }}
     runs-on: ubuntu-latest
     steps:
@@ -60,14 +57,6 @@ jobs:
           set -o pipefail
           python3 scripts/apply_session_log.py 2>&1 | tee bootstrap-session-log.log
 
-      - name: Upload bootstrap diagnostics
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: session-log-bootstrap-diagnostics-finalize
-          path: bootstrap-session-log.log
-          if-no-files-found: warn
-
       - name: Verify deployment checksums
         run: sha256sum -c checksums.sha256
 
@@ -82,14 +71,10 @@ jobs:
           PY
           node --check /tmp/cairn-inline.js
 
-      - name: Show implementation diff
-        run: git status --short && git diff --stat
-
-      - name: Remove bootstrap files and finalize
+      - name: Commit implementation
         shell: bash
         run: |
           rm -f bootstrap-session-log.log
-          git rm scripts/apply_session_log.py .github/workflows/bootstrap-session-log.yml
           git add index.html tests/app.spec.mjs README.md package.json package-lock.json service-worker.js checksums.sha256
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
