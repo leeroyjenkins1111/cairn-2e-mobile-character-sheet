@@ -10,8 +10,8 @@ async function loadDemo(page) {
 test('all embedded domain regression tests pass', async ({ page }) => {
   await page.goto('/?selftest=1');
   const marker = page.locator('#selftestMarker');
-  await expect(marker).toHaveAttribute('data-passed', '84');
-  await expect(marker).toHaveAttribute('data-total', '84');
+  await expect(marker).toHaveAttribute('data-passed', '90');
+  await expect(marker).toHaveAttribute('data-total', '90');
 });
 
 test('full and legacy exports round-trip without losing character data', async ({ page }) => {
@@ -221,5 +221,30 @@ test('schema 2 migrates to schema 3 and full backup preserves session log', asyn
   expect(result.restoredTitle).toBe('Sesja kopii');
   expect(result.restoredSummary).toBe('Podsumowanie');
   expect(result.markdown).toContain('Rzut obronny WOL');
+});
+
+test('dice dashboard shows recent types and repeats the latest safe roll', async ({ page }) => {
+  await loadDemo(page);
+  await page.getByRole('button', { name: 'Kości', exact: true }).click();
+  await page.getByRole('button', { name: 'Rzuć kością k8' }).click();
+
+  const first = await page.evaluate(() => globalThis.CairnSheetDev.getState().diceHistory[0]);
+  expect(first.notation).toBe('1k8');
+  await expect(page.locator('.dice-recent-strip .dice-recent-item')).toHaveCount(1);
+  await expect(page.locator('.dice-recent-strip .dice-recent-type')).toHaveText('Rzut');
+
+  await page.getByRole('button', { name: 'Powtórz ostatni rzut: k8' }).click();
+  await expect.poll(async () => page.evaluate(() => globalThis.CairnSheetDev.getState().diceHistory.length)).toBe(2);
+
+  const repeated = await page.evaluate(() => globalThis.CairnSheetDev.getState().diceHistory.slice(0, 2));
+  expect(repeated[0].notation).toBe('1k8');
+  expect(repeated[0].repeat.kind).toBe('roll');
+  expect(repeated[0].id).not.toBe(repeated[1].id);
+  await expect(page.locator('.dice-recent-strip .dice-recent-item')).toHaveCount(2);
+
+  await page.locator('#diceResult').click();
+  const history = page.locator('#sheet');
+  await expect(history.getByRole('heading', { name: 'Historia rzutów' })).toBeVisible();
+  await expect(history.getByRole('button', { name: 'Powtórz rzut: k8' })).toHaveCount(2);
 });
 

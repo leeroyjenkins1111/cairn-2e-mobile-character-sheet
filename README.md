@@ -12,7 +12,7 @@ https://leeroyjenkins1111.github.io/cairn-2e-mobile-character-sheet/
 - rozliczanie obrażeń, Blizn i obrażeń krytycznych;
 - kompaktowy, grupowany ekwipunek według sposobu noszenia, ze zmęczeniem, drobiazgami, przedmiotami nieporęcznymi i użyciami;
 - broń, podmuch, dwie bronie i wielu atakujących;
-- kości, rzuty obronne, Kość Losu i historia rzutów;
+- kości, rzuty obronne i Kość Losu, z trzema ostatnimi wynikami, typami rzutów oraz bezpiecznym ponawianiem zwykłych rzutów i rzutów obronnych;
 - import postaci z JSON Kettlewright;
 - pełna, odtwarzalna kopia zapasowa JSON;
 - Undo dla zmian stanu postaci;
@@ -25,7 +25,7 @@ https://leeroyjenkins1111.github.io/cairn-2e-mobile-character-sheet/
 
 Dane są zapisywane wyłącznie w `localStorage` tej przeglądarki i urządzenia. Wyczyszczenie danych przeglądarki usuwa kartę. Regularnie używaj przycisku **Pobierz pełną kopię**.
 
-Wersja 0.10.0 używa `schemaVersion: 3`, ponieważ pełna kopia obejmuje teraz log sesji. Zapisy i kopie ze `schemaVersion: 2` są migrowane automatycznie, a starsze pliki `cairn-*-eksport.json` z wersji 0.6.0 nadal mogą zostać odtworzone. Raport sesji Markdown/JSON jest czytelnym wyciągiem i nie zastępuje pełnej kopii zapasowej.
+Wersja 0.11.0 nadal używa `schemaVersion: 3`. Historia rzutów może zawierać opcjonalne metadane bezpiecznego powtórzenia, ale starsze wpisy bez tych danych pozostają czytelne i nie wymagają migracji. Zapisy i kopie ze `schemaVersion: 2` są migrowane automatycznie, a starsze pliki `cairn-*-eksport.json` z wersji 0.6.0 nadal mogą zostać odtworzone. Raport sesji Markdown/JSON jest czytelnym wyciągiem i nie zastępuje pełnej kopii zapasowej.
 
 ## Uruchomienie lokalne
 
