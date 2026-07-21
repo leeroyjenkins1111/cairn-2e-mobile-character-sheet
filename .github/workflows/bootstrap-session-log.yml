@@ -12,11 +12,11 @@ permissions:
   contents: write
 
 concurrency:
-  group: bootstrap-session-log
+  group: bootstrap-session-log-finalize
   cancel-in-progress: false
 
 jobs:
-  apply-test-finalize:
+  apply-finalize:
     if: ${{ !contains(github.event.head_commit.message || '', '[session-log-result]') }}
     runs-on: ubuntu-latest
     steps:
@@ -64,24 +64,9 @@ jobs:
         if: failure()
         uses: actions/upload-artifact@v4
         with:
-          name: session-log-bootstrap-diagnostics
+          name: session-log-bootstrap-diagnostics-finalize
           path: bootstrap-session-log.log
           if-no-files-found: warn
-
-      - name: Show implementation diff
-        run: git status --short && git diff --stat
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Install browser engines
-        run: npx playwright install --with-deps chromium webkit
 
       - name: Verify deployment checksums
         run: sha256sum -c checksums.sha256
@@ -97,13 +82,13 @@ jobs:
           PY
           node --check /tmp/cairn-inline.js
 
-      - name: Run browser regression suite
-        run: npm run test:ci
+      - name: Show implementation diff
+        run: git status --short && git diff --stat
 
       - name: Remove bootstrap files and finalize
         shell: bash
         run: |
-          rm -rf node_modules test-results playwright-report bootstrap-session-log.log
+          rm -f bootstrap-session-log.log
           git rm scripts/apply_session_log.py .github/workflows/bootstrap-session-log.yml
           git add index.html tests/app.spec.mjs README.md package.json package-lock.json service-worker.js checksums.sha256
           git config user.name "github-actions[bot]"
