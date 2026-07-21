@@ -20,7 +20,9 @@ jobs:
           fetch-depth: 0
 
       - name: Apply implementation
-        run: python3 scripts/apply-recovery-checkpoints.py
+        run: |
+          python3 scripts/apply-recovery-checkpoints.py
+          python3 scripts/fix-recovery-checkpoint-test.py
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -72,7 +74,7 @@ jobs:
         run: exit 1
 
       - name: Remove bootstrap files
-        run: git rm scripts/apply-recovery-checkpoints.py .github/workflows/apply-recovery-checkpoints.yml
+        run: git rm scripts/apply-recovery-checkpoints.py scripts/fix-recovery-checkpoint-test.py .github/workflows/apply-recovery-checkpoints.yml
 
       - name: Commit final implementation
         shell: bash
