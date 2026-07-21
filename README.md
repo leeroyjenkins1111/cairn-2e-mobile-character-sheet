@@ -49,7 +49,7 @@ npx playwright install chromium webkit
 npm test
 ```
 
-CI uruchamia testy domenowe osadzone w aplikacji, kontrolę składni, testy mobilnych viewportów, reduced motion, round-trip kopii oraz test offline.
+CI uruchamia testy domenowe osadzone w aplikacji, kontrolę składni, testy mobilnych viewportów, klawiatury i fokusu, powiększenia tekstu do 200%, reduced motion, round-trip kopii oraz test offline.
 
 ## Publikacja
 
