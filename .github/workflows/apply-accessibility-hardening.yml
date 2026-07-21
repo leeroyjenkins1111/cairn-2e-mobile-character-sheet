@@ -37,6 +37,23 @@ jobs:
           path.write_text(text, encoding='utf-8')
           PY
           python3 scripts/apply-accessibility-hardening.py 2>&1 | tee apply-output.log
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib
+
+          index_path = Path('index.html')
+          html = index_path.read_text(encoding='utf-8')
+          marker = '    input, select, textarea { max-width: 100%; }\n'
+          addition = marker + '    .advanced-roll:not([open]) > :not(summary) { display: none; }\n'
+          if html.count(marker) != 1:
+              raise RuntimeError('Nie znaleziono jednoznacznego miejsca dla reguły zwiniętego formularza kości.')
+          html = html.replace(marker, addition, 1)
+          index_path.write_text(html, encoding='utf-8')
+
+          files = ['index.html', 'manifest.webmanifest', 'service-worker.js', 'icon.svg']
+          lines = [f"{hashlib.sha256(Path(path).read_bytes()).hexdigest()}  {path}" for path in files]
+          Path('checksums.sha256').write_text('\n'.join(lines) + '\n', encoding='utf-8')
+          PY
 
       - name: Upload apply diagnostics
         if: steps.apply.outcome == 'failure'
