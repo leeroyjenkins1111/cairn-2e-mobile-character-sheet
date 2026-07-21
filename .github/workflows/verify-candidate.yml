@@ -1,0 +1,41 @@
+name: Verify candidate
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches:
+      - feature/product-reliability-offline-session-workflows
+
+permissions:
+  contents: read
+
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Extract inline JavaScript
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          html = Path('index.html').read_text(encoding='utf-8')
+          script = html.rsplit('<script>', 1)[1].split('</script>', 1)[0]
+          Path('/tmp/cairn-inline.js').write_text(script, encoding='utf-8')
+          PY
+      - name: Check syntax
+        id: syntax
+        continue-on-error: true
+        shell: bash
+        run: node --check /tmp/cairn-inline.js > syntax-error.txt 2>&1
+      - name: Upload syntax result
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: syntax-result
+          path: syntax-error.txt
+          if-no-files-found: error
+      - name: Fail on syntax error
+        if: steps.syntax.outcome == 'failure'
+        run: exit 1
