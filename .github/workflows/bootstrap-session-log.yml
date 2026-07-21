@@ -33,11 +33,25 @@ jobs:
           from pathlib import Path
           path = Path('scripts/apply_session_log.py')
           text = path.read_text(encoding='utf-8')
-          old = "html = replace_once(html, '    return results;\\n  }', session_tests + '    return results;\\n  }', 'embedded session tests')"
-          new = "html = replace_once(html, '    return results;\\n  }\\n\\n  function openTestResults()', session_tests + '    return results;\\n  }\\n\\n  function openTestResults()', 'embedded session tests')"
-          if text.count(old) != 1:
-              raise RuntimeError(f'Expected one embedded-test insertion expression, found {text.count(old)}')
-          path.write_text(text.replace(old, new), encoding='utf-8')
+          replacements = [
+              (
+                  "html = replace_once(html, '    return results;\\n  }', session_tests + '    return results;\\n  }', 'embedded session tests')",
+                  "html = replace_once(html, '    return results;\\n  }\\n\\n  function openTestResults()', session_tests + '    return results;\\n  }\\n\\n  function openTestResults()', 'embedded session tests')"
+              ),
+              (
+                  "    '      sessionPromptFor,\\n      createDemoState',",
+                  "    '      sessionPromptFor,\\n      groupInventoryEntries,\\n      moveItemWithinGroup,\\n      deriveArmor,\\n      createDemoState',"
+              ),
+              (
+                  "    '      sessionPromptFor,\\n      normalizeSessionLog,\\n      startSessionOn,\\n      appendSessionEvent,\\n      finishSessionOn,\\n      sessionReportMarkdown,\\n      classifySessionChange,\\n      createDemoState',",
+                  "    '      sessionPromptFor,\\n      normalizeSessionLog,\\n      startSessionOn,\\n      appendSessionEvent,\\n      finishSessionOn,\\n      sessionReportMarkdown,\\n      classifySessionChange,\\n      groupInventoryEntries,\\n      moveItemWithinGroup,\\n      deriveArmor,\\n      createDemoState',"
+              )
+          ]
+          for old, new in replacements:
+              if text.count(old) != 1:
+                  raise RuntimeError(f'Expected one script expression, found {text.count(old)}: {old[:70]}')
+              text = text.replace(old, new)
+          path.write_text(text, encoding='utf-8')
           PY
 
       - name: Apply session log implementation
