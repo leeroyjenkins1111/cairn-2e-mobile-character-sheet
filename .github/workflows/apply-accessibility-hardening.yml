@@ -25,6 +25,17 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('README.md')
+          text = path.read_text(encoding='utf-8')
+          text = text.replace(
+              '- do trzech lokalnych punktów odzyskiwania przed importem, resetem lub odtworzeniem;',
+              '- trzy lokalne punkty odzyskiwania przed importem, resetem lub odtworzeniem;',
+              1
+          )
+          path.write_text(text, encoding='utf-8')
+          PY
           python3 scripts/apply-accessibility-hardening.py 2>&1 | tee apply-output.log
 
       - name: Upload apply diagnostics
