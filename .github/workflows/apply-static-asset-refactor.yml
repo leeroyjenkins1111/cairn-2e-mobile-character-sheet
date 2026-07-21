@@ -1,3 +1,4 @@
+# Temporary bootstrap workflow; it removes itself after the verified refactor.
 name: Apply static asset refactor
 
 on:
