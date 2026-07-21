@@ -1,19 +1,22 @@
 name: Apply local recovery checkpoints
 
 on:
-  push:
-    branches: [feature/local-recovery-checkpoints-v0.12.0]
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
 
 permissions:
   contents: write
 
 jobs:
   apply-and-verify:
+    if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
+      - name: Checkout branch
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.event.pull_request.head.ref }}
           fetch-depth: 0
 
       - name: Apply implementation
@@ -58,4 +61,4 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add README.md checksums.sha256 index.html package.json package-lock.json service-worker.js tests/app.spec.mjs
           git commit -m "v0.12.0: add local recovery checkpoints"
-          git push origin HEAD:feature/local-recovery-checkpoints-v0.12.0
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
