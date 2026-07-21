@@ -15,7 +15,7 @@ https://leeroyjenkins1111.github.io/cairn-2e-mobile-character-sheet/
 - kości, rzuty obronne i Kość Losu, z trzema ostatnimi wynikami, typami rzutów oraz bezpiecznym ponawianiem zwykłych rzutów i rzutów obronnych;
 - import postaci z JSON Kettlewright;
 - pełna, odtwarzalna kopia zapasowa JSON;
-- trzy lokalne punkty odzyskiwania przed importem, resetem lub odtworzeniem;
+- do trzech lokalnych punktów odzyskiwania przed importem, resetem lub odtworzeniem;
 - Undo dla zmian stanu postaci;
 - instalacja jako lekka PWA i ponowne uruchomienie offline po pierwszym poprawnym otwarciu;
 - kontekstowy tryb sesji z kartą „Co teraz?”, aktywnymi stanami i szybkimi korektami;
