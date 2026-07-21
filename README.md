@@ -20,6 +20,7 @@ https://leeroyjenkins1111.github.io/cairn-2e-mobile-character-sheet/
 - Undo dla zmian stanu postaci;
 - instalacja jako lekka PWA i ponowne uruchomienie offline po pierwszym poprawnym otwarciu;
 - kontekstowy tryb sesji z kartą „Co teraz?”, aktywnymi stanami i szybkimi korektami;
+- sesyjny ekran główny z Ochroną, ostatnim rzutem, aktywnym sprzętem, notatką i skrótami do najczęstszych akcji;
 - jawny log sesji: rozpoczęcie, aktywny zapis zmian i rzutów, zakończenie, podsumowanie oraz eksport Markdown/JSON;
 - osobny Dziennik postaci, podczas gdy backup, instalacja i operacje techniczne są dostępne w ustawieniach nagłówka.
 
@@ -27,7 +28,7 @@ https://leeroyjenkins1111.github.io/cairn-2e-mobile-character-sheet/
 
 Dane są zapisywane wyłącznie w `localStorage` tej przeglądarki i urządzenia. Wyczyszczenie danych przeglądarki usuwa kartę. Regularnie używaj przycisku **Pobierz pełną kopię**.
 
-Wersja 0.14.0 nadal używa `schemaVersion: 3`. Trzy najnowsze punkty odzyskiwania są przechowywane osobno w `localStorage` i nie wchodzą do pełnej kopii postaci. Chronią przed przypadkowym importem, resetem lub odtworzeniem, ale znikają po wyczyszczeniu danych przeglądarki i nie zastępują pobranej kopii JSON. Historia rzutów może zawierać opcjonalne metadane bezpiecznego powtórzenia, ale starsze wpisy bez tych danych pozostają czytelne i nie wymagają migracji. Zapisy i kopie ze `schemaVersion: 2` są migrowane automatycznie, a starsze pliki `cairn-*-eksport.json` z wersji 0.6.0 nadal mogą zostać odtworzone. Raport sesji Markdown/JSON jest czytelnym wyciągiem i nie zastępuje pełnej kopii zapasowej.
+Wersja 0.15.0 nadal używa `schemaVersion: 3`. Trzy najnowsze punkty odzyskiwania są przechowywane osobno w `localStorage` i nie wchodzą do pełnej kopii postaci. Chronią przed przypadkowym importem, resetem lub odtworzeniem, ale znikają po wyczyszczeniu danych przeglądarki i nie zastępują pobranej kopii JSON. Historia rzutów może zawierać opcjonalne metadane bezpiecznego powtórzenia, ale starsze wpisy bez tych danych pozostają czytelne i nie wymagają migracji. Zapisy i kopie ze `schemaVersion: 2` są migrowane automatycznie, a starsze pliki `cairn-*-eksport.json` z wersji 0.6.0 nadal mogą zostać odtworzone. Raport sesji Markdown/JSON jest czytelnym wyciągiem i nie zastępuje pełnej kopii zapasowej.
 
 ## Struktura aplikacji
 

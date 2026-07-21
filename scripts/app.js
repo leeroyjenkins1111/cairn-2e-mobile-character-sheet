@@ -4,7 +4,7 @@
 // 1. Constants
 // ============================================================
 const APP_ID = 'cairn-mobile-sheet';
-const APP_VERSION = '0.14.0';
+const APP_VERSION = '0.15.0';
 const SCHEMA_VERSION = 3;
 const STORAGE_KEY = `${APP_ID}:state`;
 const RECOVERY_KEY = `${APP_ID}:recovery`;
@@ -2058,6 +2058,87 @@ function renderSessionToolsCard() {
   return tools;
 }
 
+
+function renderSessionGlanceCard() {
+  const latest = recentDiceEntries(state, 1)[0] || null;
+  const activeItems = activeEquipmentItems();
+  const activeSummary = activeItems.length
+    ? `${activeItems[0].name}${activeItems.length > 1 ? ` +${activeItems.length - 1}` : ''}`
+    : 'Brak aktywnego sprzętu';
+  const note = trimText(state.notes);
+  const needsAttention = Boolean(sessionPromptFor());
+  const glance = card([], 'session-glance-card');
+
+  glance.append(createEl('div', { className: 'session-glance-head' }, [
+    createEl('div', {}, [
+      createEl('p', { className: 'session-glance-kicker', text: 'Sesyjny skrót' }),
+      createEl('h2', { text: 'Przy stole' })
+    ]),
+    createEl('span', {
+      className: `session-glance-state${needsAttention ? ' needs-attention' : ''}`,
+      text: needsAttention ? 'Wymaga uwagi' : 'Gotowa do gry'
+    })
+  ]));
+
+  glance.append(createEl('div', { className: 'session-glance-grid' }, [
+    createEl('button', {
+      type: 'button',
+      className: 'session-glance-panel',
+      attrs: {
+        'aria-label': latest
+          ? `Ostatni rzut: ${latest.summary}. Otwórz widok Kości.`
+          : 'Brak ostatniego rzutu. Otwórz widok Kości.'
+      },
+      onclick: () => setView('dice', { announceChange: true })
+    }, [
+      uiIcon('dice'),
+      createEl('span', { className: 'session-glance-copy' }, [
+        createEl('small', { text: 'Ostatni rzut' }),
+        createEl('strong', { text: latest ? diceEntryResultText(latest) : '—' }),
+        createEl('span', { text: latest ? (latest.label || latest.notation || 'Rzut') : 'Otwórz kości' })
+      ])
+    ]),
+    createEl('button', {
+      type: 'button',
+      className: 'session-glance-panel',
+      attrs: { 'aria-label': `Aktywny sprzęt: ${activeSummary}. Otwórz ekwipunek.` },
+      onclick: () => setView('inventory', { announceChange: true })
+    }, [
+      uiIcon('box'),
+      createEl('span', { className: 'session-glance-copy' }, [
+        createEl('small', { text: 'Aktywny sprzęt' }),
+        createEl('strong', { text: activeItems.length ? String(activeItems.length) : '—' }),
+        createEl('span', { text: activeSummary })
+      ])
+    ])
+  ]));
+
+  glance.append(createEl('button', {
+    type: 'button',
+    className: 'session-note-strip',
+    attrs: { 'aria-label': 'Otwórz notatki postaci' },
+    onclick: openNotesSheet
+  }, [
+    createEl('span', { className: 'session-note-label', text: 'Notatka' }),
+    createEl('span', {
+      className: 'session-note-preview',
+      text: note ? `${note.slice(0, 80)}${note.length > 80 ? '…' : ''}` : 'Zapisz trop, nazwę lub decyzję z sesji'
+    }),
+    createEl('span', { className: 'session-note-arrow', text: '›', attrs: { 'aria-hidden': 'true' } })
+  ]));
+
+  glance.append(createEl('div', { className: 'session-dock', attrs: { 'aria-label': 'Najczęstsze akcje' } }, [
+    compactActionButton('Rzut k20', 'dice', () => {
+      setView('dice', { announceChange: true });
+      requestAnimationFrame(() => performRoll({ count: 1, sides: 20 }, 'k20'));
+    }, true),
+    compactActionButton('Notatka', 'more', openNotesSheet),
+    compactActionButton('Plecak', 'box', () => setView('inventory', { announceChange: true }))
+  ]));
+
+  return glance;
+}
+
 function renderCharacterView() {
   const root = $('#view-character');
   if (!root) return;
@@ -2085,7 +2166,7 @@ function renderCharacterView() {
 
   const armor = deriveArmor();
   const usage = calculateInventoryUsage();
-  const hero = card([], 'compact-hero');
+  const hero = card([], 'compact-hero session-hero');
   const identity = createEl('div', { className: 'identity-row' }, [
     createEl('div', { className: 'avatar', text: initials(state.identity.name) }),
     createEl('div', {}, [
@@ -2119,13 +2200,21 @@ function renderCharacterView() {
     ])
   ]);
   hero.append(statusStrip);
+  const protectionRatio = state.stats.hp.max > 0 ? clamp(state.stats.hp.current / state.stats.hp.max, 0, 1) : 0;
+  const protectionMeter = createEl('div', {
+    className: 'protection-meter',
+    attrs: { 'aria-hidden': 'true' }
+  });
+  protectionMeter.style.setProperty('--protection-ratio', String(protectionRatio));
+  hero.append(protectionMeter);
   root.append(hero);
 
   const sessionPrompt = renderSessionPrompt();
   if (sessionPrompt) root.append(sessionPrompt);
+  root.append(renderSessionGlanceCard());
 
   const actions = card([], 'card-pad compact-actions');
-  actions.append(sectionHead('Szybkie akcje', createEl('span', { className: 'muted micro', text: 'przy stole' })));
+  actions.append(sectionHead('Sytuacje', createEl('span', { className: 'muted micro', text: 'procedury przy stole' })));
   actions.append(createEl('div', { className: 'compact-action-grid' }, [
     compactActionButton('Obrażenia', 'damage', openDamageSheet, true),
     compactActionButton('1. runda', 'round', () => performFirstRoundDexSave()),
@@ -2153,24 +2242,6 @@ function renderCharacterView() {
   attrsCard.append(attrGrid);
   root.append(attrsCard);
 
-  const allActiveItems = activeEquipmentItems();
-  const activeSummary = allActiveItems.length
-    ? `${allActiveItems[0].name}${allActiveItems.length > 1 ? ` +${allActiveItems.length - 1}` : ''}`
-    : 'Brak trzymanego lub noszonego sprzętu';
-  const equipmentBar = createEl('button', {
-    type: 'button',
-    className: 'card compact-equipment-bar',
-    attrs: { 'aria-label': `Aktywny sprzęt. ${activeSummary}. Otwórz ekwipunek.` },
-    onclick: () => setView('inventory')
-  }, [
-    uiIcon('box'),
-    createEl('span', { className: 'compact-equipment-copy' }, [
-      createEl('strong', { text: 'Aktywny sprzęt' }),
-      createEl('span', { text: activeSummary })
-    ]),
-    createEl('span', { className: 'equipment-count', text: allActiveItems.length ? String(allActiveItems.length) : '›' })
-  ]);
-  root.append(equipmentBar);
 
   if (renderConditionChips(true).childElementCount) {
     const activeConditionLabels = [

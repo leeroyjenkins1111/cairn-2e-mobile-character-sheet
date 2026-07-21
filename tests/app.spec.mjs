@@ -25,7 +25,7 @@ test('application loads extracted same-origin CSS and JavaScript', async ({ page
     inlineScripts: document.querySelectorAll('script:not([src])').length,
     stylesheetLoaded: Array.from(document.styleSheets).some(sheet => sheet.href?.endsWith('/styles/app.css'))
   }));
-  expect(result).toEqual({ version: '0.14.0', inlineStyles: 0, inlineScripts: 0, stylesheetLoaded: true });
+  expect(result).toEqual({ version: '0.15.0', inlineStyles: 0, inlineScripts: 0, stylesheetLoaded: true });
 });
 
 test('full and legacy exports round-trip without losing character data', async ({ page }) => {
@@ -381,4 +381,14 @@ test('core screens remain usable with 200 percent root text size', async ({ page
     expect(layout.overflow).toBeLessThanOrEqual(1);
     expect(layout.clippedButtons).toBe(0);
   }
+});
+
+test('session dashboard exposes table context and one-tap d20 flow', async ({ page }) => {
+  await loadDemo(page);
+  await expect(page.getByRole('heading', { name: 'Przy stole' })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Aktywny sprzęt:/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Otwórz notatki postaci' })).toBeVisible();
+  await page.getByRole('button', { name: 'Rzut k20', exact: true }).click();
+  await expect(page.getByRole('heading', { name: 'Rzut kością' })).toBeVisible();
+  await expect(page.locator('#diceResult strong')).not.toHaveText('—');
 });
