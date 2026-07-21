@@ -95,11 +95,31 @@ jobs:
       - name: Remove bootstrap files
         run: git rm scripts/apply-static-asset-refactor.py .github/workflows/apply-static-asset-refactor.yml
 
-      - name: Commit final refactor
+      - name: Commit and push final refactor
+        id: finalize_refactor
+        continue-on-error: true
         shell: bash
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add README.md checksums.sha256 index.html package.json package-lock.json service-worker.js tests/app.spec.mjs .github/workflows/ci.yml .github/workflows/deploy-pages.yml styles/app.css scripts/app.js
-          git commit -m "v0.14.0: extract static application assets"
-          git push origin HEAD:${{ github.event.pull_request.head.ref }}
+          set -o pipefail
+          {
+            rm -f refactor-apply-output.log playwright-output.log
+            rm -rf test-results playwright-report
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git add -A
+            git status --short
+            git commit -m "v0.14.0: extract static application assets"
+            git push origin HEAD:${{ github.event.pull_request.head.ref }}
+          } 2>&1 | tee /tmp/refactor-finalize-output.log
+
+      - name: Upload finalization diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: static-asset-refactor-finalize-diagnostics
+          path: /tmp/refactor-finalize-output.log
+          if-no-files-found: error
+
+      - name: Stop when finalization fails
+        if: steps.finalize_refactor.outcome == 'failure'
+        run: exit 1
