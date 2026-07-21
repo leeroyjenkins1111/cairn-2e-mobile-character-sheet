@@ -4,20 +4,17 @@ on:
   push:
     branches:
       - feature/product-reliability-offline-session-workflows
-  pull_request:
-    branches:
-      - main
 
 permissions:
   contents: write
 
 concurrency:
   group: bootstrap-product-reliability
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
   apply-and-verify:
-    if: ${{ !contains(github.event.head_commit.message || '', '[product-bootstrap-result]') && !contains(github.event.head_commit.message || '', '[generated-product-state]') }}
+    if: ${{ !contains(github.event.head_commit.message || '', '[generated-product-state]') && !contains(github.event.head_commit.message || '', '[bootstrap-tests-passed]') }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout branch
@@ -32,14 +29,20 @@ jobs:
       - name: Generate dependency lock
         run: npm install --package-lock-only --ignore-scripts
 
-      - name: Persist generated state for review and debugging
+      - name: Persist non-workflow candidate files
         shell: bash
         run: |
+          cp .github/workflows/ci.yml /tmp/generated-ci.yml
+          cp .github/workflows/deploy-pages.yml /tmp/generated-deploy-pages.yml
+          git checkout HEAD -- .github/workflows/deploy-pages.yml .github/workflows/bootstrap-product-pr.yml
+          rm -f .github/workflows/ci.yml
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
           git commit -m "Generate product enhancement candidate [generated-product-state]"
           git push origin HEAD:feature/product-reliability-offline-session-workflows
+          cp /tmp/generated-ci.yml .github/workflows/ci.yml
+          cp /tmp/generated-deploy-pages.yml .github/workflows/deploy-pages.yml
 
       - name: Verify checksums and JavaScript syntax
         shell: bash
@@ -61,11 +64,13 @@ jobs:
       - name: Run browser regression suite
         run: npm run test:ci
 
-      - name: Remove bootstrap files and commit result
+      - name: Record successful bootstrap verification
         shell: bash
         run: |
-          rm -f scripts/bootstrap_product_pr.py .github/workflows/bootstrap-product-pr.yml
-          rmdir scripts 2>/dev/null || true
-          git add -A
-          git commit -m "Implement reliable backups, offline mode and session workflows [product-bootstrap-result]"
+          printf '%s\n' 'Bootstrap browser and domain checks passed.' > BOOTSTRAP_SUCCESS.md
+          git checkout HEAD -- .github/workflows/deploy-pages.yml .github/workflows/bootstrap-product-pr.yml
+          rm -f .github/workflows/ci.yml
+          git add BOOTSTRAP_SUCCESS.md
+          git commit -m "Record successful bootstrap checks [bootstrap-tests-passed]"
+          git pull --rebase origin feature/product-reliability-offline-session-workflows
           git push origin HEAD:feature/product-reliability-offline-session-workflows
