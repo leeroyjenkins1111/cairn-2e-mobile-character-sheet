@@ -16,13 +16,15 @@ https://leeroyjenkins1111.github.io/cairn-2e-mobile-character-sheet/
 - import postaci z JSON Kettlewright;
 - pełna, odtwarzalna kopia zapasowa JSON;
 - Undo dla zmian stanu postaci;
-- instalacja jako lekka PWA i ponowne uruchomienie offline po pierwszym poprawnym otwarciu.
+- instalacja jako lekka PWA i ponowne uruchomienie offline po pierwszym poprawnym otwarciu;
+- kontekstowy tryb sesji z kartą „Co teraz?”, aktywnymi stanami i szybkimi korektami;
+- osobny Dziennik postaci, podczas gdy backup, instalacja i operacje techniczne są dostępne w ustawieniach nagłówka.
 
 ## Dane i kopie zapasowe
 
 Dane są zapisywane wyłącznie w `localStorage` tej przeglądarki i urządzenia. Wyczyszczenie danych przeglądarki usuwa kartę. Regularnie używaj przycisku **Pobierz pełną kopię**.
 
-Wersja 0.7.0 potrafi również odtworzyć starsze pliki `cairn-*-eksport.json` wygenerowane przez wersję 0.6.0.
+Wersja 0.8.0 zachowuje bezpieczny format kopii z 0.7.0 i potrafi również odtworzyć starsze pliki `cairn-*-eksport.json` wygenerowane przez wersję 0.6.0.
 
 ## Uruchomienie lokalne
 
