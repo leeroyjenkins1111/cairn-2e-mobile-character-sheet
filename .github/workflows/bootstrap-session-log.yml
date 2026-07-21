@@ -26,8 +26,33 @@ jobs:
           ref: feature/session-log-v0.10.0
           fetch-depth: 0
 
+      - name: Prepare implementation script
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path('scripts/apply_session_log.py')
+          text = path.read_text(encoding='utf-8')
+          old = "html = replace_once(html, '    return results;\\n  }', session_tests + '    return results;\\n  }', 'embedded session tests')"
+          new = "html = replace_once(html, '    return results;\\n  }\\n\\n  function openTestResults()', session_tests + '    return results;\\n  }\\n\\n  function openTestResults()', 'embedded session tests')"
+          if text.count(old) != 1:
+              raise RuntimeError(f'Expected one embedded-test insertion expression, found {text.count(old)}')
+          path.write_text(text.replace(old, new), encoding='utf-8')
+          PY
+
       - name: Apply session log implementation
-        run: python3 scripts/apply_session_log.py
+        shell: bash
+        run: |
+          set -o pipefail
+          python3 scripts/apply_session_log.py 2>&1 | tee bootstrap-session-log.log
+
+      - name: Upload bootstrap diagnostics
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: session-log-bootstrap-diagnostics
+          path: bootstrap-session-log.log
+          if-no-files-found: warn
 
       - name: Show implementation diff
         run: git status --short && git diff --stat
@@ -64,7 +89,7 @@ jobs:
       - name: Remove bootstrap files and finalize
         shell: bash
         run: |
-          rm -rf node_modules test-results playwright-report
+          rm -rf node_modules test-results playwright-report bootstrap-session-log.log
           git rm scripts/apply_session_log.py .github/workflows/bootstrap-session-log.yml
           git add index.html tests/app.spec.mjs README.md package.json package-lock.json service-worker.js checksums.sha256
           git config user.name "github-actions[bot]"
