@@ -10,8 +10,8 @@ async function loadDemo(page) {
 test('all embedded domain regression tests pass', async ({ page }) => {
   await page.goto('/?selftest=1');
   const marker = page.locator('#selftestMarker');
-  await expect(marker).toHaveAttribute('data-passed', '90');
-  await expect(marker).toHaveAttribute('data-total', '90');
+  await expect(marker).toHaveAttribute('data-passed', '97');
+  await expect(marker).toHaveAttribute('data-total', '97');
 });
 
 test('full and legacy exports round-trip without losing character data', async ({ page }) => {
@@ -248,3 +248,68 @@ test('dice dashboard shows recent types and repeats the latest safe roll', async
   await expect(history.getByRole('button', { name: 'Powtórz rzut: k8' })).toHaveCount(2);
 });
 
+
+
+test('manual recovery checkpoint restores the previous local character state', async ({ page }) => {
+  await loadDemo(page);
+
+  await page.getByRole('button', { name: 'Ustawienia i dane' }).click();
+  await page.getByRole('button', { name: 'Zarządzaj punktami odzyskiwania' }).click();
+  await page.getByRole('button', { name: 'Utwórz punkt odzyskiwania' }).click();
+  await expect(page.locator('.recovery-checkpoint-item')).toHaveCount(1);
+  await page.getByRole('button', { name: 'Zamknij panel' }).click();
+
+  const originalGold = await page.evaluate(() => globalThis.CairnSheetDev.getState().stats.gold);
+  await page.getByRole('button', { name: 'Ekwipunek', exact: true }).click();
+  await page.getByRole('button', { name: new RegExp(`Złoto: ${originalGold}`) }).click();
+  await page.locator('#sheet').getByRole('button', { name: '+10', exact: true }).click();
+  await page.locator('#sheet').getByRole('button', { name: 'Zapisz złoto' }).click();
+  await expect.poll(async () => page.evaluate(() => globalThis.CairnSheetDev.getState().stats.gold)).toBe(originalGold + 10);
+
+  await page.getByRole('button', { name: 'Ustawienia i dane' }).click();
+  await page.getByRole('button', { name: 'Zarządzaj punktami odzyskiwania' }).click();
+  await page.getByRole('button', { name: 'Odtwórz punkt odzyskiwania: Mara Ciernista' }).click();
+  await page.locator('#sheet').getByRole('button', { name: 'Odtwórz punkt', exact: true }).click();
+
+  await expect.poll(async () => page.evaluate(() => globalThis.CairnSheetDev.getState().stats.gold)).toBe(originalGold);
+  await expect.poll(async () => page.evaluate(() => globalThis.CairnSheetDev.getRecoveryCheckpoints().length)).toBeGreaterThanOrEqual(1);
+});
+
+test('reset creates an automatic recovery checkpoint before clearing the card', async ({ page }) => {
+  await loadDemo(page);
+  await page.getByRole('button', { name: 'Ustawienia i dane' }).click();
+  await page.locator('#sheet').getByRole('button', { name: 'Zresetuj kartę' }).click();
+  await page.getByLabel('Wpisz USUŃ').fill('USUŃ');
+  await page.locator('#sheet').getByRole('button', { name: 'Usuń wszystkie dane karty' }).click();
+  await page.locator('#sheet').getByRole('button', { name: 'Tak, zabezpiecz i usuń' }).click();
+
+  await expect.poll(async () => page.evaluate(() => globalThis.CairnSheetDev.getState().initialized)).toBe(false);
+  const checkpoints = await page.evaluate(() => globalThis.CairnSheetDev.getRecoveryCheckpoints());
+  expect(checkpoints).toHaveLength(1);
+  expect(checkpoints[0].reason).toBe('Przed resetem karty');
+  expect(checkpoints[0].characterName).toBe('Mara Ciernista');
+});
+
+test('confirmed import preserves the overwritten card as a recovery checkpoint', async ({ page }) => {
+  await loadDemo(page);
+  const replacement = await page.evaluate(() => {
+    const fixture = globalThis.CairnSheetDev.createDemoState();
+    fixture.identity.name = 'Następczyni';
+    fixture.stats.gold = 3;
+    return globalThis.CairnSheetDev.buildBackupPayload(fixture);
+  });
+
+  await page.locator('#backupFileInput').setInputFiles({
+    name: 'replacement-backup.json',
+    mimeType: 'application/json',
+    buffer: Buffer.from(JSON.stringify(replacement))
+  });
+  await page.locator('#sheet').getByRole('button', { name: 'Nadpisz kartę importem' }).click();
+  await page.locator('#sheet').getByRole('button', { name: 'Nadpisz kartę' }).click();
+
+  await expect.poll(async () => page.evaluate(() => globalThis.CairnSheetDev.getState().identity.name)).toBe('Następczyni');
+  const checkpoints = await page.evaluate(() => globalThis.CairnSheetDev.getRecoveryCheckpoints());
+  expect(checkpoints).toHaveLength(1);
+  expect(checkpoints[0].characterName).toBe('Mara Ciernista');
+  expect(checkpoints[0].reason).toContain('Przed importem');
+});
