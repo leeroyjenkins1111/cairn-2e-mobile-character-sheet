@@ -100,7 +100,8 @@ test('session prompt appears for urgent character state', async ({ page }) => {
     toggle.dispatchEvent(new Event('change', { bubbles: true }));
   });
   await page.getByRole('button', { name: 'Oznacz panikę i 0 Ochrony' }).click();
-  await expect(page.getByText('Co teraz?')).toBeVisible();
-  await expect(page.getByRole('heading', { name: 'Postać jest spanikowana' })).toBeVisible();
-  await expect(page.getByRole('button', { name: 'Rzut WOL' })).toBeVisible();
+  const prompt = page.locator('.session-prompt');
+  await expect(prompt.getByText('Co teraz?')).toBeVisible();
+  await expect(prompt.getByRole('heading', { name: 'Postać jest spanikowana' })).toBeVisible();
+  await expect(prompt.getByRole('button', { name: 'Rzut WOL', exact: true })).toBeVisible();
 });
