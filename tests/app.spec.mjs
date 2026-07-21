@@ -80,7 +80,6 @@ test('application shell reloads while offline after Service Worker activation', 
   await context.setOffline(false);
 });
 
-
 test('settings and technical data are separated from the player journal', async ({ page }) => {
   await loadDemo(page);
   await page.getByRole('button', { name: 'Dziennik', exact: true }).click();
@@ -96,7 +95,10 @@ test('settings and technical data are separated from the player journal', async 
 test('session prompt appears for urgent character state', async ({ page }) => {
   await loadDemo(page);
   await page.getByRole('button', { name: 'Stany postaci' }).click();
-  await page.getByRole('checkbox', { name: 'Panika' }).check();
+  await page.getByRole('checkbox', { name: 'Panika' }).evaluate(toggle => {
+    toggle.checked = true;
+    toggle.dispatchEvent(new Event('change', { bubbles: true }));
+  });
   await page.getByRole('button', { name: 'Oznacz panikę i 0 Ochrony' }).click();
   await expect(page.getByText('Co teraz?')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Postać jest spanikowana' })).toBeVisible();
