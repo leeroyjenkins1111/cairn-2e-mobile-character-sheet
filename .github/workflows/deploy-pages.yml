@@ -28,9 +28,9 @@ jobs:
       - name: Prepare static site
         shell: bash
         run: |
-          test "$(sha256sum index.html | cut -d' ' -f1)" = "c4567d4f8feda76fb75b65d5cdbd2ac00ca3adab50e51bc4dac00617577f2424"
+          sha256sum -c checksums.sha256
           mkdir -p _site
-          cp index.html .nojekyll _site/
+          cp index.html .nojekyll manifest.webmanifest service-worker.js icon.svg _site/
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
