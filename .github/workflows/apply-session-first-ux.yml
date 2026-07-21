@@ -1,3 +1,4 @@
+# Temporary bootstrap workflow; removed after generated changes are committed.
 name: Apply session-first UX
 
 on:
