@@ -7,6 +7,10 @@
   <meta name="theme-color" content="#17131a">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="description" content="Lokalna, mobilna karta postaci do Cairn 2e z obsługą obrażeń, ekwipunku i kości.">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <link rel="icon" href="./icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="./icon.svg">
   <title>Karta Wędrowca — Cairn 2e</title>
   <style>
     :root {
@@ -45,7 +49,7 @@
       --surface-soft: rgba(224, 217, 207, 0.7);
       --text: #211c22;
       --muted: #655d67;
-      --faint: #837a82;
+      --faint: #6f666f;
       --line: rgba(52, 42, 54, 0.15);
       --green: #5f7654;
       --green-strong: #435f3b;
@@ -1245,8 +1249,8 @@
       -webkit-box-orient: vertical;
       -webkit-line-clamp: 2;
       color: var(--muted);
-      font-size: 0.53rem;
-      line-height: 1.12;
+      font-size: 0.58rem;
+      line-height: 1.18;
     }
     .dice-dashboard-compact .scenario-notation { color: var(--amber-strong); white-space: nowrap; }
 
@@ -1310,10 +1314,55 @@
       .dice-dashboard-compact .die-button { min-height: 44px; }
       .dice-dashboard-compact .scenario-button { min-height: 68px; padding-inline: 3px; }
       .dice-dashboard-compact .scenario-copy strong { font-size: 0.59rem; }
-      .dice-dashboard-compact .scenario-copy small { font-size: 0.48rem; }
+      .dice-dashboard-compact .scenario-copy small { font-size: 0.53rem; }
       .fate-utility-copy small { display: none; }
     }
 
+
+
+    /* Product reliability and session workflow improvements. */
+    .alert-info {
+      border-color: color-mix(in srgb, var(--green) 48%, transparent);
+      background: color-mix(in srgb, var(--green) 13%, var(--surface));
+    }
+    .alert-info strong { color: var(--green-strong); }
+    .backup-actions { display: grid; grid-template-columns: 1fr auto; gap: 7px; margin-top: 10px; }
+    .data-status {
+      display: grid;
+      gap: 4px;
+      margin: 10px 0;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--surface-soft);
+    }
+    .data-status strong { font-size: 0.82rem; }
+    .data-status span { color: var(--muted); font-size: 0.72rem; line-height: 1.35; }
+    .inventory-summary-actions { display: flex; align-items: center; gap: 6px; }
+    .gold-button { min-width: 84px; white-space: nowrap; }
+    .gold-adjust-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 7px; }
+    .gold-current { text-align: center; padding: 12px; }
+    .gold-current strong { display: block; color: var(--amber-strong); font-size: 2rem; }
+    .gold-current span { color: var(--muted); font-size: 0.74rem; }
+    .settings-row-toggle { cursor: pointer; }
+    .settings-row-toggle input[type="checkbox"] { width: 44px; min-height: 44px; flex: 0 0 44px; }
+    .dice-result-button {
+      width: 100%;
+      color: var(--text);
+      font: inherit;
+      cursor: pointer;
+      text-align: inherit;
+    }
+    .dice-result-button:disabled { cursor: default; }
+    .dice-history-sheet-list { display: grid; gap: 8px; }
+    .install-help-list { margin: 0; padding-left: 20px; color: var(--muted); }
+    .install-help-list li + li { margin-top: 7px; }
+
+    @media (max-width: 359px) {
+      .inventory-summary-actions { gap: 4px; }
+      .gold-button { min-width: 70px; padding-inline: 7px; font-size: 0.7rem; }
+      .backup-actions { grid-template-columns: 1fr; }
+    }
     @media (prefers-reduced-motion: reduce) {
       *, *::before, *::after {
         animation-duration: 0.001ms !important;
@@ -1378,10 +1427,14 @@
   // 1. Constants
   // ============================================================
   const APP_ID = 'cairn-mobile-sheet';
-  const APP_VERSION = '0.6.0';
+  const APP_VERSION = '0.7.0';
   const SCHEMA_VERSION = 2;
   const STORAGE_KEY = `${APP_ID}:state`;
   const RECOVERY_KEY = `${APP_ID}:recovery`;
+  const BACKUP_META_KEY = `${APP_ID}:backup-meta`;
+  const BACKUP_REMINDER_CHANGE_THRESHOLD = 10;
+  const BACKUP_REMINDER_DAYS = 14;
+  const BACKUP_REMINDER_SNOOZE_DAYS = 3;
   const HISTORY_LIMIT = 50;
   const DICE_HISTORY_LIMIT = 20;
   const SAVE_DEBOUNCE_MS = 300;
@@ -1400,7 +1453,7 @@
     spent: 'zużyty'
   };
   const CONDITION_DEFS = [
-    ['deprived', 'Pozbawienie / dyskomfort'],
+    ['deprived', 'Pozbawienie'],
     ['panicked', 'Panika'],
     ['criticalDamage', 'Obrażenia krytyczne'],
     ['stabilized', 'Stabilizacja'],
@@ -1414,8 +1467,8 @@
     4: { title: 'Złamana kość', summary: 'Rzuć k6, aby wskazać uraz. Po zrośnięciu 2k6 może podnieść maksymalną Ochronę.', helper: 'broken-bone' },
     5: { title: 'Choroba', summary: 'Po wyzdrowieniu 2k6 może podnieść maksymalną Ochronę.' },
     6: { title: 'Poważna rana głowy', summary: 'Rzuć k6, aby wskazać atrybut; następnie 3k6 może podnieść jego aktualną wartość.', helper: 'head-wound' },
-    7: { title: 'Wstrząs', summary: 'Postać ledwo się porusza do czasu poważnej pomocy i odpoczynku. Po wyzdrowieniu 3k6 może podnieść maksymalne ZRE.' },
-    8: { title: 'Ogłuszenie', summary: 'Postać nic nie słyszy do czasu wyjątkowej pomocy. Udany rzut WOL pozwala zwiększyć maksymalne WOL o k4.' },
+    7: { title: 'Uszkodzone ścięgno', summary: 'Postać ledwo się porusza do czasu poważnej pomocy i odpoczynku. Po wyzdrowieniu 3k6 może podnieść maksymalne ZRE.' },
+    8: { title: 'Ogłuchnięcie', summary: 'Postać nic nie słyszy do czasu wyjątkowej pomocy. Udany rzut WOL pozwala zwiększyć maksymalne WOL o k4.' },
     9: { title: 'Uraz psychiczny', summary: 'Rzut 3k6 może podnieść maksymalne WOL.' },
     10: { title: 'Utrata kończyny', summary: 'Warden wskazuje dotkniętą kończynę. Udany rzut WOL pozwala zwiększyć maksymalne WOL o k6.' },
     11: { title: 'Śmiertelna rana', summary: 'Postać odczuwa dyskomfort, jest wyłączona z działania i umrze w godzinę bez leczenia. Po wyzdrowieniu 2k6 wyznacza nową maksymalną Ochronę.' },
@@ -1560,6 +1613,16 @@
     return { formula: normalized, notation: formatDamageFormula(normalized), rolls, total };
   }
 
+
+
+  function parseAttackDiceList(value) {
+    const normalized = trimText(value).toLowerCase();
+    if (!normalized) return null;
+    const tokens = normalized.split(',').map(token => token.trim()).filter(Boolean);
+    if (!tokens.length || tokens.length > 20) return null;
+    if (tokens.some(token => !/^k(?:4|6|8|10|12)$/.test(token))) return null;
+    return tokens.map(token => ({ token, sides: toInt(token.slice(1), 0) }));
+  }
   function polishUsesLabel(value) {
     const count = Math.max(0, toInt(value, 0));
     const lastTwo = count % 100;
@@ -1801,6 +1864,8 @@
   let storageBlocked = false;
   let loadWarning = '';
   let saveTimer = null;
+  let backupMeta = createDefaultBackupMeta();
+  let deferredInstallPrompt = null;
 
   function canUseStorage() {
     try {
@@ -1817,6 +1882,78 @@
     catch { return null; }
   }
 
+
+
+  function createDefaultBackupMeta() {
+    return { lastBackupAt: null, meaningfulChangesSinceBackup: 0, snoozedAt: null };
+  }
+
+  function loadBackupMeta() {
+    if (!canUseStorage()) return createDefaultBackupMeta();
+    try {
+      const raw = localStorage.getItem(BACKUP_META_KEY);
+      if (!raw) return createDefaultBackupMeta();
+      const parsed = JSON.parse(raw);
+      return {
+        lastBackupAt: typeof parsed.lastBackupAt === 'string' ? parsed.lastBackupAt : null,
+        meaningfulChangesSinceBackup: Math.max(0, toInt(parsed.meaningfulChangesSinceBackup, 0)),
+        snoozedAt: typeof parsed.snoozedAt === 'string' ? parsed.snoozedAt : null
+      };
+    } catch {
+      return createDefaultBackupMeta();
+    }
+  }
+
+  function saveBackupMeta() {
+    if (storageBlocked) return false;
+    try {
+      localStorage.setItem(BACKUP_META_KEY, JSON.stringify(backupMeta));
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  function daysSince(iso) {
+    if (!iso) return Number.POSITIVE_INFINITY;
+    const timestamp = Date.parse(iso);
+    if (!Number.isFinite(timestamp)) return Number.POSITIVE_INFINITY;
+    return Math.max(0, (Date.now() - timestamp) / 86_400_000);
+  }
+
+  function recordMeaningfulChange() {
+    backupMeta.meaningfulChangesSinceBackup = Math.max(0, toInt(backupMeta.meaningfulChangesSinceBackup, 0)) + 1;
+    saveBackupMeta();
+  }
+
+  function markBackupCreated() {
+    backupMeta.lastBackupAt = nowIso();
+    backupMeta.meaningfulChangesSinceBackup = 0;
+    backupMeta.snoozedAt = null;
+    saveBackupMeta();
+  }
+
+  function markBackupImported() {
+    backupMeta.lastBackupAt = nowIso();
+    backupMeta.meaningfulChangesSinceBackup = 0;
+    backupMeta.snoozedAt = null;
+    saveBackupMeta();
+  }
+
+  function snoozeBackupReminder() {
+    backupMeta.snoozedAt = nowIso();
+    saveBackupMeta();
+    renderAll();
+    showToast('Przypomnienie o kopii odłożono na 3 dni.');
+  }
+
+  function shouldShowBackupReminder(meta = backupMeta, sourceState = state) {
+    if (!sourceState?.initialized) return false;
+    if (daysSince(meta?.snoozedAt) < BACKUP_REMINDER_SNOOZE_DAYS) return false;
+    const changes = Math.max(0, toInt(meta?.meaningfulChangesSinceBackup, 0));
+    if (!meta?.lastBackupAt) return changes >= BACKUP_REMINDER_CHANGE_THRESHOLD;
+    return changes > 0 && daysSince(meta.lastBackupAt) >= BACKUP_REMINDER_DAYS;
+  }
   function loadState() {
     if (!canUseStorage()) {
       storageBlocked = true;
@@ -1901,6 +2038,7 @@
     };
     next.changeHistory = [...safeArray(state.changeHistory), entry].slice(-HISTORY_LIMIT);
     state = next;
+    recordMeaningfulChange();
     scheduleSave();
     renderAll();
     if (!options.silent) showToast(description);
@@ -1930,6 +2068,7 @@
     next.changeHistory = history.filter((_, i) => i !== index);
     next.updatedAt = nowIso();
     state = next;
+    recordMeaningfulChange();
     scheduleSave();
     renderAll();
     showToast(`Cofnięto: ${entry.description}`);
@@ -1983,9 +2122,13 @@
     if (result?.success) target.conditions.panicked = false;
   }
 
+  function recordDiceEntry(target, entry) {
+    target.diceHistory = [{ id: makeId(), time: nowIso(), ...entry }, ...safeArray(target.diceHistory)].slice(0, DICE_HISTORY_LIMIT);
+    return target.diceHistory[0];
+  }
+
   function addDiceHistory(entry) {
-    state.diceHistory = [{ id: makeId(), time: nowIso(), ...entry }, ...safeArray(state.diceHistory)].slice(0, DICE_HISTORY_LIMIT);
-    recordEvent(entry.summary);
+    recordDiceEntry(state, entry);
     scheduleSave();
     renderDiceView();
   }
@@ -2409,15 +2552,72 @@
   // ============================================================
   let pendingImport = null;
 
+
+
+  function validateRawBackupShape(candidate) {
+    const errors = [];
+    if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate)) errors.push('Kopia nie jest obiektem.');
+    if (candidate?.appId !== APP_ID) errors.push('Nieprawidłowy identyfikator kopii.');
+    if (!Number.isInteger(candidate?.schemaVersion)) errors.push('Brak prawidłowego schemaVersion.');
+    if (!candidate?.identity || typeof candidate.identity !== 'object') errors.push('Kopia nie zawiera danych postaci.');
+    if (!candidate?.stats || typeof candidate.stats !== 'object') errors.push('Kopia nie zawiera statystyk.');
+    if (!candidate?.inventory || !Array.isArray(candidate.inventory.items) || (candidate.inventory.fatigue !== undefined && !Array.isArray(candidate.inventory.fatigue))) errors.push('Kopia nie zawiera prawidłowego ekwipunku.');
+    return { valid: errors.length === 0, errors };
+  }
+
+  function convertLegacyCharacterExport(parsed) {
+    if (!parsed?.character || typeof parsed.character !== 'object') return null;
+    const character = parsed.character;
+    const candidate = createDefaultState();
+    candidate.appId = APP_ID;
+    candidate.schemaVersion = Number.isInteger(parsed.schemaVersion) ? parsed.schemaVersion : SCHEMA_VERSION;
+    candidate.appVersion = trimText(parsed.appVersion, '0.6.0');
+    candidate.initialized = true;
+    candidate.identity = deepClone(character.identity);
+    candidate.stats = deepClone(character.stats);
+    candidate.inventory = deepClone(character.inventory);
+    candidate.conditions = deepClone(character.conditions || candidate.conditions);
+    candidate.scars = deepClone(character.scars || []);
+    candidate.notes = typeof character.notes === 'string' ? character.notes : '';
+    candidate.source = parsed.source && typeof parsed.source === 'object' ? deepClone(parsed.source) : candidate.source;
+    candidate.createdAt = trimText(parsed.createdAt, nowIso());
+    candidate.updatedAt = trimText(parsed.exportedAt, nowIso());
+    return candidate;
+  }
+
+  function buildBackupPayload(sourceState = state) {
+    const payload = deepClone(sourceState);
+    payload.appId = APP_ID;
+    payload.schemaVersion = SCHEMA_VERSION;
+    payload.appVersion = APP_VERSION;
+    payload.updatedAt = nowIso();
+    return payload;
+  }
   function parseImportText(text) {
     let parsed;
     try { parsed = JSON.parse(text); }
     catch (error) { return { type: 'invalid', candidate: null, report: { imported: [], unrecognized: [], manual: [], warnings: [], errors: [`Uszkodzony JSON: ${error.message}`] } }; }
     if (parsed?.appId === APP_ID) {
+      const legacy = Boolean(parsed.character);
       try {
-        const candidate = sanitizeLoadedState(parsed);
+        const rawCandidate = legacy ? convertLegacyCharacterExport(parsed) : parsed;
+        const rawValidation = validateRawBackupShape(rawCandidate);
+        if (!rawValidation.valid) {
+          return { type: 'backup', candidate: null, report: { imported: [], unrecognized: [], manual: legacy ? ['Rozpoznano starszy eksport postaci, ale nie zawiera kompletu danych.'] : [], warnings: [], errors: rawValidation.errors } };
+        }
+        const candidate = sanitizeLoadedState(rawCandidate);
         const validation = validateState(candidate);
-        return { type: 'backup', candidate: validation.valid ? candidate : null, report: { imported: validation.valid ? ['pełna kopia karty aplikacji'] : [], unrecognized: [], manual: [], warnings: validation.warnings, errors: validation.errors } };
+        return {
+          type: 'backup',
+          candidate: validation.valid ? candidate : null,
+          report: {
+            imported: validation.valid ? [legacy ? 'starszy eksport postaci przekonwertowany do pełnej kopii' : 'pełna kopia karty aplikacji'] : [],
+            unrecognized: [],
+            manual: legacy ? ['Plik pochodzi ze starszego przycisku „Eksport postaci” i został bezpiecznie przekonwertowany.'] : [],
+            warnings: validation.warnings,
+            errors: validation.errors
+          }
+        };
       } catch (error) {
         return { type: 'backup', candidate: null, report: { imported: [], unrecognized: [], manual: [], warnings: [], errors: [error.message] } };
       }
@@ -2443,10 +2643,13 @@
 
   function applyPendingImport() {
     if (!pendingImport?.candidate || pendingImport.report.errors.length) return;
+    const importedType = pendingImport.type;
     const imported = deepClone(pendingImport.candidate);
     imported.settings = { ...state.settings, ...imported.settings };
     imported.updatedAt = nowIso();
     state = imported;
+    if (importedType === 'backup') markBackupImported();
+    else { backupMeta = createDefaultBackupMeta(); saveBackupMeta(); }
     pendingImport = null;
     saveNow();
     closeSheet();
@@ -2458,29 +2661,13 @@
 
   function exportBackup() {
     saveNow();
+    const payload = buildBackupPayload(state);
     const name = trimText(state.identity.name, 'postać').replace(/[^\p{L}\p{N}_-]+/gu, '-').replace(/^-|-$/g, '').toLowerCase() || 'postac';
-    downloadTextFile(`cairn-${name}-kopia-${new Date().toISOString().slice(0,10)}.json`, JSON.stringify(state, null, 2));
-    showToast('Pobrano kopię zapasową JSON.');
-  }
-
-  function exportCharacterJson() {
-    const payload = {
-      appId: APP_ID,
-      schemaVersion: SCHEMA_VERSION,
-      exportedAt: nowIso(),
-      character: {
-        identity: state.identity,
-        stats: state.stats,
-        inventory: state.inventory,
-        conditions: state.conditions,
-        scars: state.scars,
-        notes: state.notes
-      },
-      source: state.source
-    };
-    const name = trimText(state.identity.name, 'postać').replace(/[^\p{L}\p{N}_-]+/gu, '-').replace(/^-|-$/g, '').toLowerCase() || 'postac';
-    downloadTextFile(`cairn-${name}-eksport.json`, JSON.stringify(payload, null, 2));
-    showToast('Pobrano eksport postaci.');
+    downloadTextFile(`cairn-${name}-kopia-${new Date().toISOString().slice(0,10)}.json`, JSON.stringify(payload, null, 2));
+    markBackupCreated();
+    renderAll();
+    showToast('Pobrano pełną kopię zapasową JSON.');
+    announce('Pobrano pełną kopię zapasową postaci.');
   }
 
   // ============================================================
@@ -2796,6 +2983,20 @@
     return list;
   }
 
+
+
+  function renderBackupReminder() {
+    if (!shouldShowBackupReminder()) return null;
+    const last = backupMeta.lastBackupAt ? `Ostatnia kopia: ${formatDateTime(backupMeta.lastBackupAt)}.` : 'Ta postać nie ma jeszcze zapisanej kopii.';
+    return createEl('div', { className: 'alert alert-info' }, [
+      createEl('strong', { text: 'Zabezpiecz postać' }),
+      createEl('p', { className: 'small', text: `${last} Dane istnieją tylko w tej przeglądarce i mogą zniknąć po jej wyczyszczeniu.` }),
+      createEl('div', { className: 'backup-actions' }, [
+        button('Pobierz pełną kopię', exportBackup, 'btn btn-primary'),
+        button('Przypomnij za 3 dni', snoozeBackupReminder, 'btn btn-ghost')
+      ])
+    ]);
+  }
   function inconsistencyAlerts() {
     const alerts = [];
     const usage = calculateInventoryUsage();
@@ -2855,6 +3056,8 @@
     }
 
     for (const alert of inconsistencyAlerts()) root.append(alert);
+    const backupReminder = renderBackupReminder();
+    if (backupReminder) root.append(backupReminder);
 
     const armor = deriveArmor();
     const usage = calculateInventoryUsage();
@@ -3206,7 +3409,32 @@
     }
   }
 
-  function openBlastAttackSheet(sourceItem = null) {
+
+
+  function runItemAttack(item) {
+    if (!item?.damageFormula) return null;
+    if (!state.conditions.panicked) {
+      return item.damageFormula.blast ? openBlastAttackSheet(item) : performDamageFormulaRoll(item);
+    }
+    const body = createEl('div', { className: 'sheet-list' }, [
+      createEl('p', { text: 'Spanikowana postać wykonuje ataki jako osłabione. Zamiast kości broni użyj k4.' }),
+      createEl('p', { className: 'help', text: 'Warden może rozstrzygnąć szczególną sytuację inaczej. Ochrona nie jest przywracana przez ten rzut.' })
+    ]);
+    const impaired = button('Rzuć osłabiony k4', () => {
+      closeSheet();
+      if (item.damageFormula.blast) openBlastAttackSheet(item, { impaired: true });
+      else performRoll({ count: 1, sides: 4 }, `${item.name} — atak osłabiony przez panikę`);
+    }, 'btn btn-primary');
+    const override = button('Warden pozwala użyć broni', () => {
+      closeSheet();
+      if (item.damageFormula.blast) openBlastAttackSheet(item);
+      else performDamageFormulaRoll(item);
+    }, 'btn btn-ghost');
+    openSheet({ title: 'Panika: atak osłabiony', body, footer: createEl('div', { className: 'button-row' }, [override, impaired]) });
+    return null;
+  }
+  function openBlastAttackSheet(sourceItem = null, options = {}) {
+    const impaired = options.impaired === true;
     const blastItems = safeArray(state.inventory.items).filter(item => item.damageFormula?.blast && item.carryState !== 'spent');
     const options = [
       ['manual-d4', 'Ręcznie: k4'], ['manual-d6', 'Ręcznie: k6'], ['manual-d8', 'Ręcznie: k8'], ['manual-d10', 'Ręcznie: k10'], ['manual-d12', 'Ręcznie: k12'],
@@ -3217,19 +3445,19 @@
     const targets = numberInput(2, 1, 20);
     const body = createEl('div', { className: 'form-grid' }, [
       createEl('p', { text: 'Podmuch wpływa na wszystkie cele w obszarze. Dla każdego celu wykonuje się oddzielny rzut obrażeń.' }),
-      field('Źródło obrażeń', source),
+      impaired ? createEl('div', { className: 'alert alert-info' }, [createEl('strong', { text: 'Atak osłabiony przez panikę' }), createEl('p', { className: 'small', text: 'Dla każdego celu zostanie rzucone k4 zamiast kości broni.' })]) : field('Źródło obrażeń', source),
       field('Liczba celów', targets, 'Warden określa, kto znajduje się w obszarze. Aplikacja nie śledzi przeciwników ani ich pancerza.'),
       createEl('p', { className: 'help', text: 'Gdy liczba celów jest niepewna, oficjalna zasada pozwala rzucić odpowiednią kością obrażeń, aby ją ustalić.' })
     ]);
     const roll = button('Rzuć osobno dla każdego celu', () => {
-      const item = blastItems.find(entry => entry.id === source.value);
+      const item = impaired ? sourceItem : blastItems.find(entry => entry.id === source.value);
       const manualSide = source.value.startsWith('manual-d') ? toInt(source.value.slice(8), 6) : null;
-      const formula = item?.damageFormula || parseDamageFormulaNotation(`d${manualSide}`, true);
+      const formula = impaired ? parseDamageFormulaNotation('d4', true) : (item?.damageFormula || parseDamageFormulaNotation(`d${manualSide}`, true));
       let results;
       try { results = rollBlastTargets(formula, targets.value); }
       catch (error) { showToast(error.message, 'error'); return; }
       const details = results.map(entry => `Cel ${entry.target}: ${entry.total}${entry.rolls.length > 1 ? ` (${entry.rolls.map(die => die.value).join(', ')} → najwyższy)` : ''}`);
-      const label = item?.name || `Podmuch ${formatDamageFormula(formula)}`;
+      const label = impaired ? `${item?.name || 'Podmuch'} — osłabiony` : (item?.name || `Podmuch ${formatDamageFormula(formula)}`);
       const summary = `${label}: ${results.length} ${results.length === 1 ? 'cel' : 'cele'} — ${results.map(entry => entry.total).join(', ')}`;
       addDiceHistory({ type: 'blast', label, summary, notation: formatDamageFormula(formula), result: results.map(entry => entry.total), details: details.join(' · ') });
       closeSheet();
@@ -3269,7 +3497,10 @@
         createEl('p', { className: 'eyebrow', text: 'Wyposażenie' }),
         createEl('h1', { className: 'inventory-summary-title', text: 'Ekwipunek' })
       ]),
-      iconButton('Dodaj przedmiot', 'plus', () => openItemSheet(), 'btn btn-icon btn-primary')
+      createEl('div', { className: 'inventory-summary-actions' }, [
+        button(`Złoto: ${state.stats.gold}`, openGoldSheet, 'btn btn-quiet gold-button', { 'aria-label': `Złoto: ${state.stats.gold}. Otwórz szybką korektę.` }),
+        iconButton('Dodaj przedmiot', 'plus', () => openItemSheet(), 'btn btn-icon btn-primary')
+      ])
     ]));
     overview.append(createEl('div', { className: 'inventory-summary-stats' }, [
       createEl('div', { className: 'inventory-summary-stat' }, [createEl('strong', { text: `${usage.total}/10` }), createEl('span', { text: `${usage.fatigueSlots} zmęczenia` })]),
@@ -3327,8 +3558,8 @@
     if (item.uses.current !== null || item.uses.max !== null) {
       footer.append(createEl('span', { className: 'item-use-summary', text: formatUses(item.uses) }));
     }
-    if (item.damageFormula?.blast) footer.append(button(`Podmuch ${formatDamageFormula(item.damageFormula)}`, () => openBlastAttackSheet(item), 'btn btn-quiet'));
-    else if (item.damageFormula) footer.append(button(`Rzuć ${formatDamageFormula(item.damageFormula)}`, () => performDamageFormulaRoll(item), 'btn btn-quiet'));
+    if (item.damageFormula?.blast) footer.append(button(`Podmuch ${formatDamageFormula(item.damageFormula)}`, () => runItemAttack(item), 'btn btn-quiet'));
+    else if (item.damageFormula) footer.append(button(`Rzuć ${formatDamageFormula(item.damageFormula)}`, () => runItemAttack(item), 'btn btn-quiet'));
     if (item.uses.current !== null) footer.append(button('Użyj', () => openUseItemSheet(item.id), 'btn btn-primary', { disabled: item.uses.current <= 0, 'aria-label': `Użyj ${item.name}` }));
     if (footer.childElementCount) wrap.append(footer);
     if (item.uses.current === 0) wrap.append(createEl('p', { className: 'item-warning', text: 'Brak użyć. Przywrócenie jest w menu dodatkowych akcji.' }));
@@ -3581,6 +3812,41 @@
     });
   }
 
+
+
+  function openGoldSheet() {
+    let draft = Math.max(0, toInt(state.stats.gold, 0));
+    const current = createEl('div', { className: 'report-block gold-current', attrs: { 'aria-live': 'polite' } }, [
+      createEl('strong', { text: draft }),
+      createEl('span', { text: 'sztuk złota' })
+    ]);
+    const exact = numberInput(draft, 0, 999999);
+    const refresh = () => {
+      current.querySelector('strong').textContent = String(draft);
+      exact.value = String(draft);
+    };
+    const adjust = delta => {
+      draft = Math.max(0, draft + delta);
+      refresh();
+    };
+    exact.addEventListener('input', () => { draft = Math.max(0, toInt(exact.value, 0)); current.querySelector('strong').textContent = String(draft); });
+    const body = createEl('div', { className: 'form-grid' }, [
+      current,
+      createEl('div', { className: 'gold-adjust-grid' }, [
+        button('−10', () => adjust(-10), 'btn'),
+        button('−1', () => adjust(-1), 'btn'),
+        button('+1', () => adjust(1), 'btn'),
+        button('+10', () => adjust(10), 'btn')
+      ]),
+      field('Dokładna wartość', exact)
+    ]);
+    const save = button('Zapisz złoto', () => {
+      const value = Math.max(0, toInt(exact.value, draft));
+      closeSheet();
+      commitChange(`Zmieniono złoto: ${state.stats.gold} → ${value}`, next => { next.stats.gold = value; });
+    }, 'btn btn-primary btn-block');
+    openSheet({ title: 'Złoto', body, footer: save });
+  }
   function openArmorSheet() {
     const mode = selectInput([['equipment','Automatycznie z noszonego/trzymanego sprzętu'],['manual','Wartość ręczna']], state.stats.armor.mode);
     const manual = numberInput(state.stats.armor.manual, 0, 3);
@@ -3612,11 +3878,14 @@
         createEl('h2', { text: 'Rzut kością' }),
         createEl('p', { text: 'Wybierz kość — wynik pojawi się obok.' })
       ]),
-      createEl('div', {
-        className: 'dice-result dice-result-inline',
+      createEl('button', {
+        type: 'button',
+        className: 'dice-result dice-result-inline dice-result-button',
         id: 'diceResult',
-        attrs: { 'aria-live': 'polite', 'aria-atomic': 'true' }
-      }, [createEl('div', {}, [createEl('strong', { text: '—' }), createEl('span', { text: 'Ostatni wynik' })])])
+        disabled: !safeArray(state.diceHistory).length,
+        attrs: { 'aria-live': 'polite', 'aria-atomic': 'true', 'aria-label': safeArray(state.diceHistory).length ? 'Otwórz historię rzutów' : 'Brak historii rzutów' },
+        onclick: openDiceHistorySheet
+      }, [createEl('div', {}, [createEl('strong', { text: '—' }), createEl('span', { text: safeArray(state.diceHistory).length ? 'Dotknij: historia' : 'Ostatni wynik' })])])
     ]);
     consoleCard.append(consoleHead);
 
@@ -3681,6 +3950,24 @@
     animateDiceResult($('#diceResult'), value, label, options.sides || 6);
   }
 
+
+
+  function openDiceHistorySheet() {
+    const entries = safeArray(state.diceHistory);
+    const body = createEl('div', { className: 'dice-history-sheet-list' });
+    if (!entries.length) body.append(createEl('p', { className: 'muted', text: 'Brak zapisanych rzutów.' }));
+    for (const entry of entries) {
+      body.append(createEl('div', { className: 'dice-history-item' }, [
+        createEl('p', { text: entry.summary }),
+        entry.details ? createEl('p', { className: 'muted small', text: entry.details }) : null,
+        createEl('time', { text: formatDateTime(entry.time), dateTime: entry.time })
+      ]));
+    }
+    const footer = entries.length
+      ? createEl('div', { className: 'button-row' }, [button('Zamknij', closeSheet, 'btn btn-primary'), button('Wyczyść historię', () => { closeSheet(); confirmClearDiceHistory(); }, 'btn btn-danger')])
+      : button('Zamknij', closeSheet, 'btn btn-primary btn-block');
+    openSheet({ title: 'Historia rzutów', body, footer });
+  }
   function performFateRoll() {
     let result;
     try { result = rollDice({ count: 1, sides: 6 }); }
@@ -3718,13 +4005,13 @@
       field('Kości atakujących', notation, 'Dozwolone: k4, k6, k8, k10, k12.')
     ]);
     const roll = button('Rzuć i zachowaj najwyższy', () => {
-      const matches = notation.value.toLowerCase().match(/k(4|6|8|10|12)/g) || [];
-      if (!matches.length || matches.length > 20) { showToast('Wpisz od 1 do 20 prawidłowych kości.', 'error'); return; }
-      const results = matches.map(token => ({ token, value: rollDie(toInt(token.slice(1), 6)) }));
+      const parsed = parseAttackDiceList(notation.value);
+      if (!parsed) { showToast('Wpisz od 1 do 20 kości w formacie k6, k8, k6.', 'error'); return; }
+      const results = parsed.map(entry => ({ token: entry.token, value: rollDie(entry.sides) }));
       const high = Math.max(...results.map(result => result.value));
       const details = results.map(result => `${result.token}: ${result.value}`).join(', ');
       const summary = `Wielu atakujących: ${high} — najwyższy wynik`;
-      addDiceHistory({ type: 'dice', label: 'Wielu atakujących', summary, notation: matches.join('+'), result: high, details });
+      addDiceHistory({ type: 'dice', label: 'Wielu atakujących', summary, notation: parsed.map(entry => entry.token).join('+'), result: high, details });
       closeSheet(); setView('dice'); renderDiceResult(high, `${details} → najwyższy`); announce(`${summary}. ${details}`);
     }, 'btn btn-primary btn-block');
     openSheet({ title: 'Wielu atakujących', body, footer: roll });
@@ -3757,7 +4044,7 @@
     for (const [key, label] of CONDITION_DEFS) {
       const toggle = createEl('input', { type: 'checkbox', checked: Boolean(state.conditions[key]), attrs: { 'aria-label': label } });
       toggle.addEventListener('change', () => handleConditionToggle(key, toggle.checked));
-      settings.append(createEl('div', { className: 'settings-row' }, [createEl('div', {}, [createEl('strong', { text: label }), createEl('p', { className: 'help', text: conditionHelp(key) })]), toggle]));
+      settings.append(createEl('label', { className: 'settings-row settings-row-toggle' }, [createEl('div', {}, [createEl('strong', { text: label }), createEl('p', { className: 'help', text: conditionHelp(key) })]), toggle]));
     }
     settings.append(createEl('div', { className: 'settings-row' }, [createEl('div', {}, [createEl('strong', { text: 'Własne stany' }), createEl('p', { className: 'help', text: state.conditions.custom.map(entry => entry.name).join(', ') || 'Brak' })]), button('Zarządzaj', openCustomConditionsSheet, 'btn btn-quiet btn-ghost')]));
     conditions.append(settings);
@@ -3821,12 +4108,15 @@
 
     const dataCard = card([], 'card-pad');
     dataCard.append(sectionHead('Dane i kopie zapasowe'));
-    dataCard.append(createEl('p', { className: 'help', text: 'Dane są zapisane wyłącznie w tej przeglądarce i na tym urządzeniu. Mogą zniknąć po wyczyszczeniu danych przeglądarki. Regularnie pobieraj kopię JSON.' }));
+    dataCard.append(createEl('p', { className: 'help', text: 'Dane są zapisane wyłącznie w tej przeglądarce i na tym urządzeniu. Aplikacja działa offline po pierwszym poprawnym otwarciu, ale wyczyszczenie danych przeglądarki nadal usuwa kartę.' }));
+    dataCard.append(createEl('div', { className: 'data-status' }, [
+      createEl('strong', { text: backupMeta.lastBackupAt ? `Ostatnia pełna kopia: ${formatDateTime(backupMeta.lastBackupAt)}` : 'Brak potwierdzonej kopii zapasowej' }),
+      createEl('span', { text: `${backupMeta.meaningfulChangesSinceBackup} zmian od ostatniej kopii. Eksport zawiera całą aktywną postać i może zostać ponownie zaimportowany.` })
+    ]));
     dataCard.append(createEl('div', { className: 'button-row' }, [
-      button('Eksportuj kopię', exportBackup, 'btn btn-primary'),
-      button('Eksport postaci', exportCharacterJson, 'btn'),
+      button('Pobierz pełną kopię', exportBackup, 'btn btn-primary'),
       button('Import Kettlewright', () => $('#importFileInput').click(), 'btn'),
-      button('Import kopii', () => $('#backupFileInput').click(), 'btn')
+      button('Odtwórz pełną kopię', () => $('#backupFileInput').click(), 'btn')
     ]));
     root.append(dataCard);
 
@@ -3835,7 +4125,8 @@
     const themeToggle = createEl('input', { type: 'checkbox', checked: state.settings.theme === 'light', attrs: { 'aria-label': 'Jasny motyw' } });
     themeToggle.addEventListener('change', () => { state.settings.theme = themeToggle.checked ? 'light' : 'dark'; scheduleSave(); renderAll(); });
     const appSettings = createEl('div', { className: 'settings-list' }, [
-      createEl('div', { className: 'settings-row' }, [createEl('div', {}, [createEl('strong', { text: 'Jasny motyw' }), createEl('p', { className: 'help', text: 'Ciemny pozostaje domyślny.' })]), themeToggle]),
+      createEl('label', { className: 'settings-row settings-row-toggle' }, [createEl('div', {}, [createEl('strong', { text: 'Jasny motyw' }), createEl('p', { className: 'help', text: 'Ciemny pozostaje domyślny.' })]), themeToggle]),
+      createEl('div', { className: 'settings-row' }, [createEl('div', {}, [createEl('strong', { text: 'Instalacja i offline' }), createEl('p', { className: 'help', text: deferredInstallPrompt ? 'Przeglądarka pozwala zainstalować kartę jako aplikację.' : 'Po pierwszym otwarciu karta jest buforowana do pracy bez sieci. Na iPhonie użyj Udostępnij → Do ekranu początkowego.' })]), button(deferredInstallPrompt ? 'Zainstaluj' : 'Instrukcja', deferredInstallPrompt ? installApp : openInstallHelp, 'btn btn-quiet btn-ghost')]),
       createEl('div', { className: 'settings-row' }, [createEl('div', {}, [createEl('strong', { text: 'Testy deweloperskie' }), createEl('p', { className: 'help', text: 'Uruchamia testy czystych funkcji bez frameworka.' })]), button('Uruchom', openTestResults, 'btn btn-quiet btn-ghost')]),
       createEl('div', { className: 'settings-row' }, [createEl('div', {}, [createEl('strong', { text: `Wersja ${APP_VERSION}` }), createEl('p', { className: 'help', text: `Schemat danych ${SCHEMA_VERSION}` })]), createEl('span', { className: 'tag', text: state.source.type })])
     ]);
@@ -3862,7 +4153,7 @@
 
   function conditionHelp(key) {
     return {
-      deprived: 'Blokuje odzyskiwanie Ochrony, atrybutów i zmęczenia.',
+      deprived: 'Brak kluczowej potrzeby blokuje odzyskiwanie Ochrony, atrybutów i zmęczenia.',
       panicked: '0 Ochrony; brak działania w 1. rundzie; ataki osłabione.',
       criticalDamage: 'Tylko pełzanie; bez pomocy śmierć w ciągu godziny.',
       stabilized: 'Zatrzymuje śmierć, nie usuwa obrażeń krytycznych.',
@@ -4011,7 +4302,7 @@
     const body = createEl('div', { className: 'form-grid' }, [createEl('p', { text: 'Reset usuwa aktywną kartę, ekwipunek, historię i źródło importu z tej przeglądarki. Najpierw pobierz kopię zapasową.' }), field('Wpisz USUŃ', phrase)]);
     const reset = button('Usuń wszystkie dane karty', () => {
       if (phrase.value !== 'USUŃ') { showToast('Wpisz dokładnie: USUŃ', 'error'); return; }
-      openConfirmSheet({ title: 'Ostatnie potwierdzenie', message: 'Czy na pewno całkowicie wyczyścić kartę?', confirmLabel: 'Tak, usuń wszystko', danger: true, onConfirm: () => { try { localStorage.removeItem(STORAGE_KEY); } catch {} state = createDefaultState(); saveNow(); setView('character'); renderAll(); showToast('Karta została wyczyszczona.'); } });
+      openConfirmSheet({ title: 'Ostatnie potwierdzenie', message: 'Czy na pewno całkowicie wyczyścić kartę?', confirmLabel: 'Tak, usuń wszystko', danger: true, onConfirm: () => { try { localStorage.removeItem(STORAGE_KEY); localStorage.removeItem(BACKUP_META_KEY); } catch {} backupMeta = createDefaultBackupMeta(); state = createDefaultState(); saveNow(); setView('character'); renderAll(); showToast('Karta została wyczyszczona.'); } });
     }, 'btn btn-danger btn-block');
     openSheet({ title: 'Reset karty', body, footer: reset });
   }
@@ -4112,6 +4403,17 @@
     test('52. Wspólny animator kości respektuje reduced motion', () => { assert(typeof animateDiceResult === 'function' && typeof shouldReduceMotion === 'function'); });
     test('53. Rzuty w panelach używają wspólnego animatora', () => { assert(openResultSheet.toString().includes('animateDiceResult') && performCriticalStrengthSave.toString().includes('animateDiceResult')); });
     test('54. Kość Losu prezentuje pojedynczy wynik', () => { assert((performFateRoll.toString().match(/renderDiceResult/g) || []).length === 1 && !performFateRoll.toString().includes('performRoll(')); });
+
+    test('55. Parser wielu atakujących wymaga pełnej, poprawnej listy', () => { const valid = parseAttackDiceList('k6, k8, k6'); assert(valid?.map(entry => entry.sides).join(',') === '6,8,6'); assert(parseAttackDiceList('tekst k6') === null); assert(parseAttackDiceList('k6, k20') === null); });
+    test('56. Pełna kopia przechodzi bezstratny round-trip', () => { const fixture = createDemoState(); fixture.conditions.panicked = true; fixture.scars.push({ id:'scar', text:'Testowa blizna' }); const payload = buildBackupPayload(fixture); const parsed = parseImportText(JSON.stringify(payload)); assert(parsed.type === 'backup' && parsed.candidate?.identity.name === fixture.identity.name && parsed.candidate.inventory.items.length === fixture.inventory.items.length && parsed.candidate.conditions.panicked && parsed.candidate.scars.length === 1); });
+    test('57. Starszy eksport z polem character jest odzyskiwany', () => { const fixture = createDemoState(); const legacy = { appId:APP_ID, schemaVersion:2, exportedAt:nowIso(), character:{ identity:fixture.identity, stats:fixture.stats, inventory:fixture.inventory, conditions:fixture.conditions, scars:fixture.scars, notes:fixture.notes }, source:fixture.source }; const parsed = parseImportText(JSON.stringify(legacy)); assert(parsed.candidate?.initialized && parsed.candidate.identity.name === fixture.identity.name && parsed.report.manual.some(entry => /starszego przycisku/.test(entry))); });
+    test('58. Niepełna własna kopia nie może utworzyć pustej karty', () => { const parsed = parseImportText(JSON.stringify({ appId:APP_ID, schemaVersion:2, identity:{name:'Niepełna'} })); assert(!parsed.candidate && parsed.report.errors.length >= 2); });
+    test('59. Rzut nie zużywa historii Undo', () => { const fixture = createDefaultState(); fixture.changeHistory = [{ id:'change', undoable:true }]; recordDiceEntry(fixture, { summary:'k6: 4' }); assert(fixture.changeHistory.length === 1 && fixture.diceHistory.length === 1); });
+    test('60. Przypomnienie backupu zależy od zmian, czasu i drzemki', () => { const fixture = createDemoState(); assert(shouldShowBackupReminder({ lastBackupAt:null, meaningfulChangesSinceBackup:10, snoozedAt:null }, fixture)); assert(!shouldShowBackupReminder({ lastBackupAt:null, meaningfulChangesSinceBackup:9, snoozedAt:null }, fixture)); assert(!shouldShowBackupReminder({ lastBackupAt:null, meaningfulChangesSinceBackup:20, snoozedAt:nowIso() }, fixture)); });
+    test('61. Etykiety Blizn 7 i 8 odpowiadają skutkom reguł', () => { assert(SCAR_GUIDE[7].title === 'Uszkodzone ścięgno' && SCAR_GUIDE[8].title === 'Ogłuchnięcie'); });
+    test('62. Dokument deklaruje manifest i ikonę aplikacji', () => { assert(Boolean(document.querySelector('link[rel="manifest"]')) && Boolean(document.querySelector('link[rel="icon"]'))); });
+    test('63. Wynik kości udostępnia historię w kontekście', () => { renderDiceView(); assert($('#diceResult')?.tagName === 'BUTTON' && typeof openDiceHistorySheet === 'function'); });
+    test('64. Atak przedmiotem przechodzi przez straż paniki', () => { assert(renderItemCard.toString().includes('runItemAttack') && runItemAttack.toString().includes('atak osłabiony')); });
     return results;
   }
 
@@ -4139,7 +4441,39 @@
   // ============================================================
   // 19. Events and initialization
   // ============================================================
+
+
+  function openInstallHelp() {
+    const body = createEl('div', { className: 'sheet-list' }, [
+      createEl('p', { text: 'Po pierwszym poprawnym otwarciu Service Worker zachowuje pliki aplikacji do ponownego uruchomienia bez sieci.' }),
+      createEl('ol', { className: 'install-help-list' }, [
+        createEl('li', { text: 'iPhone/iPad: otwórz menu Udostępnij w Safari i wybierz „Do ekranu początkowego”.' }),
+        createEl('li', { text: 'Android/Chrome: użyj „Zainstaluj aplikację” lub „Dodaj do ekranu głównego”.' }),
+        createEl('li', { text: 'Po aktualizacji otwórz aplikację raz z internetem, aby pobrać nową wersję.' })
+      ]),
+      createEl('p', { className: 'help', text: 'Tryb offline nie jest kopią zapasową. Dane postaci nadal są lokalne i mogą zniknąć po wyczyszczeniu pamięci przeglądarki.' })
+    ]);
+    openSheet({ title: 'Instalacja i działanie offline', body, footer: button('Zamknij', closeSheet, 'btn btn-primary btn-block') });
+  }
+
+  async function installApp() {
+    if (!deferredInstallPrompt) { openInstallHelp(); return; }
+    deferredInstallPrompt.prompt();
+    try { await deferredInstallPrompt.userChoice; } catch {}
+    deferredInstallPrompt = null;
+    renderMoreView();
+  }
+
+  function registerServiceWorker() {
+    if (!('serviceWorker' in navigator)) return;
+    navigator.serviceWorker.register('./service-worker.js').catch(error => {
+      loadWarning = `Nie udało się przygotować trybu offline: ${error.message}`;
+      showToast(loadWarning, 'error');
+    });
+  }
   function bindEvents() {
+    window.addEventListener('beforeinstallprompt', event => { event.preventDefault(); deferredInstallPrompt = event; renderMoreView(); });
+    window.addEventListener('appinstalled', () => { deferredInstallPrompt = null; renderMoreView(); showToast('Aplikacja została zainstalowana.'); });
     for (const nav of $$('[data-nav]')) nav.addEventListener('click', () => setView(nav.dataset.nav));
     document.addEventListener('click', event => {
       const target = event.target.closest('button');
@@ -4161,9 +4495,11 @@
 
   function initialize() {
     state = loadState();
+    backupMeta = loadBackupMeta();
     bindEvents();
     renderAll();
     setView('character');
+    registerServiceWorker();
     if (loadWarning) showToast(loadWarning, 'error');
     globalThis.CairnSheetDev = {
       version: APP_VERSION,
@@ -4180,7 +4516,15 @@
       resolveFirstRoundDex,
       rollBlastTargets,
       planItemUse,
-      getScarGuide
+      getScarGuide,
+      parseImportText,
+      buildBackupPayload,
+      convertLegacyCharacterExport,
+      validateRawBackupShape,
+      recordDiceEntry,
+      parseAttackDiceList,
+      shouldShowBackupReminder,
+      createDemoState
     };
     if (new URLSearchParams(location.search).get('selftest') === '1') {
       const results = runDeveloperTests();

@@ -1,0 +1,20 @@
+{
+  "name": "Karta Wędrowca — Cairn 2e",
+  "short_name": "Karta Cairn",
+  "description": "Lokalna, mobilna karta jednej postaci do Cairn 2e.",
+  "lang": "pl",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#141116",
+  "theme_color": "#17131a",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "./icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
