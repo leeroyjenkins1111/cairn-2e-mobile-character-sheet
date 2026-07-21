@@ -1,28 +1,44 @@
-# Temporary bootstrap workflow; removed after generated changes are committed.
+# Temporary bootstrap workflow; removes itself after verified generation.
 name: Apply session-first UX
 
 on:
-  push:
-    branches: [feature/session-first-ux-v0.15.0]
-    paths:
-      - scripts/apply-session-first-ux.py
-      - .github/workflows/apply-session-first-ux.yml
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened]
 
 permissions:
   contents: write
 
 jobs:
   apply-and-verify:
+    if: github.event.pull_request.head.repo.full_name == github.repository
     runs-on: ubuntu-latest
     steps:
       - name: Checkout branch
         uses: actions/checkout@v4
         with:
-          ref: feature/session-first-ux-v0.15.0
+          ref: ${{ github.event.pull_request.head.ref }}
           fetch-depth: 0
 
       - name: Apply UX changes
-        run: python3 scripts/apply-session-first-ux.py
+        id: apply_ux
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -o pipefail
+          python3 scripts/apply-session-first-ux.py 2>&1 | tee ux-apply-output.log
+
+      - name: Upload apply diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: session-first-ux-apply-diagnostics
+          path: ux-apply-output.log
+          if-no-files-found: error
+
+      - name: Stop when UX changes cannot be applied
+        if: steps.apply_ux.outcome == 'failure'
+        run: exit 1
 
       - name: Verify generated structure
         shell: bash
@@ -74,13 +90,16 @@ jobs:
         if: steps.browser_tests.outcome == 'failure'
         run: exit 1
 
+      - name: Remove bootstrap files
+        run: git rm scripts/apply-session-first-ux.py .github/workflows/apply-session-first-ux.yml
+
       - name: Commit generated UX changes
         shell: bash
         run: |
-          rm -f playwright-output.log
+          rm -f ux-apply-output.log playwright-output.log
           rm -rf test-results playwright-report
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add README.md checksums.sha256 package.json package-lock.json scripts/app.js service-worker.js styles/app.css tests/app.spec.mjs
+          git add -A
           git commit -m "v0.15.0: introduce session-first visual UX"
-          git push origin HEAD:feature/session-first-ux-v0.15.0
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
