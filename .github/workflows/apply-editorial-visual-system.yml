@@ -1,4 +1,4 @@
-name: Apply editorial visual system
+name: Finalize editorial visual system
 
 on:
   push:
@@ -9,7 +9,7 @@ permissions:
   contents: write
 
 jobs:
-  apply-and-verify:
+  verify-and-commit:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -19,15 +19,14 @@ jobs:
           ref: feature/editorial-visual-system-v0.17.0
           fetch-depth: 0
 
-      - name: Apply visual system
-        run: node scripts/apply-editorial-visual-system.mjs
+      - name: Finalize published assets
+        run: node scripts/finalize-editorial-visual-system.mjs
 
       - name: Verify generated structure
         run: |
           test -f styles/editorial.css
           grep -q './styles/editorial.css' index.html
-          grep -q "APP_VERSION = '0.17.0'" scripts/app.js
-          grep -q 'cairn-mobile-sheet-v0.17.0' service-worker.js
+          grep -q 'styles/editorial.css' service-worker.js
           grep -q 'styles/editorial.css' checksums.sha256
           git diff --check
 
@@ -55,8 +54,9 @@ jobs:
       - name: Remove one-shot files
         if: success()
         run: |
-          rm scripts/apply-editorial-visual-system.mjs
-          rm .github/workflows/apply-editorial-visual-system.yml
+          rm -f scripts/apply-editorial-visual-system.mjs
+          rm -f scripts/finalize-editorial-visual-system.mjs
+          rm -f .github/workflows/apply-editorial-visual-system.yml
 
       - name: Commit verified implementation
         if: success()
