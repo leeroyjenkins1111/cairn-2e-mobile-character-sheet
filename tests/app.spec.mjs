@@ -10,8 +10,8 @@ async function loadDemo(page) {
 test('all embedded domain regression tests pass', async ({ page }) => {
   await page.goto('/?selftest=1');
   const marker = page.locator('#selftestMarker');
-  await expect(marker).toHaveAttribute('data-passed', '97');
-  await expect(marker).toHaveAttribute('data-total', '97');
+  await expect(marker).toHaveAttribute('data-passed', '101');
+  await expect(marker).toHaveAttribute('data-total', '101');
 });
 
 test('full and legacy exports round-trip without losing character data', async ({ page }) => {
@@ -312,4 +312,59 @@ test('confirmed import preserves the overwritten card as a recovery checkpoint',
   expect(checkpoints).toHaveLength(1);
   expect(checkpoints[0].characterName).toBe('Mara Ciernista');
   expect(checkpoints[0].reason).toContain('Przed importem');
+});
+
+
+test('skip link reaches the main character content before persistent navigation', async ({ page }) => {
+  await page.goto('/');
+  await page.keyboard.press('Tab');
+  const skip = page.getByRole('link', { name: 'Przejdź do treści karty' });
+  await expect(skip).toBeFocused();
+  await expect(skip).toBeVisible();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#main')).toBeFocused();
+});
+
+test('bottom navigation exposes controlled views and announces a view change', async ({ page }) => {
+  await loadDemo(page);
+  const dice = page.getByRole('button', { name: 'Kości', exact: true });
+  await expect(dice).toHaveAttribute('aria-controls', 'view-dice');
+  await dice.click();
+  await expect(dice).toHaveAttribute('aria-current', 'page');
+  await expect(page.getByRole('button', { name: 'Postać', exact: true })).not.toHaveAttribute('aria-current', 'page');
+  await expect(page.locator('#viewLiveRegion')).toHaveText('Widok: Kości');
+  await expect(page).toHaveTitle(/Mara Ciernista — Kości — Cairn 2e/);
+});
+
+test('sheet announces its title first and Escape restores the invoking control', async ({ page }) => {
+  await loadDemo(page);
+  const settings = page.getByRole('button', { name: 'Ustawienia i dane' });
+  await settings.focus();
+  await settings.click();
+  const title = page.locator('#sheetTitle');
+  await expect(title).toHaveText('Ustawienia i dane');
+  await expect(title).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(settings).toBeFocused();
+});
+
+test('core screens remain usable with 200 percent root text size', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 568 });
+  await loadDemo(page);
+  await page.evaluate(() => { document.documentElement.style.fontSize = '200%'; });
+  for (const name of ['Postać', 'Ekwipunek', 'Kości', 'Dziennik']) {
+    await page.getByRole('button', { name, exact: true }).click();
+    const layout = await page.evaluate(() => ({
+      overflow: document.documentElement.scrollWidth - window.innerWidth,
+      clippedButtons: Array.from(document.querySelectorAll('button')).filter(button => {
+        const style = getComputedStyle(button);
+        if (style.display === 'none' || style.visibility === 'hidden') return false;
+        const rect = button.getBoundingClientRect();
+        if (!rect.width || !rect.height) return false;
+        return rect.left < -1 || rect.right > window.innerWidth + 1;
+      }).length
+    }));
+    expect(layout.overflow).toBeLessThanOrEqual(1);
+    expect(layout.clippedButtons).toBe(0);
+  }
 });
