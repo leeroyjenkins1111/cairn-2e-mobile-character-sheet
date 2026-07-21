@@ -1,0 +1,63 @@
+name: Fix session migration
+
+on:
+  push:
+    branches:
+      - feature/session-log-v0.10.0
+
+permissions:
+  contents: write
+
+concurrency:
+  group: fix-session-migration
+  cancel-in-progress: false
+
+jobs:
+  fix:
+    if: ${{ !contains(github.event.head_commit.message || '', '[session-migration-fixed]') }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: feature/session-log-v0.10.0
+          fetch-depth: 0
+
+      - name: Correct migration chain
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import hashlib
+
+          path = Path('index.html')
+          text = path.read_text(encoding='utf-8')
+          old = 'else if (migrated.schemaVersion === 3) migrated = migrateV2ToV3(migrated);'
+          new = 'else if (migrated.schemaVersion === 2) migrated = migrateV2ToV3(migrated);'
+          if text.count(old) != 1:
+              raise RuntimeError(f'Expected one incorrect migration branch, found {text.count(old)}')
+          path.write_text(text.replace(old, new), encoding='utf-8')
+
+          files = ['index.html', 'manifest.webmanifest', 'service-worker.js', 'icon.svg']
+          lines = [f"{hashlib.sha256(Path(name).read_bytes()).hexdigest()}  {name}" for name in files]
+          Path('checksums.sha256').write_text('\n'.join(lines) + '\n', encoding='utf-8')
+          PY
+
+      - name: Verify syntax and checksums
+        shell: bash
+        run: |
+          sha256sum -c checksums.sha256
+          python3 - <<'PY'
+          from pathlib import Path
+          html = Path('index.html').read_text(encoding='utf-8')
+          Path('/tmp/cairn-inline.js').write_text(html.rsplit('<script>', 1)[1].split('</script>', 1)[0], encoding='utf-8')
+          PY
+          node --check /tmp/cairn-inline.js
+
+      - name: Commit correction
+        shell: bash
+        run: |
+          git add index.html checksums.sha256
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Fix schema 2 to 3 migration [session-migration-fixed]"
+          git push origin HEAD:feature/session-log-v0.10.0
