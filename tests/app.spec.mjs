@@ -10,8 +10,8 @@ async function loadDemo(page) {
 test('all embedded domain regression tests pass', async ({ page }) => {
   await page.goto('/?selftest=1');
   const marker = page.locator('#selftestMarker');
-  await expect(marker).toHaveAttribute('data-passed', '69');
-  await expect(marker).toHaveAttribute('data-total', '69');
+  await expect(marker).toHaveAttribute('data-passed', '76');
+  await expect(marker).toHaveAttribute('data-total', '76');
 });
 
 test('full and legacy exports round-trip without losing character data', async ({ page }) => {
@@ -104,4 +104,64 @@ test('session prompt appears for urgent character state', async ({ page }) => {
   await expect(prompt.getByText('Co teraz?')).toBeVisible();
   await expect(prompt.getByRole('heading', { name: 'Postać jest spanikowana' })).toBeVisible();
   await expect(prompt.getByRole('button', { name: 'Rzut WOL', exact: true })).toBeVisible();
+});
+
+
+test('grouped inventory presents demo equipment by carry state', async ({ page }) => {
+  await loadDemo(page);
+  await page.getByRole('button', { name: 'Ekwipunek', exact: true }).click();
+  const held = page.locator('details[data-inventory-group="held"]');
+  const worn = page.locator('details[data-inventory-group="worn"]');
+  const stored = page.locator('details[data-inventory-group="stored"]');
+  await expect(held.getByText('Krótki łuk')).toBeVisible();
+  await expect(worn.getByText('Skórzany kaftan')).toBeVisible();
+  await expect(stored.getByText('Pochodnia')).toBeVisible();
+  await expect(stored.getByText('Suszone racje')).toBeVisible();
+  await expect(stored.getByText('Mosiężny gwizdek')).toBeVisible();
+});
+
+test('quick carry change updates automatic armor', async ({ page }) => {
+  await loadDemo(page);
+  await page.getByRole('button', { name: 'Ekwipunek', exact: true }).click();
+  const leather = page.locator('[data-item-id]').filter({ hasText: 'Skórzany kaftan' });
+  await leather.getByRole('button', { name: /Zmień sposób noszenia: Skórzany kaftan/ }).click();
+  await page.locator('#sheet').getByRole('button', { name: 'Schowane', exact: true }).click();
+  const result = await page.evaluate(() => {
+    const dev = globalThis.CairnSheetDev;
+    const snapshot = dev.getState();
+    return {
+      carryState: snapshot.inventory.items.find(item => item.name === 'Skórzany kaftan')?.carryState,
+      armor: dev.deriveArmor(snapshot).effective
+    };
+  });
+  expect(result).toEqual({ carryState: 'stored', armor: 0 });
+  await expect(page.locator('details[data-inventory-group="stored"]').getByText('Skórzany kaftan')).toBeVisible();
+});
+
+test('inventory quick use and detail sheet preserve session workflows', async ({ page }) => {
+  await loadDemo(page);
+  await page.getByRole('button', { name: 'Ekwipunek', exact: true }).click();
+  const torch = page.locator('[data-item-id]').filter({ hasText: 'Pochodnia' });
+  await torch.getByRole('button', { name: 'Użyj Pochodnia' }).click();
+  await page.locator('#sheet').getByRole('button', { name: 'Użyj i zmniejsz o 1' }).click();
+  await expect.poll(async () => page.evaluate(() => globalThis.CairnSheetDev.getState().inventory.items.find(item => item.name === 'Pochodnia')?.uses.current)).toBe(1);
+
+  const bow = page.locator('[data-item-id]').filter({ hasText: 'Krótki łuk' });
+  await bow.getByRole('button', { name: 'Szczegóły przedmiotu Krótki łuk' }).click();
+  await expect(page.locator('#sheet').getByRole('heading', { name: 'Szczegóły przedmiotu' })).toBeVisible();
+  await expect(page.locator('#sheet').getByText('Lekki łuk myśliwski.')).toBeVisible();
+});
+
+test('spent inventory is grouped and hides primary use actions', async ({ page }) => {
+  await loadDemo(page);
+  await page.getByRole('button', { name: 'Ekwipunek', exact: true }).click();
+  const torch = page.locator('[data-item-id]').filter({ hasText: 'Pochodnia' });
+  await torch.getByRole('button', { name: /Zmień sposób noszenia: Pochodnia/ }).click();
+  await page.locator('#sheet').getByRole('button', { name: 'Zużyte', exact: true }).click();
+  const spent = page.locator('details[data-inventory-group="spent"]');
+  await expect(spent).toBeVisible();
+  expect(await spent.evaluate(element => element.open)).toBe(false);
+  await spent.locator('summary').click();
+  await expect(spent.getByText('Pochodnia')).toBeVisible();
+  await expect(spent.getByRole('button', { name: 'Użyj Pochodnia' })).toHaveCount(0);
 });

@@ -10,7 +10,7 @@ https://leeroyjenkins1111.github.io/cairn-2e-mobile-character-sheet/
 
 - Ochrona, SIŁ, ZRE, WOL, pancerz, złoto i stany;
 - rozliczanie obrażeń, Blizn i obrażeń krytycznych;
-- ekwipunek, zmęczenie, drobiazgi, przedmioty nieporęczne i użycia;
+- kompaktowy, grupowany ekwipunek według sposobu noszenia, ze zmęczeniem, drobiazgami, przedmiotami nieporęcznymi i użyciami;
 - broń, podmuch, dwie bronie i wielu atakujących;
 - kości, rzuty obronne, Kość Losu i historia rzutów;
 - import postaci z JSON Kettlewright;
@@ -24,7 +24,7 @@ https://leeroyjenkins1111.github.io/cairn-2e-mobile-character-sheet/
 
 Dane są zapisywane wyłącznie w `localStorage` tej przeglądarki i urządzenia. Wyczyszczenie danych przeglądarki usuwa kartę. Regularnie używaj przycisku **Pobierz pełną kopię**.
 
-Wersja 0.8.0 zachowuje bezpieczny format kopii z 0.7.0 i potrafi również odtworzyć starsze pliki `cairn-*-eksport.json` wygenerowane przez wersję 0.6.0.
+Wersja 0.9.0 zachowuje `schemaVersion: 2`, bezpieczny format kopii z 0.7.0–0.8.0 i potrafi również odtworzyć starsze pliki `cairn-*-eksport.json` wygenerowane przez wersję 0.6.0.
 
 ## Uruchomienie lokalne
 

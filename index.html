@@ -1435,6 +1435,108 @@
         transition-duration: 0.001ms !important;
       }
     }
+
+    /* Grouped inventory v0.9.0 — compact scan-first rows with 44px actions. */
+    .inventory-groups { display: grid; gap: 8px; }
+    .inventory-group {
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: color-mix(in srgb, var(--surface) 84%, transparent);
+      overflow: clip;
+    }
+    .inventory-group > summary {
+      min-height: 48px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 10px;
+      cursor: pointer;
+      list-style: none;
+      user-select: none;
+    }
+    .inventory-group > summary::-webkit-details-marker { display: none; }
+    .inventory-group > summary::after {
+      content: '⌄';
+      color: var(--muted);
+      font-size: 1rem;
+      line-height: 1;
+      transform: rotate(-90deg);
+      transition: transform 140ms ease;
+    }
+    .inventory-group[open] > summary::after { transform: rotate(0); }
+    .inventory-group-title { min-width: 0; display: grid; gap: 2px; }
+    .inventory-group-title strong { font-size: 0.92rem; }
+    .inventory-group-title span { color: var(--muted); font-size: 0.67rem; font-weight: 700; }
+    .inventory-group-list { padding: 0 10px 4px; border-top: 1px solid var(--line); }
+    .inventory-group-empty { margin: 0; padding: 12px 0; }
+
+    .inventory-item.inventory-row {
+      padding: 9px 0;
+      border-top: 1px solid var(--line);
+    }
+    .inventory-group-list > .inventory-row:first-child { border-top: 0; }
+    .inventory-row-main { min-width: 0; display: grid; gap: 6px; }
+    .inventory-row-title {
+      min-width: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: start;
+      gap: 8px;
+    }
+    .inventory-row-title h3 {
+      min-width: 0;
+      margin: 0;
+      font-size: 0.92rem;
+      line-height: 1.15;
+      overflow-wrap: anywhere;
+    }
+    .inventory-row-tags { min-width: 0; display: flex; flex-wrap: wrap; gap: 4px; }
+    .inventory-row-tags .tag { min-height: 22px; padding: 2px 6px; font-size: 0.62rem; }
+    .inventory-row-actions {
+      min-width: 0;
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 6px;
+    }
+    .inventory-row-actions .btn { min-width: 0; min-height: 44px; padding: 6px 8px; font-size: 0.74rem; }
+    .inventory-row-actions .inventory-details-button { width: 44px; justify-self: end; padding: 0; }
+    .inventory-row-actions.actions-3 { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 44px; }
+    .inventory-row-actions.actions-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .inventory-carry-button { color: var(--green-strong); }
+    .inventory-row-spent { opacity: 0.78; }
+    .inventory-row-spent .inventory-row-tags { filter: saturate(0.7); }
+    .inventory-row-note { margin: 0; color: var(--muted); font-size: 0.7rem; line-height: 1.3; }
+    .inventory-detail-copy { display: grid; gap: 8px; }
+    .inventory-detail-copy p { margin: 0; }
+    .inventory-detail-tags { display: flex; flex-wrap: wrap; gap: 5px; }
+    .inventory-detail-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+    .inventory-detail-actions .btn { min-width: 0; }
+    .inventory-secondary-actions > summary {
+      min-height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      font-weight: 800;
+      list-style: none;
+    }
+    .inventory-secondary-actions > summary::-webkit-details-marker { display: none; }
+    .inventory-secondary-actions > summary::after { content: '＋'; color: var(--muted); }
+    .inventory-secondary-actions[open] > summary::after { content: '−'; }
+    .inventory-secondary-actions .sheet-list { padding-top: 7px; }
+    .quick-carry-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+
+    @media (max-width: 350px) {
+      .inventory-group > summary { padding-left: 8px; padding-right: 8px; }
+      .inventory-group-list { padding-left: 8px; padding-right: 8px; }
+      .inventory-row-actions.actions-3,
+      .inventory-row-actions.actions-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .inventory-row-actions .inventory-details-button { width: 100%; justify-self: stretch; }
+      .inventory-detail-actions { grid-template-columns: 1fr; }
+    }
+
   </style>
 </head>
 <body>
@@ -1492,7 +1594,7 @@
   // 1. Constants
   // ============================================================
   const APP_ID = 'cairn-mobile-sheet';
-  const APP_VERSION = '0.8.0';
+  const APP_VERSION = '0.9.0';
   const SCHEMA_VERSION = 2;
   const STORAGE_KEY = `${APP_ID}:state`;
   const RECOVERY_KEY = `${APP_ID}:recovery`;
@@ -3629,6 +3731,70 @@
     return meter;
   }
 
+  const INVENTORY_GROUP_DEFS = [
+    { id: 'held', label: 'Trzymane', defaultOpen: true },
+    { id: 'worn', label: 'Noszone', defaultOpen: true },
+    { id: 'stored', label: 'Schowane', defaultOpen: true },
+    { id: 'fatigue', label: 'Zmęczenie', defaultOpen: true },
+    { id: 'spent', label: 'Zużyte', defaultOpen: false },
+    { id: 'other', label: 'Inne', defaultOpen: true }
+  ];
+
+  function inventoryGroupKey(item) {
+    return Object.prototype.hasOwnProperty.call(CARRY_STATES, item?.carryState) ? item.carryState : 'other';
+  }
+
+  function groupInventoryEntries(sourceState = state) {
+    const items = safeArray(sourceState?.inventory?.items);
+    const fatigue = safeArray(sourceState?.inventory?.fatigue);
+    return INVENTORY_GROUP_DEFS.map(definition => {
+      const entries = definition.id === 'fatigue'
+        ? fatigue.map(entry => ({ kind: 'fatigue', entry }))
+        : items.filter(item => inventoryGroupKey(item) === definition.id).map(entry => ({ kind: 'item', entry }));
+      const slots = entries.reduce((sum, entry) => sum + (entry.kind === 'fatigue' ? 1 : clamp(toInt(entry.entry.slots, 1), 0, 10)), 0);
+      return { ...definition, entries, count: entries.length, slots };
+    }).filter(group => group.count > 0);
+  }
+
+  function moveItemWithinGroup(targetState, itemId, direction) {
+    const items = safeArray(targetState?.inventory?.items);
+    const currentIndex = items.findIndex(item => item.id === itemId);
+    if (currentIndex < 0) return false;
+    const groupKey = inventoryGroupKey(items[currentIndex]);
+    const groupIndices = items.map((item, index) => inventoryGroupKey(item) === groupKey ? index : -1).filter(index => index >= 0);
+    const groupPosition = groupIndices.indexOf(currentIndex);
+    const targetPosition = groupPosition + direction;
+    if (groupPosition < 0 || targetPosition < 0 || targetPosition >= groupIndices.length) return false;
+    const targetIndex = groupIndices[targetPosition];
+    [items[currentIndex], items[targetIndex]] = [items[targetIndex], items[currentIndex]];
+    return true;
+  }
+
+  function formatSlotLabel(slots) {
+    const value = clamp(toInt(slots, 1), 0, 10);
+    return `${value} ${value === 1 ? 'miejsce' : 'miejsca'}`;
+  }
+
+  function renderInventoryGroup(group) {
+    const details = createEl('details', {
+      className: 'inventory-group',
+      dataset: { inventoryGroup: group.id },
+      attrs: group.defaultOpen ? { open: true } : {}
+    });
+    details.append(createEl('summary', {}, [
+      createEl('span', { className: 'inventory-group-title' }, [
+        createEl('strong', { text: group.label }),
+        createEl('span', { text: `${group.count} ${group.count === 1 ? 'wpis' : 'wpisów'} · ${formatSlotLabel(group.slots)}` })
+      ])
+    ]));
+    const list = createEl('div', { className: 'inventory-group-list' });
+    for (const entry of group.entries) {
+      list.append(entry.kind === 'fatigue' ? renderFatigueCard(entry.entry) : renderItemCard(entry.entry));
+    }
+    details.append(list);
+    return details;
+  }
+
   function renderInventoryView() {
     const root = $('#view-inventory');
     if (!root) return;
@@ -3651,8 +3817,8 @@
       ])
     ]));
     overview.append(createEl('div', { className: 'inventory-summary-stats' }, [
-      createEl('div', { className: 'inventory-summary-stat' }, [createEl('strong', { text: `${usage.total}/10` }), createEl('span', { text: `${usage.fatigueSlots} zmęczenia` })]),
-      createEl('div', { className: 'inventory-summary-stat' }, [createEl('strong', { text: armor.effective }), createEl('span', { text: 'pancerz' })])
+      createEl('div', { className: 'inventory-summary-stat', dataset: { inventoryStat: 'slots' } }, [createEl('strong', { text: `${usage.total}/10` }), createEl('span', { text: `${usage.fatigueSlots} zmęczenia` })]),
+      createEl('div', { className: 'inventory-summary-stat', dataset: { inventoryStat: 'armor' } }, [createEl('strong', { text: armor.effective }), createEl('span', { text: 'pancerz' })])
     ]));
     overview.append(renderSlotMeter(usage));
     overview.append(createEl('p', { className: 'inventory-legend', text: 'Drobiazg 0 · zwykły 1 · nieporęczny 2 · zmęczenie 1' }));
@@ -3664,16 +3830,17 @@
 
     const listCard = card([], 'card-pad card-flat');
     listCard.append(sectionHead('Przedmioty', createEl('span', { className: 'muted micro', text: `${state.inventory.items.length + state.inventory.fatigue.length} wpisów` })));
-    const list = createEl('div', { className: 'inventory-list' });
-    if (!state.inventory.items.length && !state.inventory.fatigue.length) list.append(createEl('p', { className: 'muted small', text: 'Brak przedmiotów.' }));
-    state.inventory.items.forEach((item, index) => list.append(renderItemCard(item, index)));
-    for (const fatigue of state.inventory.fatigue) list.append(renderFatigueCard(fatigue));
-    listCard.append(list);
+    const groups = createEl('div', { className: 'inventory-groups' });
+    const grouped = groupInventoryEntries();
+    if (!grouped.length) groups.append(createEl('p', { className: 'muted small', text: 'Brak przedmiotów.' }));
+    for (const group of grouped) groups.append(renderInventoryGroup(group));
+    listCard.append(groups);
     root.append(listCard);
   }
 
   function getItemPrimaryActionKinds(item) {
     const kinds = [];
+    if (item.carryState === 'spent') return ['more'];
     if (item.damageFormula?.blast) kinds.push('blast');
     else if (item.damageFormula) kinds.push('roll');
     if (item.uses.current !== null) kinds.push('use');
@@ -3681,79 +3848,127 @@
     return kinds;
   }
 
-  function renderItemCard(item, index) {
-    const wrap = createEl('article', { className: 'inventory-item' });
-    const titleWrap = createEl('div', {}, [
+  function renderItemCard(item) {
+    const spent = item.carryState === 'spent';
+    const wrap = createEl('article', {
+      className: `inventory-item inventory-row${spent ? ' inventory-row-spent' : ''}`,
+      dataset: { itemId: item.id }
+    });
+    const row = createEl('div', { className: 'inventory-row-main' });
+    row.append(createEl('div', { className: 'inventory-row-title' }, [
       createEl('h3', { text: item.name }),
-      item.description ? createEl('p', { className: 'item-description', text: item.description }) : null
-    ]);
-    const head = createEl('div', { className: 'inventory-item-head' }, [
-      titleWrap,
-      createEl('span', { className: 'tag item-slot', text: `${item.slots} ${item.slots === 1 ? 'miejsce' : 'miejsca'}` }),
-      iconButton(`Więcej akcji dla ${item.name}`, 'more', () => openItemActionsSheet(item.id), 'btn btn-icon btn-ghost item-more-button')
-    ]);
-    wrap.append(head);
+      createEl('span', { className: 'tag item-slot', text: formatSlotLabel(item.slots) })
+    ]));
 
-    const meta = createEl('div', { className: 'item-meta' });
-    if (item.damageFormula) meta.append(createEl('span', { className: 'tag', text: formatDamageFormula(item.damageFormula) }));
-    if (item.damageFormula?.blast) meta.append(createEl('span', { className: 'tag', text: 'podmuch' }));
-    if (item.armorValue) meta.append(createEl('span', { className: 'tag', text: `pancerz +${item.armorValue}` }));
-    meta.append(createEl('span', { className: 'tag', text: CARRY_STATES[item.carryState] || item.carryState }));
-    for (const trait of item.traits) meta.append(createEl('span', { className: 'tag', text: trait }));
-    wrap.append(meta);
+    const tags = createEl('div', { className: 'inventory-row-tags' });
+    if (item.damageFormula) tags.append(createEl('span', { className: 'tag', text: formatDamageFormula(item.damageFormula) }));
+    if (item.damageFormula?.blast) tags.append(createEl('span', { className: 'tag', text: 'podmuch' }));
+    if (item.armorValue) tags.append(createEl('span', { className: 'tag', text: `pancerz +${item.armorValue}` }));
+    if (item.uses.current !== null || item.uses.max !== null) tags.append(createEl('span', { className: 'tag', text: `użycia ${formatUses(item.uses)}` }));
+    for (const trait of safeArray(item.traits).slice(0, 2)) tags.append(createEl('span', { className: 'tag', text: trait }));
+    if (tags.childElementCount) row.append(tags);
 
-    const footer = createEl('div', { className: 'item-compact-footer' });
-    if (item.uses.current !== null || item.uses.max !== null) {
-      footer.append(createEl('span', { className: 'item-use-summary', text: formatUses(item.uses) }));
-    }
-    if (item.damageFormula?.blast) footer.append(button(`Podmuch ${formatDamageFormula(item.damageFormula)}`, () => runItemAttack(item), 'btn btn-quiet'));
-    else if (item.damageFormula) footer.append(button(`Rzuć ${formatDamageFormula(item.damageFormula)}`, () => runItemAttack(item), 'btn btn-quiet'));
-    if (item.uses.current !== null) footer.append(button('Użyj', () => openUseItemSheet(item.id), 'btn btn-primary', { disabled: item.uses.current <= 0, 'aria-label': `Użyj ${item.name}` }));
-    if (footer.childElementCount) wrap.append(footer);
-    if (item.uses.current === 0) wrap.append(createEl('p', { className: 'item-warning', text: 'Brak użyć. Przywrócenie jest w menu dodatkowych akcji.' }));
+    const actions = [];
+    if (!spent && item.damageFormula?.blast) actions.push(button(`Podmuch ${formatDamageFormula(item.damageFormula)}`, () => runItemAttack(item), 'btn btn-quiet', { 'aria-label': `Rzuć obrażenia podmuchu: ${item.name}` }));
+    else if (!spent && item.damageFormula) actions.push(button(`Rzuć ${formatDamageFormula(item.damageFormula)}`, () => runItemAttack(item), 'btn btn-quiet', { 'aria-label': `Rzuć obrażenia: ${item.name}` }));
+    if (!spent && item.uses.current !== null) actions.push(button('Użyj', () => openUseItemSheet(item.id), 'btn btn-primary', { disabled: item.uses.current <= 0, 'aria-label': `Użyj ${item.name}` }));
+    const carryLabel = CARRY_STATES[item.carryState] || 'inny stan';
+    actions.push(button(carryLabel, () => openQuickCarrySheet(item.id), 'btn btn-quiet inventory-carry-button', { 'aria-label': `Zmień sposób noszenia: ${item.name}. Aktualnie ${carryLabel}.` }));
+    actions.push(iconButton(`Szczegóły przedmiotu ${item.name}`, 'more', () => openItemActionsSheet(item.id), 'btn btn-icon btn-ghost inventory-details-button'));
+    row.append(createEl('div', { className: `inventory-row-actions actions-${actions.length}` }, actions));
+    if (item.uses.current === 0) row.append(createEl('p', { className: 'item-warning', text: 'Brak użyć. Przywrócenie jest dostępne w szczegółach.' }));
+    wrap.append(row);
     return wrap;
+  }
+
+  function openQuickCarrySheet(itemId) {
+    const item = state.inventory.items.find(entry => entry.id === itemId);
+    if (!item) return;
+    const options = [
+      ['held', 'Trzymane'],
+      ['worn', 'Noszone'],
+      ['stored', 'Schowane'],
+      ['spent', 'Zużyte']
+    ];
+    const body = createEl('div', { className: 'quick-carry-grid' });
+    for (const [value, label] of options) {
+      body.append(button(label, () => {
+        if (value === item.carryState) { closeSheet(); return; }
+        const before = CARRY_STATES[item.carryState] || item.carryState;
+        const after = CARRY_STATES[value] || value;
+        closeSheet();
+        commitChange(`Zmieniono sposób noszenia: ${item.name} (${before} → ${after})`, next => {
+          const target = next.inventory.items.find(entry => entry.id === itemId);
+          if (target) target.carryState = value;
+        });
+      }, value === item.carryState ? 'btn btn-primary' : 'btn'));
+    }
+    openSheet({
+      title: 'Sposób noszenia',
+      body: createEl('div', { className: 'form-grid' }, [
+        createEl('p', { text: `Wybierz stan dla „${item.name}”. Pancerz automatyczny uwzględnia tylko przedmioty trzymane i noszone.` }),
+        body
+      ])
+    });
   }
 
   function openItemActionsSheet(itemId) {
     const item = state.inventory.items.find(entry => entry.id === itemId);
     if (!item) return;
-    const currentIndex = state.inventory.items.findIndex(entry => entry.id === itemId);
-    const carry = selectInput(Object.entries(CARRY_STATES), item.carryState);
-    const body = createEl('div', { className: 'form-grid' }, [
-      createEl('div', { className: 'report-block' }, [
-        createEl('h3', { text: item.name }),
-        createEl('p', { className: 'muted small', text: `${item.slots} ${item.slots === 1 ? 'miejsce' : 'miejsca'}${item.damageFormula ? ` · ${formatDamageFormula(item.damageFormula)}` : ''}${item.uses.current !== null ? ` · ${formatUses(item.uses)}` : ''}` })
-      ]),
-      field('Sposób noszenia', carry),
-      button('Zapisz sposób noszenia', () => {
-        if (carry.value === item.carryState) { showToast('Sposób noszenia nie zmienił się.'); return; }
-        const before = CARRY_STATES[item.carryState] || item.carryState;
-        const after = CARRY_STATES[carry.value] || carry.value;
-        closeSheet();
-        commitChange(`Zmieniono sposób noszenia: ${item.name} (${before} → ${after})`, next => { const target = next.inventory.items.find(entry => entry.id === itemId); target.carryState = carry.value; });
-      }, 'btn btn-primary btn-block')
+    const groupKey = inventoryGroupKey(item);
+    const groupItems = state.inventory.items.filter(entry => inventoryGroupKey(entry) === groupKey);
+    const groupPosition = groupItems.findIndex(entry => entry.id === itemId);
+    const body = createEl('div', { className: 'form-grid' });
+    const copy = createEl('div', { className: 'report-block inventory-detail-copy' }, [
+      createEl('h3', { text: item.name }),
+      createEl('p', { className: 'muted small', text: `${formatSlotLabel(item.slots)} · ${CARRY_STATES[item.carryState] || item.carryState}` }),
+      item.description ? createEl('p', { text: item.description }) : createEl('p', { className: 'muted small', text: 'Brak opisu.' }),
+      item.notes ? createEl('p', { className: 'inventory-row-note', text: `Notatki: ${item.notes}` }) : null
     ]);
-    const secondary = createEl('div', { className: 'sheet-list' });
-    secondary.append(button('Edytuj szczegóły', () => { closeSheet(); openItemSheet(itemId); }, 'btn'));
-    if (item.uses.current !== null) secondary.append(button('Przywróć 1 użycie', () => { closeSheet(); openRestoreItemUseSheet(itemId); }, 'btn btn-ghost', { disabled: item.uses.max !== null && item.uses.current >= item.uses.max }));
-    secondary.append(
-      button(item.carryState === 'spent' ? 'Przywróć przedmiot' : 'Oznacz jako zużyty', () => { closeSheet(); toggleItemSpent(itemId); }, 'btn btn-ghost'),
-      button('Przesuń wyżej', () => { closeSheet(); moveItem(itemId, -1); }, 'btn btn-ghost', { disabled: currentIndex <= 0 }),
-      button('Przesuń niżej', () => { closeSheet(); moveItem(itemId, 1); }, 'btn btn-ghost', { disabled: currentIndex < 0 || currentIndex >= state.inventory.items.length - 1 }),
+    const tags = createEl('div', { className: 'inventory-detail-tags' });
+    if (item.category) tags.append(createEl('span', { className: 'tag', text: item.category }));
+    if (item.damageFormula) tags.append(createEl('span', { className: 'tag', text: formatDamageFormula(item.damageFormula) }));
+    if (item.damageFormula?.blast) tags.append(createEl('span', { className: 'tag', text: 'podmuch' }));
+    if (item.armorValue) tags.append(createEl('span', { className: 'tag', text: `pancerz +${item.armorValue}` }));
+    if (item.uses.current !== null || item.uses.max !== null) tags.append(createEl('span', { className: 'tag', text: `użycia ${formatUses(item.uses)}` }));
+    for (const trait of safeArray(item.traits)) tags.append(createEl('span', { className: 'tag', text: trait }));
+    if (tags.childElementCount) copy.append(tags);
+    body.append(copy);
+
+    const primary = createEl('div', { className: 'inventory-detail-actions' });
+    if (item.carryState !== 'spent' && item.damageFormula) primary.append(button(item.damageFormula.blast ? 'Rzuć podmuch' : 'Rzuć obrażenia', () => { closeSheet(); runItemAttack(item); }, 'btn'));
+    if (item.carryState !== 'spent' && item.uses.current !== null) primary.append(button('Użyj', () => { closeSheet(); openUseItemSheet(itemId); }, 'btn btn-primary', { disabled: item.uses.current <= 0 }));
+    primary.append(
+      button('Zmień stan', () => { closeSheet(); openQuickCarrySheet(itemId); }, 'btn'),
+      button('Edytuj', () => { closeSheet(); openItemSheet(itemId); }, 'btn')
+    );
+    if (item.uses.current !== null) primary.append(button('Przywróć 1 użycie', () => { closeSheet(); openRestoreItemUseSheet(itemId); }, 'btn btn-ghost', { disabled: item.uses.max !== null && item.uses.current >= item.uses.max }));
+    primary.append(button(item.carryState === 'spent' ? 'Przywróć przedmiot' : 'Oznacz jako zużyty', () => { closeSheet(); toggleItemSpent(itemId); }, 'btn btn-ghost'));
+    body.append(primary);
+
+    const secondary = createEl('details', { className: 'inventory-secondary-actions' });
+    secondary.append(createEl('summary', { text: 'Dalsze operacje' }));
+    secondary.append(createEl('div', { className: 'sheet-list' }, [
+      button('Przesuń wyżej w grupie', () => { closeSheet(); moveItem(itemId, -1); }, 'btn btn-ghost', { disabled: groupPosition <= 0 }),
+      button('Przesuń niżej w grupie', () => { closeSheet(); moveItem(itemId, 1); }, 'btn btn-ghost', { disabled: groupPosition < 0 || groupPosition >= groupItems.length - 1 }),
       button('Duplikuj', () => { closeSheet(); duplicateItem(itemId); }, 'btn btn-ghost'),
       button('Usuń', () => { closeSheet(); confirmDeleteItem(itemId); }, 'btn btn-danger')
-    );
+    ]));
     body.append(secondary);
-    openSheet({ title: 'Akcje przedmiotu', body });
+    openSheet({ title: 'Szczegóły przedmiotu', body });
   }
 
   function renderFatigueCard(fatigue) {
-    const wrap = createEl('article', { className: 'inventory-item' });
-    wrap.append(createEl('div', { className: 'inventory-item-head' }, [
-      createEl('div', {}, [createEl('h3', { text: 'Zmęczenie' }), createEl('p', { className: 'item-description', text: fatigue.note || 'Zajmuje miejsce do regeneracji.' })]),
-      createEl('span', { className: 'tag item-slot', text: '1 miejsce' }),
-      iconButton('Usuń zmęczenie po regeneracji', 'more', () => openRemoveFatigueSheet(fatigue.id), 'btn btn-icon btn-ghost item-more-button')
-    ]));
+    const wrap = createEl('article', { className: 'inventory-item inventory-row', dataset: { fatigueId: fatigue.id } });
+    const row = createEl('div', { className: 'inventory-row-main' }, [
+      createEl('div', { className: 'inventory-row-title' }, [
+        createEl('h3', { text: 'Zmęczenie' }),
+        createEl('span', { className: 'tag item-slot', text: '1 miejsce' })
+      ]),
+      createEl('p', { className: 'inventory-row-note', text: fatigue.note || 'Zajmuje miejsce do czasu odpowiedniej regeneracji.' }),
+      button('Usuń po regeneracji', () => openRemoveFatigueSheet(fatigue.id), 'btn btn-quiet btn-block', { 'aria-label': 'Usuń jedno zmęczenie po regeneracji' })
+    ]);
+    wrap.append(row);
     return wrap;
   }
 
@@ -3863,12 +4078,11 @@
 
 
   function moveItem(itemId, direction) {
-    commitChange('Zmieniono kolejność ekwipunku', next => {
-      const index = next.inventory.items.findIndex(item => item.id === itemId);
-      const target = index + direction;
-      if (index < 0 || target < 0 || target >= next.inventory.items.length) return;
-      [next.inventory.items[index], next.inventory.items[target]] = [next.inventory.items[target], next.inventory.items[index]];
-    }, { silent: true });
+    const current = state.inventory.items.find(item => item.id === itemId);
+    if (!current) return;
+    const moved = moveItemWithinGroup(deepClone(state), itemId, direction);
+    if (!moved) { showToast('Nie można przesunąć dalej w tej grupie.'); return; }
+    commitChange('Zmieniono kolejność ekwipunku w grupie', next => { moveItemWithinGroup(next, itemId, direction); }, { silent: true });
   }
 
   function duplicateItem(itemId) {
@@ -4535,6 +4749,13 @@
     test('67. Dziennik nie zawiera ustawień technicznych', () => { const source = renderMoreView.toString(); assert(source.includes('Dziennik postaci') && !source.includes('Dane i kopie zapasowe') && !source.includes('Testy deweloperskie')); });
     test('68. Ustawienia i dane są dostępne z nagłówka', () => { assert(Boolean($('#appSettingsBtn')) && typeof openAppSettingsSheet === 'function' && $('#nav-more')?.textContent.includes('Dziennik')); });
     test('69. Skróty sytuacji w walce są pełnymi zdaniami', () => { const definitions = combatScenarioDefinitions(); assert(definitions.find(entry => entry.id === 'blast').description === 'Osobny rzut dla każdego celu.' && definitions.find(entry => entry.id === 'dual').description === 'Rzuć obiema. Zachowaj wyższą.' && definitions.find(entry => entry.id === 'multiple').description === 'Rzuć wszystkie. Zachowaj najwyższą.'); });
+    test('70. Grupowanie ekwipunku zachowuje ustaloną kolejność sekcji', () => { const fixture = createDefaultState(); fixture.inventory.items = [makeItem({ id:'held', carryState:'held' }), makeItem({ id:'worn', carryState:'worn' }), makeItem({ id:'stored', carryState:'stored' }), makeItem({ id:'spent', carryState:'spent' }), makeItem({ id:'other', carryState:'legacy' })]; fixture.inventory.fatigue = [makeFatigue({ id:'fatigue' })]; assert(groupInventoryEntries(fixture).map(group => group.id).join(',') === 'held,worn,stored,fatigue,spent,other'); });
+    test('71. Nieznany sposób noszenia trafia do grupy Inne', () => { const fixture = createDefaultState(); fixture.inventory.items = [makeItem({ id:'legacy', carryState:'legacy-state' })]; const group = groupInventoryEntries(fixture)[0]; assert(group.id === 'other' && group.entries[0].entry.id === 'legacy'); });
+    test('72. Grupowanie nie mutuje danych postaci', () => { const fixture = createDemoState(); const before = JSON.stringify(fixture); groupInventoryEntries(fixture); assert(JSON.stringify(fixture) === before); });
+    test('73. Nagłówki grup sumują zajmowane miejsca', () => { const fixture = createDefaultState(); fixture.inventory.items = [makeItem({ id:'a', slots:0, carryState:'held' }), makeItem({ id:'b', slots:2, carryState:'held' })]; fixture.inventory.fatigue = [makeFatigue({ id:'f' })]; const groups = groupInventoryEntries(fixture); assert(groups.find(group => group.id === 'held').slots === 2 && groups.find(group => group.id === 'fatigue').slots === 1); });
+    test('74. Przesuwanie działa wyłącznie wewnątrz grupy', () => { const fixture = createDefaultState(); fixture.inventory.items = [makeItem({ id:'held-a', carryState:'held' }), makeItem({ id:'stored', carryState:'stored' }), makeItem({ id:'held-b', carryState:'held' })]; assert(moveItemWithinGroup(fixture, 'held-b', -1)); assert(fixture.inventory.items.map(item => item.id).join(',') === 'held-b,stored,held-a'); assert(!moveItemWithinGroup(fixture, 'stored', -1)); });
+    test('75. Zmiana sposobu noszenia aktualizuje automatyczny pancerz', () => { const fixture = createDefaultState(); fixture.inventory.items = [makeItem({ id:'armor', armorValue:1, carryState:'worn' })]; assert(deriveArmor(fixture).effective === 1); fixture.inventory.items[0].carryState = 'stored'; assert(deriveArmor(fixture).effective === 0); });
+    test('76. Pełna kopia zachowuje wszystkie dane kompaktowego wiersza', () => { const fixture = createDefaultState(); fixture.initialized = true; fixture.inventory.items = [makeItem({ id:'detail', name:'Detal', description:'Opis', notes:'Notatka', slots:2, category:'broń', damageFormula:parseDamageFormulaNotation('d8+d8', true), armorValue:1, uses:{current:2,max:4}, carryState:'held', traits:['nieporęczny','rzadki'] })]; const parsed = parseImportText(JSON.stringify(buildBackupPayload(fixture))); const item = parsed.candidate?.inventory.items[0]; assert(item?.description === 'Opis' && item.notes === 'Notatka' && item.slots === 2 && item.damageFormula.blast && item.uses.current === 2 && item.traits.length === 2); });
     return results;
   }
 
@@ -4719,6 +4940,9 @@
       parseAttackDiceList,
       shouldShowBackupReminder,
       sessionPromptFor,
+      groupInventoryEntries,
+      moveItemWithinGroup,
+      deriveArmor,
       createDemoState
     };
     if (new URLSearchParams(location.search).get('selftest') === '1') {
