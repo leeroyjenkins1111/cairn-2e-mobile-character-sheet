@@ -2086,3 +2086,6 @@ body::before {
   .protection-meter::after,
   .session-glance-panel { transition: none; }
 }
+
+/* Avoid sub-pixel rounding below the 44px mobile touch target. */
+.btn { min-height: 45px; }
