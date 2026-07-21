@@ -1,0 +1,6 @@
+# Local dependencies and generated test artifacts.
+node_modules/
+test-results/
+playwright-report/
+*.log
+.DS_Store
