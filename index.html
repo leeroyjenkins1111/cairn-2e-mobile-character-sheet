@@ -1537,6 +1537,72 @@
       .inventory-detail-actions { grid-template-columns: 1fr; }
     }
 
+
+    /* Session log v0.10.0 — explicit, local and backup-safe. */
+    .session-log-card { display: grid; gap: 10px; }
+    .session-log-status {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: start;
+      gap: 10px;
+      padding: 10px;
+      border: 1px solid var(--line);
+      border-radius: 13px;
+      background: var(--surface-soft);
+    }
+    .session-log-status strong { display: block; font-size: 0.98rem; }
+    .session-log-status p { margin: 3px 0 0; color: var(--muted); font-size: 0.72rem; line-height: 1.35; }
+    .session-live-badge { color: var(--green-strong); }
+    .session-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+    .session-actions .btn { min-width: 0; }
+    .session-event-list { display: grid; gap: 6px; }
+    .session-event {
+      min-width: 0;
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      gap: 8px;
+      align-items: start;
+      padding: 8px 0;
+      border-top: 1px solid var(--line);
+    }
+    .session-event:first-child { border-top: 0; }
+    .session-event-type {
+      min-width: 66px;
+      color: var(--green-strong);
+      font-size: 0.62rem;
+      font-weight: 850;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+    .session-event-copy { min-width: 0; }
+    .session-event-copy p { margin: 0; overflow-wrap: anywhere; font-size: 0.78rem; line-height: 1.3; }
+    .session-event-copy small { display: block; margin-top: 3px; color: var(--muted); font-size: 0.65rem; line-height: 1.25; }
+    .session-event-copy time { display: block; margin-top: 3px; color: var(--faint); font-size: 0.62rem; }
+    .session-archive-list { display: grid; gap: 6px; }
+    .session-archive-button {
+      width: 100%;
+      min-width: 0;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 8px;
+      text-align: left;
+    }
+    .session-archive-button span { min-width: 0; display: grid; gap: 2px; }
+    .session-archive-button strong { overflow-wrap: anywhere; }
+    .session-archive-button small { color: var(--muted); font-weight: 650; }
+    .session-summary-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+    .session-summary-stat { padding: 8px; border: 1px solid var(--line); border-radius: 11px; background: var(--surface-soft); }
+    .session-summary-stat strong { display: block; font-size: 1.05rem; }
+    .session-summary-stat span { color: var(--muted); font-size: 0.65rem; }
+    .session-report-note { margin: 0; color: var(--muted); font-size: 0.7rem; line-height: 1.35; }
+
+    @media (max-width: 350px) {
+      .session-log-status { grid-template-columns: 1fr; }
+      .session-actions { grid-template-columns: 1fr; }
+      .session-summary-grid { grid-template-columns: 1fr; }
+    }
+
   </style>
 </head>
 <body>
@@ -1594,8 +1660,8 @@
   // 1. Constants
   // ============================================================
   const APP_ID = 'cairn-mobile-sheet';
-  const APP_VERSION = '0.9.0';
-  const SCHEMA_VERSION = 2;
+  const APP_VERSION = '0.10.0';
+  const SCHEMA_VERSION = 3;
   const STORAGE_KEY = `${APP_ID}:state`;
   const RECOVERY_KEY = `${APP_ID}:recovery`;
   const BACKUP_META_KEY = `${APP_ID}:backup-meta`;
@@ -1604,6 +1670,8 @@
   const BACKUP_REMINDER_SNOOZE_DAYS = 3;
   const HISTORY_LIMIT = 50;
   const DICE_HISTORY_LIMIT = 20;
+  const SESSION_ARCHIVE_LIMIT = 20;
+  const SESSION_EVENT_LIMIT = 500;
   const SAVE_DEBOUNCE_MS = 300;
   const DICE_SIDES = [4, 6, 8, 10, 12, 20, 100];
   const DAMAGE_DIE_SIDES = [4, 6, 8, 10, 12];
@@ -1849,6 +1917,7 @@
       notes: '',
       diceHistory: [],
       changeHistory: [],
+      sessionLog: { active: null, archive: [] },
       source: {
         type: 'manual',
         importedAt: null,
@@ -1936,6 +2005,140 @@
     };
   }
 
+
+  const SESSION_EVENT_LABELS = {
+    system: 'Sesja',
+    change: 'Zmiana',
+    damage: 'Obrażenia',
+    recovery: 'Regeneracja',
+    attribute: 'Atrybuty',
+    condition: 'Stan',
+    inventory: 'Ekwipunek',
+    fatigue: 'Zmęczenie',
+    scar: 'Blizna',
+    dice: 'Rzut',
+    save: 'Rzut obronny',
+    undo: 'Cofnięcie'
+  };
+
+  function makeSessionEvent(partial = {}) {
+    const requestedType = trimText(partial.type, 'change');
+    return {
+      id: trimText(partial.id) || makeId(),
+      time: trimText(partial.time) || nowIso(),
+      type: Object.prototype.hasOwnProperty.call(SESSION_EVENT_LABELS, requestedType) ? requestedType : 'change',
+      summary: trimText(partial.summary || partial.description, 'Zdarzenie sesji'),
+      details: trimText(partial.details)
+    };
+  }
+
+  function makeSession(partial = {}) {
+    const startedAt = trimText(partial.startedAt) || nowIso();
+    return {
+      id: trimText(partial.id) || makeId(),
+      title: trimText(partial.title, 'Sesja'),
+      startedAt,
+      endedAt: trimText(partial.endedAt) || null,
+      summary: trimText(partial.summary),
+      events: safeArray(partial.events).map(makeSessionEvent).slice(-SESSION_EVENT_LIMIT)
+    };
+  }
+
+  function normalizeSessionLog(value) {
+    const raw = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+    return {
+      active: raw.active && typeof raw.active === 'object' ? makeSession(raw.active) : null,
+      archive: safeArray(raw.archive).map(makeSession).filter(session => session.endedAt).slice(0, SESSION_ARCHIVE_LIMIT)
+    };
+  }
+
+  function defaultSessionTitle(iso = nowIso()) {
+    try {
+      const date = new Intl.DateTimeFormat('pl-PL', { dateStyle: 'short' }).format(new Date(iso));
+      return `Sesja ${date}`;
+    } catch {
+      return 'Nowa sesja';
+    }
+  }
+
+  function startSessionOn(target, title = '', startedAt = nowIso()) {
+    target.sessionLog = normalizeSessionLog(target.sessionLog);
+    if (target.sessionLog.active) return null;
+    const session = makeSession({ title: trimText(title) || defaultSessionTitle(startedAt), startedAt });
+    session.events.push(makeSessionEvent({ time: startedAt, type: 'system', summary: 'Rozpoczęto sesję' }));
+    target.sessionLog.active = session;
+    return session;
+  }
+
+  function appendSessionEvent(target, partial = {}) {
+    target.sessionLog = normalizeSessionLog(target.sessionLog);
+    if (!target.sessionLog.active) return null;
+    const event = makeSessionEvent(partial);
+    target.sessionLog.active.events = [...target.sessionLog.active.events, event].slice(-SESSION_EVENT_LIMIT);
+    return event;
+  }
+
+  function finishSessionOn(target, summary = '', endedAt = nowIso()) {
+    target.sessionLog = normalizeSessionLog(target.sessionLog);
+    const active = target.sessionLog.active;
+    if (!active) return null;
+    const completed = makeSession({
+      ...active,
+      endedAt,
+      summary: trimText(summary),
+      events: [...active.events, makeSessionEvent({ time: endedAt, type: 'system', summary: 'Zakończono sesję' })]
+    });
+    target.sessionLog.active = null;
+    target.sessionLog.archive = [completed, ...target.sessionLog.archive.filter(session => session.id !== completed.id)].slice(0, SESSION_ARCHIVE_LIMIT);
+    return completed;
+  }
+
+  function classifySessionChange(description) {
+    const value = trimText(description).toLowerCase();
+    if (/^cofnięto/.test(value)) return 'undo';
+    if (/blizn/.test(value)) return 'scar';
+    if (/zmęczen/.test(value)) return 'fatigue';
+    if (/obraż|atak|ochrona spadła/.test(value)) return 'damage';
+    if (/odpoczynek|regener|wylecz|przywrócono ochronę/.test(value)) return 'recovery';
+    if (/stan:|panik|stabiliz|paraliż|deliri|pozbaw/.test(value)) return 'condition';
+    if (/przedmiot|ekwipun|sposób noszenia|użyto:|użycie|zduplikowano|upuszczono/.test(value)) return 'inventory';
+    if (/statyst|sił|zre|wol|ochron/.test(value)) return 'attribute';
+    return 'change';
+  }
+
+  function sessionEventTypeForDice(entry) {
+    if (entry?.type === 'save') return 'save';
+    if (entry?.type === 'damage' || entry?.type === 'blast') return 'damage';
+    return 'dice';
+  }
+
+  function sessionEventCounts(session) {
+    const counts = {};
+    for (const event of safeArray(session?.events)) counts[event.type] = (counts[event.type] || 0) + 1;
+    return counts;
+  }
+
+  function sessionReportMarkdown(session, characterName = state?.identity?.name || 'Postać') {
+    const record = makeSession(session);
+    const lines = [
+      `# ${record.title}`,
+      '',
+      `- Postać: ${trimText(characterName, 'Postać')}`,
+      `- Rozpoczęcie: ${formatDateTime(record.startedAt)}`,
+      `- Zakończenie: ${record.endedAt ? formatDateTime(record.endedAt) : 'sesja aktywna'}`,
+      `- Liczba zdarzeń: ${record.events.length}`
+    ];
+    if (record.summary) lines.push('', '## Podsumowanie', '', record.summary);
+    lines.push('', '## Zdarzenia', '');
+    if (!record.events.length) lines.push('- Brak zapisanych zdarzeń.');
+    for (const event of record.events) {
+      lines.push(`- ${formatDateTime(event.time)} — **${SESSION_EVENT_LABELS[event.type] || 'Zmiana'}**: ${event.summary}`);
+      if (event.details) lines.push(`  - ${event.details}`);
+    }
+    lines.push('', '_Raport sesji nie zastępuje pełnej kopii zapasowej postaci._', '');
+    return lines.join('\n');
+  }
+
   // ============================================================
   // 4. Validation and migrations
   // ============================================================
@@ -1950,6 +2153,7 @@
     if (!candidate?.stats || typeof candidate.stats !== 'object') errors.push('Brak statystyk postaci.');
     if (!candidate?.inventory || !Array.isArray(candidate.inventory.items) || !Array.isArray(candidate.inventory.fatigue)) errors.push('Nieprawidłowy ekwipunek.');
     if (candidate?.inventory?.items?.length > 200) errors.push('Zbyt wiele przedmiotów w pliku.');
+    if (!candidate?.sessionLog || typeof candidate.sessionLog !== 'object' || !Array.isArray(candidate.sessionLog.archive)) errors.push('Nieprawidłowy log sesji.');
     if (candidate?.stats) {
       for (const key of ['hp', 'str', 'dex', 'wil']) {
         const pair = candidate.stats[key];
@@ -1984,12 +2188,21 @@
     return migrated;
   }
 
+
+  function migrateV2ToV3(candidate) {
+    const migrated = deepClone(candidate);
+    migrated.sessionLog = normalizeSessionLog(migrated.sessionLog);
+    migrated.schemaVersion = 3;
+    return migrated;
+  }
+
   function migrateState(candidate) {
     let migrated = deepClone(candidate);
     if (!Number.isInteger(migrated.schemaVersion)) throw new Error('Brak schemaVersion.');
     if (migrated.schemaVersion > SCHEMA_VERSION) throw new Error('Nieobsługiwana nowsza wersja danych.');
     while (migrated.schemaVersion < SCHEMA_VERSION) {
       if (migrated.schemaVersion === 1) migrated = migrateV1ToV2(migrated);
+      else if (migrated.schemaVersion === 2) migrated = migrateV2ToV3(migrated);
       else throw new Error(`Brak migracji dla schemaVersion ${migrated.schemaVersion}.`);
     }
     migrated.appVersion = APP_VERSION;
@@ -1997,6 +2210,7 @@
     migrated.settings = { theme: 'dark', reducedMotionOverride: null, ...(migrated.settings || {}) };
     migrated.changeHistory = safeArray(migrated.changeHistory).slice(-HISTORY_LIMIT);
     migrated.diceHistory = safeArray(migrated.diceHistory).slice(-DICE_HISTORY_LIMIT);
+    migrated.sessionLog = normalizeSessionLog(migrated.sessionLog);
     return migrated;
   }
 
@@ -2019,7 +2233,8 @@
       inventory: { ...base.inventory, ...(migrated.inventory || {}), items: safeArray(migrated.inventory?.items).map(makeItem), fatigue: safeArray(migrated.inventory?.fatigue).map(makeFatigue) },
       conditions: { ...base.conditions, ...(migrated.conditions || {}), custom: safeArray(migrated.conditions?.custom) },
       source: { ...base.source, ...(migrated.source || {}) },
-      settings: { ...base.settings, ...(migrated.settings || {}) }
+      settings: { ...base.settings, ...(migrated.settings || {}) },
+      sessionLog: normalizeSessionLog(migrated.sessionLog)
     };
     return merged;
   }
@@ -2204,6 +2419,7 @@
       undoable: options.undoable !== false
     };
     next.changeHistory = [...safeArray(state.changeHistory), entry].slice(-HISTORY_LIMIT);
+    appendSessionEvent(next, { type: options.sessionType || classifySessionChange(description), summary: description, details: trimText(options.sessionDetails) });
     state = next;
     recordMeaningfulChange();
     scheduleSave();
@@ -2216,6 +2432,7 @@
     const unchanged = snapshotForHistory();
     const entry = { id: makeId(), time: nowIso(), description, before: unchanged, after: deepClone(unchanged), undoable: false };
     state.changeHistory = [...safeArray(state.changeHistory), entry].slice(-HISTORY_LIMIT);
+    appendSessionEvent(state, { type: classifySessionChange(description), summary: description });
     scheduleSave();
   }
 
@@ -2234,6 +2451,7 @@
     applySnapshot(next, entry.before);
     next.changeHistory = history.filter((_, i) => i !== index);
     next.updatedAt = nowIso();
+    appendSessionEvent(next, { type: 'undo', summary: `Cofnięto: ${entry.description}` });
     state = next;
     recordMeaningfulChange();
     scheduleSave();
@@ -2295,9 +2513,11 @@
   }
 
   function addDiceHistory(entry) {
-    recordDiceEntry(state, entry);
+    const recorded = recordDiceEntry(state, entry);
+    appendSessionEvent(state, { type: sessionEventTypeForDice(recorded), summary: recorded.summary, details: recorded.details });
     scheduleSave();
     renderDiceView();
+    if (activeView === 'more') renderMoreView();
   }
 
   function performRoll(config, label = '') {
@@ -4400,6 +4620,171 @@
     return details;
   }
 
+
+  function sessionById(sessionId) {
+    const log = normalizeSessionLog(state.sessionLog);
+    if (sessionId === 'active') return log.active;
+    return log.archive.find(session => session.id === sessionId) || null;
+  }
+
+  function sessionFileStem(session) {
+    const value = trimText(session?.title, 'sesja').replace(/[^\p{L}\p{N}_-]+/gu, '-').replace(/^-|-$/g, '').toLowerCase();
+    return value || 'sesja';
+  }
+
+  function exportSessionReport(sessionId, format) {
+    const session = sessionById(sessionId);
+    if (!session) { showToast('Nie znaleziono sesji.', 'error'); return; }
+    const date = session.startedAt.slice(0, 10);
+    const stem = sessionFileStem(session);
+    if (format === 'json') {
+      const payload = {
+        appId: `${APP_ID}-session-report`,
+        exportType: 'session-report',
+        appVersion: APP_VERSION,
+        schemaVersion: SCHEMA_VERSION,
+        exportedAt: nowIso(),
+        character: { id: state.characterId, name: state.identity.name },
+        session: deepClone(session)
+      };
+      downloadTextFile(`cairn-${stem}-${date}.json`, JSON.stringify(payload, null, 2));
+      showToast('Pobrano raport sesji JSON.');
+      return;
+    }
+    downloadTextFile(`cairn-${stem}-${date}.md`, sessionReportMarkdown(session, state.identity.name), 'text/markdown;charset=utf-8');
+    showToast('Pobrano raport sesji Markdown.');
+  }
+
+  function renderSessionEvent(event) {
+    return createEl('div', { className: 'session-event' }, [
+      createEl('span', { className: 'session-event-type', text: SESSION_EVENT_LABELS[event.type] || 'Zmiana' }),
+      createEl('div', { className: 'session-event-copy' }, [
+        createEl('p', { text: event.summary }),
+        event.details ? createEl('small', { text: event.details }) : null,
+        createEl('time', { text: formatDateTime(event.time), dateTime: event.time })
+      ])
+    ]);
+  }
+
+  function openStartSessionSheet() {
+    if (state.sessionLog?.active) { showToast('Sesja jest już aktywna.'); return; }
+    const title = textInput(defaultSessionTitle(), 160);
+    const body = createEl('div', { className: 'form-grid' }, [
+      createEl('p', { text: 'Aktywna sesja zapisuje wykonywane zmiany i rzuty. Nie uruchamia automatycznych rozstrzygnięć ani nie zastępuje Wardena.' }),
+      field('Nazwa sesji', title)
+    ]);
+    const start = button('Rozpocznij', () => {
+      const next = deepClone(state);
+      const session = startSessionOn(next, title.value);
+      if (!session) { showToast('Sesja jest już aktywna.', 'error'); return; }
+      state = next;
+      recordMeaningfulChange();
+      scheduleSave();
+      closeSheet();
+      renderAll();
+      showToast(`Rozpoczęto: ${session.title}`);
+      announce('Rozpoczęto log sesji.');
+    }, 'btn btn-primary btn-block');
+    openSheet({ title: 'Rozpocznij sesję', body, footer: start });
+  }
+
+  function openEndSessionSheet() {
+    const active = state.sessionLog?.active;
+    if (!active) { showToast('Brak aktywnej sesji.'); return; }
+    const summary = textarea('', 4000);
+    const body = createEl('div', { className: 'form-grid' }, [
+      createEl('div', { className: 'report-block' }, [
+        createEl('h3', { text: active.title }),
+        createEl('p', { className: 'muted small', text: `${formatDateTime(active.startedAt)} · ${safeArray(active.events).length} zdarzeń` })
+      ]),
+      field('Podsumowanie', summary, 'Opcjonalny opis najważniejszych wydarzeń. Nie jest to kalendarz kampanii.')
+    ]);
+    const finish = button('Zakończ i zapisz', () => {
+      const next = deepClone(state);
+      const completed = finishSessionOn(next, summary.value);
+      if (!completed) { showToast('Brak aktywnej sesji.', 'error'); return; }
+      state = next;
+      recordMeaningfulChange();
+      scheduleSave();
+      closeSheet();
+      renderAll();
+      showToast(`Zakończono: ${completed.title}`);
+      announce('Zakończono i zarchiwizowano log sesji.');
+    }, 'btn btn-primary btn-block');
+    openSheet({ title: 'Zakończ sesję', body, footer: finish });
+  }
+
+  function openSessionDetailsSheet(sessionId) {
+    const session = sessionById(sessionId);
+    if (!session) { showToast('Nie znaleziono sesji.', 'error'); return; }
+    const counts = sessionEventCounts(session);
+    const body = createEl('div', { className: 'sheet-list' });
+    body.append(createEl('div', { className: 'report-block' }, [
+      createEl('h3', { text: session.title }),
+      createEl('p', { className: 'muted small', text: `${formatDateTime(session.startedAt)} → ${session.endedAt ? formatDateTime(session.endedAt) : 'aktywna'}` }),
+      session.summary ? createEl('p', { text: session.summary }) : createEl('p', { className: 'help', text: 'Brak podsumowania.' })
+    ]));
+    body.append(createEl('div', { className: 'session-summary-grid' }, [
+      createEl('div', { className: 'session-summary-stat' }, [createEl('strong', { text: session.events.length }), createEl('span', { text: 'zdarzeń' })]),
+      createEl('div', { className: 'session-summary-stat' }, [createEl('strong', { text: (counts.dice || 0) + (counts.save || 0) + (counts.damage || 0) }), createEl('span', { text: 'rzutów i obrażeń' })])
+    ]));
+    const events = createEl('div', { className: 'session-event-list' });
+    for (const event of session.events.slice().reverse()) events.append(renderSessionEvent(event));
+    body.append(events);
+    body.append(createEl('p', { className: 'session-report-note', text: 'Raport sesji jest czytelnym wyciągiem. Pełne odtworzenie danych wymaga pełnej kopii zapasowej JSON.' }));
+    const footer = createEl('div', { className: 'button-row' }, [
+      button('Markdown', () => exportSessionReport(sessionId, 'markdown'), 'btn btn-primary'),
+      button('JSON', () => exportSessionReport(sessionId, 'json'), 'btn'),
+      button('Zamknij', closeSheet, 'btn btn-ghost')
+    ]);
+    openSheet({ title: 'Podsumowanie sesji', body, footer });
+  }
+
+  function renderSessionLogCard() {
+    state.sessionLog = normalizeSessionLog(state.sessionLog);
+    const active = state.sessionLog.active;
+    const section = card([], 'card-pad session-log-card');
+    section.append(sectionHead('Sesja', createEl('span', { className: `tag${active ? ' session-live-badge' : ''}`, text: active ? 'AKTYWNA' : `${state.sessionLog.archive.length}/20` })));
+    if (!active) {
+      section.append(createEl('p', { className: 'muted small', text: 'Rozpocznij sesję, aby połączyć zmiany postaci i rzuty w jeden czytelny zapis.' }));
+      section.append(button('Rozpocznij sesję', openStartSessionSheet, 'btn btn-primary btn-block'));
+    } else {
+      section.append(createEl('div', { className: 'session-log-status' }, [
+        createEl('div', {}, [
+          createEl('strong', { text: active.title }),
+          createEl('p', { text: `Od ${formatDateTime(active.startedAt)} · ${active.events.length} zdarzeń` })
+        ]),
+        createEl('span', { className: 'tag session-live-badge', text: 'zapis trwa' })
+      ]));
+      section.append(createEl('div', { className: 'session-actions' }, [
+        button('Zakończ sesję', openEndSessionSheet, 'btn btn-primary'),
+        button('Zobacz i eksportuj', () => openSessionDetailsSheet('active'), 'btn')
+      ]));
+      const recent = createEl('div', { className: 'session-event-list' });
+      for (const event of active.events.slice(-8).reverse()) recent.append(renderSessionEvent(event));
+      section.append(recent);
+    }
+    if (state.sessionLog.archive.length) {
+      const archive = createEl('details', { className: 'history-disclosure' });
+      archive.append(createEl('summary', {}, [createEl('span', { text: 'Zakończone sesje' }), createEl('span', { className: 'tag', text: state.sessionLog.archive.length })]));
+      const list = createEl('div', { className: 'history-disclosure-content session-archive-list' });
+      for (const session of state.sessionLog.archive) {
+        list.append(createEl('button', {
+          type: 'button',
+          className: 'btn btn-ghost session-archive-button',
+          attrs: { 'aria-label': `Otwórz sesję ${session.title}` },
+          onclick: () => openSessionDetailsSheet(session.id)
+        }, [
+          createEl('span', {}, [createEl('strong', { text: session.title }), createEl('small', { text: `${formatDateTime(session.startedAt)} · ${session.events.length} zdarzeń` })]),
+          createEl('span', { text: '›', attrs: { 'aria-hidden': 'true' } })
+        ]));
+      }
+      archive.append(list);
+      section.append(archive);
+    }
+    return section;
+  }
+
   function renderMoreView() {
     const root = $('#view-more');
     if (!root) return;
@@ -4414,6 +4799,7 @@
     identity.append(createEl('p', { className: 'eyebrow', text: state.identity.background || 'Bez tła' }));
     identity.append(createEl('p', { text: state.identity.backgroundDescription || 'Brak opisu tła.', className: 'muted small wrap-anywhere notes-preview' }));
     root.append(identity);
+    root.append(renderSessionLogCard());
 
     const notes = card([], 'card-pad');
     notes.append(sectionHead('Notatki i opis', button('Edytuj', openNotesSheet, 'btn btn-quiet btn-ghost')));
@@ -4698,7 +5084,7 @@
     test('19. Drobiazg nie może zwolnić miejsca na zmęczenie', () => { const fixture = createDefaultState(); fixture.inventory.items = [makeItem({ id:'petty', slots:0 }), ...Array.from({ length: 10 }, (_, index) => makeItem({ id:`full-${index}`, slots:1 }))]; assert(!droppableInventoryItems(fixture).some(item => item.id === 'petty')); assert(!planFatigueWithDroppedItem(fixture, 'petty').valid); });
     test('20. Brak przedmiotu do upuszczenia nie zmienia danych', () => { const fixture = createDefaultState(); fixture.inventory.items = [makeItem({ id:'petty', slots:0 })]; fixture.inventory.fatigue = Array.from({ length: 10 }, (_, index) => makeFatigue({ id:`fatigue-${index}` })); const before = JSON.stringify(fixture); assert(droppableInventoryItems(fixture).length === 0); assert(!planFatigueWithDroppedItem(fixture, 'petty').valid); assert(JSON.stringify(fixture) === before); });
 
-    test('21. Migracja damageDie d6 do damageFormula', () => { const fixture = createDefaultState(); fixture.schemaVersion = 1; fixture.inventory.items = [{ id:'old', name:'Old', slots:1, damageDie:'d6', uses:{current:null,max:null}, traits:[], sourceExtras:{} }]; const migrated = sanitizeLoadedState(fixture); assert(migrated.schemaVersion === 2 && formatDamageFormula(migrated.inventory.items[0].damageFormula) === 'd6' && migrated.inventory.items[0].sourceExtras.legacyDamageDie === 'd6'); });
+    test('21. Migracja damageDie d6 do damageFormula', () => { const fixture = createDefaultState(); fixture.schemaVersion = 1; fixture.inventory.items = [{ id:'old', name:'Old', slots:1, damageDie:'d6', uses:{current:null,max:null}, traits:[], sourceExtras:{} }]; const migrated = sanitizeLoadedState(fixture); assert(migrated.schemaVersion === 3 && formatDamageFormula(migrated.inventory.items[0].damageFormula) === 'd6' && migrated.inventory.items[0].sourceExtras.legacyDamageDie === 'd6'); });
     test('22. Import Kettlewright rozpoznaje d6+d6', () => { const fixture = deepClone(fletchwindFixture); fixture.items[0].tags = ['d6+d6','bulky']; const r = normalizeKettlewright(fixture); assert(formatDamageFormula(r.candidate.inventory.items[0].damageFormula) === 'd6+d6' && r.candidate.inventory.items[0].damageFormula.keep === 'highest'); });
     test('23. Rzut dwiema kośćmi zachowuje najwyższy wynik', () => { const values = [2,5]; const result = rollDamageFormula(parseDamageFormulaNotation('d6+d6'), (_sides,index) => values[index]); assert(result.total === 5 && result.rolls.length === 2); });
     test('24. Formuła blast jest serializowalna', () => { const formula = parseDamageFormulaNotation('d8+d8', true); const copy = JSON.parse(JSON.stringify(formula)); assert(copy.blast && copy.keep === 'highest' && formatDamageFormula(copy) === 'd8+d8'); });
@@ -4709,8 +5095,8 @@
     test('28. Import prawidłowego JSON Kettlewright', () => { const r = normalizeKettlewright(fletchwindFixture); assert(r.candidate?.identity.name === 'Fixture Fletchwind' && !r.report.errors.length); });
     test('29. Import uszkodzonego JSON', () => { const r = parseImportText('{nie'); assert(r.type === 'invalid' && r.report.errors.length === 1); });
     test('30. Import nieznanej nowszej wersji', () => { const fixture = createDefaultState(); fixture.schemaVersion = 999; const r = parseImportText(JSON.stringify(fixture)); assert(!r.candidate && r.report.errors.length); });
-    test('31. Odczyt starego zapisu schemaVersion 1', () => { const fixture = createDefaultState(); fixture.schemaVersion = 1; fixture.inventory.items = [makeItem({ name:'Legacy' })]; fixture.inventory.items[0].damageDie = 'd8'; delete fixture.inventory.items[0].damageFormula; const copy = sanitizeLoadedState(JSON.parse(JSON.stringify(fixture))); assert(copy.schemaVersion === 2 && formatDamageFormula(copy.inventory.items[0].damageFormula) === 'd8'); });
-    test('32. Eksport i ponowny import schemaVersion 2', () => { const fixture = createDemoState(); const r = parseImportText(JSON.stringify(fixture)); assert(r.type === 'backup' && r.candidate?.schemaVersion === 2 && r.candidate?.identity.name === fixture.identity.name); });
+    test('31. Odczyt starego zapisu schemaVersion 1', () => { const fixture = createDefaultState(); fixture.schemaVersion = 1; fixture.inventory.items = [makeItem({ name:'Legacy' })]; fixture.inventory.items[0].damageDie = 'd8'; delete fixture.inventory.items[0].damageFormula; const copy = sanitizeLoadedState(JSON.parse(JSON.stringify(fixture))); assert(copy.schemaVersion === 3 && formatDamageFormula(copy.inventory.items[0].damageFormula) === 'd8'); });
+    test('32. Eksport i ponowny import schemaVersion 3', () => { const fixture = createDemoState(); const r = parseImportText(JSON.stringify(fixture)); assert(r.type === 'backup' && r.candidate?.schemaVersion === 3 && r.candidate?.identity.name === fixture.identity.name); });
     test('33. Długie i niebezpieczne teksty są zachowywane jako dane', () => { const payload = '<img src=x onerror=alert(1)>'.repeat(20); const fixture = { name:payload, hp:1, hp_max:1, strength:1, strength_max:1, dexterity:1, dexterity_max:1, willpower:1, willpower_max:1, items:[] }; const r = normalizeKettlewright(fixture); assert(r.candidate.identity.name === payload); });
     test('34. Dokument nie ładuje zewnętrznych skryptów ani styli', () => { const external = $$('script[src], link[rel="stylesheet"][href]').filter(el => /^https?:/i.test(el.src || el.href)); assert(external.length === 0); });
     test('35. Efektywny pancerz jest ograniczony do 3', () => { const fixture = createDemoState(); fixture.inventory.items = [makeItem({ armorValue:2, carryState:'worn' }), makeItem({ armorValue:2, carryState:'held' })]; assert(deriveArmor(fixture).effective === 3); });
@@ -4756,6 +5142,15 @@
     test('74. Przesuwanie działa wyłącznie wewnątrz grupy', () => { const fixture = createDefaultState(); fixture.inventory.items = [makeItem({ id:'held-a', carryState:'held' }), makeItem({ id:'stored', carryState:'stored' }), makeItem({ id:'held-b', carryState:'held' })]; assert(moveItemWithinGroup(fixture, 'held-b', -1)); assert(fixture.inventory.items.map(item => item.id).join(',') === 'held-b,stored,held-a'); assert(!moveItemWithinGroup(fixture, 'stored', -1)); });
     test('75. Zmiana sposobu noszenia aktualizuje automatyczny pancerz', () => { const fixture = createDefaultState(); fixture.inventory.items = [makeItem({ id:'armor', armorValue:1, carryState:'worn' })]; assert(deriveArmor(fixture).effective === 1); fixture.inventory.items[0].carryState = 'stored'; assert(deriveArmor(fixture).effective === 0); });
     test('76. Pełna kopia zachowuje wszystkie dane kompaktowego wiersza', () => { const fixture = createDefaultState(); fixture.initialized = true; fixture.inventory.items = [makeItem({ id:'detail', name:'Detal', description:'Opis', notes:'Notatka', slots:2, category:'broń', damageFormula:parseDamageFormulaNotation('d8+d8', true), armorValue:1, uses:{current:2,max:4}, carryState:'held', traits:['nieporęczny','rzadki'] })]; const parsed = parseImportText(JSON.stringify(buildBackupPayload(fixture))); const item = parsed.candidate?.inventory.items[0]; assert(item?.description === 'Opis' && item.notes === 'Notatka' && item.slots === 2 && item.damageFormula.blast && item.uses.current === 2 && item.traits.length === 2); });
+
+    test('77. Migracja schemaVersion 2 dodaje pusty log sesji', () => { const fixture = createDemoState(); fixture.schemaVersion = 2; delete fixture.sessionLog; const migrated = sanitizeLoadedState(fixture); assert(migrated.schemaVersion === 3 && migrated.sessionLog.active === null && migrated.sessionLog.archive.length === 0); });
+    test('78. Nie można rozpocząć drugiej aktywnej sesji', () => { const fixture = createDemoState(); assert(startSessionOn(fixture, 'Pierwsza', '2026-01-01T10:00:00.000Z')); assert(!startSessionOn(fixture, 'Druga', '2026-01-01T11:00:00.000Z')); });
+    test('79. Zdarzenia są dopisywane wyłącznie do aktywnej sesji', () => { const fixture = createDemoState(); assert(!appendSessionEvent(fixture, { summary:'Bez sesji' })); startSessionOn(fixture, 'Test'); appendSessionEvent(fixture, { type:'inventory', summary:'Dodano przedmiot' }); assert(fixture.sessionLog.active.events.length === 2 && fixture.sessionLog.active.events[1].type === 'inventory'); });
+    test('80. Zakończenie przenosi sesję do archiwum z podsumowaniem', () => { const fixture = createDemoState(); startSessionOn(fixture, 'Ruiny', '2026-01-01T10:00:00.000Z'); appendSessionEvent(fixture, { type:'save', summary:'Rzut WOL' }); const ended = finishSessionOn(fixture, 'Odnaleziono wyjście.', '2026-01-01T12:00:00.000Z'); assert(!fixture.sessionLog.active && fixture.sessionLog.archive[0].id === ended.id && ended.summary === 'Odnaleziono wyjście.' && ended.events.at(-1).summary === 'Zakończono sesję'); });
+    test('81. Log ogranicza liczbę zdarzeń i archiwalnych sesji', () => { const fixture = createDemoState(); startSessionOn(fixture, 'Limit'); for (let index = 0; index < SESSION_EVENT_LIMIT + 10; index++) appendSessionEvent(fixture, { summary:`Zdarzenie ${index}` }); assert(fixture.sessionLog.active.events.length === SESSION_EVENT_LIMIT); finishSessionOn(fixture); fixture.sessionLog.archive = Array.from({ length: SESSION_ARCHIVE_LIMIT + 5 }, (_, index) => makeSession({ id:`s${index}`, title:`S${index}`, startedAt:'2026-01-01T10:00:00.000Z', endedAt:'2026-01-01T11:00:00.000Z' })); assert(normalizeSessionLog(fixture.sessionLog).archive.length === SESSION_ARCHIVE_LIMIT); });
+    test('82. Undo nie usuwa logu sesji ze snapshotu postaci', () => { const fixture = createDemoState(); startSessionOn(fixture, 'Snapshot'); appendSessionEvent(fixture, { summary:'Zapisane zdarzenie' }); const snapshot = snapshotForHistory(fixture); fixture.stats.gold = 99; applySnapshot(fixture, snapshot); assert(fixture.sessionLog.active.events.some(event => event.summary === 'Zapisane zdarzenie')); });
+    test('83. Pełna kopia zachowuje aktywne i zakończone sesje', () => { const fixture = createDemoState(); startSessionOn(fixture, 'Pierwsza'); appendSessionEvent(fixture, { type:'dice', summary:'Rzut k6' }); finishSessionOn(fixture, 'Koniec'); startSessionOn(fixture, 'Druga'); const parsed = parseImportText(JSON.stringify(buildBackupPayload(fixture))); assert(parsed.candidate?.schemaVersion === 3 && parsed.candidate.sessionLog.active.title === 'Druga' && parsed.candidate.sessionLog.archive[0].summary === 'Koniec'); });
+    test('84. Raport Markdown zawiera metadane, podsumowanie i zdarzenia', () => { const fixture = createDemoState(); const session = startSessionOn(fixture, 'Raport', '2026-01-01T10:00:00.000Z'); appendSessionEvent(fixture, { type:'damage', summary:'Otrzymano obrażenia', details:'Ochrona 4 → 1' }); const ended = finishSessionOn(fixture, 'Bezpieczny powrót', '2026-01-01T12:00:00.000Z'); const report = sessionReportMarkdown(ended, fixture.identity.name); assert(report.includes('# Raport') && report.includes('Bezpieczny powrót') && report.includes('Otrzymano obrażenia') && report.includes('Mara Ciernista')); });
     return results;
   }
 
@@ -4940,6 +5335,12 @@
       parseAttackDiceList,
       shouldShowBackupReminder,
       sessionPromptFor,
+      normalizeSessionLog,
+      startSessionOn,
+      appendSessionEvent,
+      finishSessionOn,
+      sessionReportMarkdown,
+      classifySessionChange,
       groupInventoryEntries,
       moveItemWithinGroup,
       deriveArmor,
