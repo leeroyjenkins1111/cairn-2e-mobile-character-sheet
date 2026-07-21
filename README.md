@@ -21,6 +21,7 @@ https://leeroyjenkins1111.github.io/cairn-2e-mobile-character-sheet/
 - instalacja jako lekka PWA i ponowne uruchomienie offline po pierwszym poprawnym otwarciu;
 - kontekstowy tryb sesji z kartą „Co teraz?”, aktywnymi stanami i szybkimi korektami;
 - gameplay-first ekran Postać: bieżący stan, cztery główne akcje i aktywna broń bez powielania notatek oraz historii rzutów;
+- spójny editorial fantasy visual system: warstwowe powierzchnie, matowy mosiądz, przygaszona zieleń, wyraźna hierarchia typografii, subtelna faktura i mikroanimacje bez zewnętrznych assetów;
 - jawny log sesji: rozpoczęcie, aktywny zapis zmian i rzutów, zakończenie, podsumowanie oraz eksport Markdown/JSON;
 - osobny Dziennik postaci, podczas gdy backup, instalacja i operacje techniczne są dostępne w ustawieniach nagłówka.
 
@@ -28,16 +29,17 @@ https://leeroyjenkins1111.github.io/cairn-2e-mobile-character-sheet/
 
 Dane są zapisywane wyłącznie w `localStorage` tej przeglądarki i urządzenia. Wyczyszczenie danych przeglądarki usuwa kartę. Regularnie używaj przycisku **Pobierz pełną kopię**.
 
-Wersja 0.16.0 nadal używa `schemaVersion: 3`. Trzy najnowsze punkty odzyskiwania są przechowywane osobno w `localStorage` i nie wchodzą do pełnej kopii postaci. Chronią przed przypadkowym importem, resetem lub odtworzeniem, ale znikają po wyczyszczeniu danych przeglądarki i nie zastępują pobranej kopii JSON. Historia rzutów może zawierać opcjonalne metadane bezpiecznego powtórzenia, ale starsze wpisy bez tych danych pozostają czytelne i nie wymagają migracji. Zapisy i kopie ze `schemaVersion: 2` są migrowane automatycznie, a starsze pliki `cairn-*-eksport.json` z wersji 0.6.0 nadal mogą zostać odtworzone. Raport sesji Markdown/JSON jest czytelnym wyciągiem i nie zastępuje pełnej kopii zapasowej.
+Wersja aplikacji 0.16.0 nadal używa `schemaVersion: 3`. Warstwa editorial visual system nie zmienia danych ani formatu kopii. Trzy najnowsze punkty odzyskiwania są przechowywane osobno w `localStorage` i nie wchodzą do pełnej kopii postaci. Chronią przed przypadkowym importem, resetem lub odtworzeniem, ale znikają po wyczyszczeniu danych przeglądarki i nie zastępują pobranej kopii JSON. Historia rzutów może zawierać opcjonalne metadane bezpiecznego powtórzenia, ale starsze wpisy bez tych danych pozostają czytelne i nie wymagają migracji. Zapisy i kopie ze `schemaVersion: 2` są migrowane automatycznie, a starsze pliki `cairn-*-eksport.json` z wersji 0.6.0 nadal mogą zostać odtworzone. Raport sesji Markdown/JSON jest czytelnym wyciągiem i nie zastępuje pełnej kopii zapasowej.
 
 ## Struktura aplikacji
 
 Warstwa statyczna jest rozdzielona bez zmiany funkcji lub modelu danych:
 
 - `index.html` zawiera semantyczny szkielet dokumentu;
-- `styles/app.css` zawiera cały styl interfejsu;
+- `styles/app.css` zawiera bazowy układ i komponenty;
+- `styles/editorial.css` zawiera system powierzchni, typografię, kolory, teksturę i dopracowanie wszystkich ekranów;
 - `scripts/app.js` zawiera logikę aplikacji;
-- Service Worker jawnie buforuje oba zasoby do pracy offline.
+- Service Worker jawnie buforuje oba arkusze stylów i logikę do pracy offline.
 
 Ten etap nie wprowadza bundlera ani modułów runtime. Rozdzielenie logiki JavaScript na mniejsze moduły pozostaje możliwym późniejszym refaktorem, ale nie jest wymagane do korzystania z aplikacji.
 
@@ -61,7 +63,7 @@ npx playwright install chromium webkit
 npm test
 ```
 
-CI uruchamia testy domenowe osadzone w aplikacji, kontrolę składni, testy mobilnych viewportów, klawiatury i fokusu, powiększenia tekstu do 200%, reduced motion, round-trip kopii oraz test offline.
+CI uruchamia testy domenowe osadzone w aplikacji, kontrolę składni, testy mobilnych viewportów, klawiatury i fokusu, powiększenia tekstu do 200%, reduced motion, round-trip kopii, test offline oraz kontrolę załadowania lokalnego visual system.
 
 ## Publikacja
 
