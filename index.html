@@ -3064,34 +3064,11 @@
   }
   function inconsistencyAlerts() {
     const alerts = [];
-    const usage = calculateInventoryUsage();
-    if (usage.total === 10 && state.stats.hp.current > 0) {
-      const wrap = createEl('div', { className: 'alert' }, [
-        createEl('strong', { text: 'Pełny ekwipunek' }),
-        createEl('p', { className: 'small', text: 'Postać zajmuje 10/10 miejsc, ale ma Ochronę powyżej 0.' }),
-        button('Zastosuj regułę: 0 Ochrony', () => openConfirmSheet({ title: 'Ustaw 0 Ochrony', message: 'Pełne 10 miejsc sprowadza Ochronę postaci do 0. Zmianę będzie można cofnąć.', confirmLabel: 'Ustaw 0 Ochrony', danger: true, onConfirm: () => commitChange('Pełny ekwipunek: Ochronę ustawiono na 0', next => { next.stats.hp.current = 0; }) }), 'btn btn-danger btn-block')
-      ]);
-      alerts.push(wrap);
-    }
-    if (state.conditions.panicked && state.stats.hp.current > 0) {
-      const wrap = createEl('div', { className: 'alert' }, [
-        createEl('strong', { text: 'Panika a Ochrona' }),
-        createEl('p', { className: 'small', text: 'Spanikowana postać ma zgodnie z zasadami 0 Ochrony.' }),
-        button('Ustaw 0 Ochrony', () => openConfirmSheet({ title: 'Skutek paniki', message: 'Zastosować 0 Ochrony dla spanikowanej postaci?', confirmLabel: 'Zastosuj', danger: true, onConfirm: () => commitChange('Panika: Ochronę ustawiono na 0', next => { next.stats.hp.current = 0; }) }), 'btn btn-danger btn-block')
-      ]);
-      alerts.push(wrap);
-    }
-    if (state.conditions.criticalDamage) {
-      const status = state.conditions.stabilized ? 'Postać jest ustabilizowana, ale nadal ma obrażenia krytyczne.' : 'Postać może tylko słabo pełzać i umrze w ciągu godziny bez odpowiedniej pomocy.';
-      const actions = state.conditions.stabilized ? [] : [button('Stabilizuj po udzieleniu pomocy', handleStabilize, 'btn btn-danger btn-block')];
-      alerts.push(createEl('div', { className: 'alert' }, [
-        createEl('strong', { text: 'Obrażenia krytyczne' }),
-        createEl('p', { className: 'small', text: status }),
-        ...actions
-      ]));
-    }
     if (loadWarning) {
-      alerts.push(createEl('div', { className: 'alert' }, [createEl('strong', { text: 'Uwaga dotycząca danych' }), createEl('p', { className: 'small wrap-anywhere', text: loadWarning })]));
+      alerts.push(createEl('div', { className: 'alert' }, [
+        createEl('strong', { text: 'Uwaga dotycząca danych' }),
+        createEl('p', { className: 'small wrap-anywhere', text: loadWarning })
+      ]));
     }
     return alerts;
   }
@@ -3110,6 +3087,16 @@
         message: 'Postać może tylko pełzać i bez pomocy umrze w ciągu godziny. Stabilizacja zatrzymuje śmierć, ale nie usuwa obrażeń krytycznych.',
         primaryLabel: 'Stabilizuj',
         primaryAction: handleStabilize
+      };
+    }
+    if (sourceState.conditions.panicked && sourceState.stats.hp.current > 0) {
+      return {
+        id: 'panicked-protection',
+        tone: 'danger',
+        title: 'Panika wymaga 0 Ochrony',
+        message: 'Spanikowana postać ma 0 Ochrony, nie działa w pierwszej rundzie i atakuje jako osłabiona. Zastosuj brakującą konsekwencję stanu.',
+        primaryLabel: 'Ustaw Ochronę na 0',
+        primaryAction: applyPanickedProtectionRule
       };
     }
     if (sourceState.conditions.panicked) {
@@ -3143,6 +3130,16 @@
       };
     }
     return null;
+  }
+
+  function applyPanickedProtectionRule() {
+    openConfirmSheet({
+      title: 'Skutek Paniki',
+      message: 'Zastosować 0 Ochrony dla spanikowanej postaci? Zmianę będzie można cofnąć.',
+      confirmLabel: 'Ustaw 0 Ochrony',
+      danger: true,
+      onConfirm: () => commitChange('Panika: Ochrona spadła do 0', next => { next.stats.hp.current = 0; })
+    });
   }
 
   function applyFullInventoryProtectionRule() {

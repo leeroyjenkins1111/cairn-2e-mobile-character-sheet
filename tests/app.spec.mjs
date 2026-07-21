@@ -94,14 +94,10 @@ test('settings and technical data are separated from the player journal', async 
 });
 
 test('session prompt appears for urgent character state', async ({ page }) => {
-  await page.goto('/');
-  await page.evaluate(() => {
-    const fixture = globalThis.CairnSheetDev.createDemoState();
-    fixture.conditions.panicked = true;
-    fixture.stats.hp.current = 0;
-    localStorage.setItem('cairn-mobile-sheet:state', JSON.stringify(fixture));
-  });
-  await page.reload();
+  await loadDemo(page);
+  await page.getByRole('button', { name: 'Stany postaci' }).click();
+  await page.getByRole('checkbox', { name: 'Panika' }).check();
+  await page.getByRole('button', { name: 'Oznacz panikę i 0 Ochrony' }).click();
   await expect(page.getByText('Co teraz?')).toBeVisible();
   await expect(page.getByRole('heading', { name: 'Postać jest spanikowana' })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Rzut WOL' })).toBeVisible();
