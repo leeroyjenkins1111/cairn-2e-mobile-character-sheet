@@ -18,13 +18,14 @@ https://leeroyjenkins1111.github.io/cairn-2e-mobile-character-sheet/
 - Undo dla zmian stanu postaci;
 - instalacja jako lekka PWA i ponowne uruchomienie offline po pierwszym poprawnym otwarciu;
 - kontekstowy tryb sesji z kartą „Co teraz?”, aktywnymi stanami i szybkimi korektami;
+- jawny log sesji: rozpoczęcie, aktywny zapis zmian i rzutów, zakończenie, podsumowanie oraz eksport Markdown/JSON;
 - osobny Dziennik postaci, podczas gdy backup, instalacja i operacje techniczne są dostępne w ustawieniach nagłówka.
 
 ## Dane i kopie zapasowe
 
 Dane są zapisywane wyłącznie w `localStorage` tej przeglądarki i urządzenia. Wyczyszczenie danych przeglądarki usuwa kartę. Regularnie używaj przycisku **Pobierz pełną kopię**.
 
-Wersja 0.9.0 zachowuje `schemaVersion: 2`, bezpieczny format kopii z 0.7.0–0.8.0 i potrafi również odtworzyć starsze pliki `cairn-*-eksport.json` wygenerowane przez wersję 0.6.0.
+Wersja 0.10.0 używa `schemaVersion: 3`, ponieważ pełna kopia obejmuje teraz log sesji. Zapisy i kopie ze `schemaVersion: 2` są migrowane automatycznie, a starsze pliki `cairn-*-eksport.json` z wersji 0.6.0 nadal mogą zostać odtworzone. Raport sesji Markdown/JSON jest czytelnym wyciągiem i nie zastępuje pełnej kopii zapasowej.
 
 ## Uruchomienie lokalne
 

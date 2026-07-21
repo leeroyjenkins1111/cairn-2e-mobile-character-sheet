@@ -10,8 +10,8 @@ async function loadDemo(page) {
 test('all embedded domain regression tests pass', async ({ page }) => {
   await page.goto('/?selftest=1');
   const marker = page.locator('#selftestMarker');
-  await expect(marker).toHaveAttribute('data-passed', '76');
-  await expect(marker).toHaveAttribute('data-total', '76');
+  await expect(marker).toHaveAttribute('data-passed', '84');
+  await expect(marker).toHaveAttribute('data-total', '84');
 });
 
 test('full and legacy exports round-trip without losing character data', async ({ page }) => {
@@ -165,3 +165,61 @@ test('spent inventory is grouped and hides primary use actions', async ({ page }
   await expect(spent.getByText('Pochodnia')).toBeVisible();
   await expect(spent.getByRole('button', { name: 'Użyj Pochodnia' })).toHaveCount(0);
 });
+
+test('session workflow records changes and dice, then archives a summary', async ({ page }) => {
+  await loadDemo(page);
+  await page.getByRole('button', { name: 'Dziennik', exact: true }).click();
+  await page.getByRole('button', { name: 'Rozpocznij sesję' }).click();
+  await page.getByLabel('Nazwa sesji').fill('Wyprawa do ruin');
+  await page.locator('#sheet').getByRole('button', { name: 'Rozpocznij', exact: true }).click();
+
+  await page.getByRole('button', { name: 'Ekwipunek', exact: true }).click();
+  const torch = page.locator('[data-item-id]').filter({ hasText: 'Pochodnia' });
+  await torch.getByRole('button', { name: 'Użyj Pochodnia' }).click();
+  await page.locator('#sheet').getByRole('button', { name: 'Użyj i zmniejsz o 1' }).click();
+
+  await page.getByRole('button', { name: 'Kości', exact: true }).click();
+  await page.getByRole('button', { name: 'Rzuć kością k6' }).click();
+  await page.getByRole('button', { name: 'Dziennik', exact: true }).click();
+  const sessionCard = page.locator('.session-log-card');
+  await expect(sessionCard.getByText('Wyprawa do ruin')).toBeVisible();
+  await expect(sessionCard.getByText('Użyto: Pochodnia')).toBeVisible();
+  await expect(sessionCard.getByText(/Rzut: \d+ \(1k6\)/)).toBeVisible();
+
+  await sessionCard.getByRole('button', { name: 'Zakończ sesję' }).click();
+  await page.getByLabel('Podsumowanie').fill('Odnaleziono przejście i wrócono bezpiecznie.');
+  await page.locator('#sheet').getByRole('button', { name: 'Zakończ i zapisz' }).click();
+  await expect(sessionCard.getByRole('button', { name: 'Rozpocznij sesję' })).toBeVisible();
+  await sessionCard.getByText('Zakończone sesje').click();
+  await expect(sessionCard.getByRole('button', { name: 'Otwórz sesję Wyprawa do ruin' })).toBeVisible();
+});
+
+test('schema 2 migrates to schema 3 and full backup preserves session log', async ({ page }) => {
+  await page.goto('/');
+  const result = await page.evaluate(() => {
+    const dev = globalThis.CairnSheetDev;
+    const old = dev.createDemoState();
+    old.schemaVersion = 2;
+    delete old.sessionLog;
+    const migrated = dev.parseImportText(JSON.stringify(old)).candidate;
+
+    const fixture = dev.createDemoState();
+    dev.startSessionOn(fixture, 'Sesja kopii', '2026-01-01T10:00:00.000Z');
+    dev.appendSessionEvent(fixture, { type: 'save', summary: 'Rzut obronny WOL' });
+    dev.finishSessionOn(fixture, 'Podsumowanie', '2026-01-01T12:00:00.000Z');
+    const restored = dev.parseImportText(JSON.stringify(dev.buildBackupPayload(fixture))).candidate;
+    return {
+      migratedSchema: migrated?.schemaVersion,
+      migratedArchive: migrated?.sessionLog.archive.length,
+      restoredTitle: restored?.sessionLog.archive[0]?.title,
+      restoredSummary: restored?.sessionLog.archive[0]?.summary,
+      markdown: dev.sessionReportMarkdown(restored?.sessionLog.archive[0], restored?.identity.name)
+    };
+  });
+  expect(result.migratedSchema).toBe(3);
+  expect(result.migratedArchive).toBe(0);
+  expect(result.restoredTitle).toBe('Sesja kopii');
+  expect(result.restoredSummary).toBe('Podsumowanie');
+  expect(result.markdown).toContain('Rzut obronny WOL');
+});
+
