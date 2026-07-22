@@ -27,7 +27,7 @@ test('application loads extracted same-origin CSS and JavaScript', async ({ page
     inlineScripts: document.querySelectorAll('script:not([src])').length,
     stylesheetLoaded: Array.from(document.styleSheets).some(sheet => sheet.href?.endsWith('/styles/app.css'))
   }));
-  expect(result).toEqual({ version: '0.22.1', inlineStyles: 0, inlineScripts: 0, stylesheetLoaded: true });
+  expect(result).toEqual({ version: '0.23.0', inlineStyles: 0, inlineScripts: 0, stylesheetLoaded: true });
 });
 
 test('full and legacy exports round-trip without losing character data', async ({ page }) => {
@@ -110,7 +110,7 @@ test('application shell reloads while offline after Service Worker activation', 
   await page.evaluate(() => navigator.serviceWorker.ready);
   await page.reload();
   await expect.poll(() => page.evaluate(async () => {
-    const cache = await caches.open('cairn-mobile-sheet-v0.22.1');
+    const cache = await caches.open('cairn-mobile-sheet-v0.23.0');
     const requests = await cache.keys();
     return requests.some(request => new URL(request.url).pathname.endsWith('/assets/forest-background.jpg'));
   })).toBe(true);

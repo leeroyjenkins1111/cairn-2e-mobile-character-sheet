@@ -6,7 +6,7 @@ Szybki, dotykowy companion jednej lokalnej postaci do Cairn 2e. Aplikacja dział
 
 https://leeroyjenkins1111.github.io/cairn-2e-mobile-character-sheet/
 
-## Wersja 0.22.1
+## Wersja 0.23.0
 
 Interfejs został strukturalnie przebudowany pod krótkie użycie na telefonie przy stole:
 
@@ -24,6 +24,7 @@ Interfejs został strukturalnie przebudowany pod krótkie użycie na telefonie p
 - jeden docelowy arkusz `styles/app.css` zawiera cały system wizualny, jasny motyw, forced colors i reduced motion;
 - powierzchnie wszystkich widoków i sheetów używają płaskich tonów oraz lekkiej faktury papierowego włókna zamiast połyskliwych gradientów i ciężkich ramek.
 - wszystkie widoki korzystają z lokalnej ilustracji lasu jako stałego tła; zależne od motywu warstwy kontrastowe utrzymują czytelność tekstu, a forced colors całkowicie wyłącza grafikę.
+- ekran Postaci korzysta z jednej osi treści, otwartych grup statystyk i lekkich separatorów zamiast zagnieżdżonych ciemnych kart.
 
 ## Najważniejsze funkcje
 
@@ -43,7 +44,7 @@ Interfejs został strukturalnie przebudowany pod krótkie użycie na telefonie p
 
 Dane są zapisywane wyłącznie w `localStorage` tej przeglądarki i urządzenia. Wyczyszczenie danych przeglądarki usuwa kartę, dlatego regularnie używaj **Pobierz pełną kopię**.
 
-Wersja aplikacji 0.22.1 nadal używa `schemaVersion: 3`. Ilustrowane tło nie zmienia formatu importu, backupu ani punktów odzyskiwania i nie wymaga migracji danych. Zapisy ze `schemaVersion: 2` są nadal migrowane automatycznie, a starsze eksporty pozostają obsługiwane.
+Wersja aplikacji 0.23.0 nadal używa `schemaVersion: 3`. Otwarty układ ekranu Postaci nie zmienia formatu importu, backupu ani punktów odzyskiwania i nie wymaga migracji danych. Zapisy ze `schemaVersion: 2` są nadal migrowane automatycznie, a starsze eksporty pozostają obsługiwane.
 
 ## Struktura aplikacji
 
