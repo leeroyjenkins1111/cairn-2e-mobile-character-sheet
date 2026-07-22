@@ -26,13 +26,9 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Prepare static site
-        shell: bash
         run: |
           sha256sum -c checksums.sha256
-          mkdir -p _site/styles _site/scripts
-          cp index.html .nojekyll manifest.webmanifest service-worker.js icon.svg _site/
-          cp styles/app.css _site/styles/
-          cp scripts/app.js _site/scripts/
+          node scripts/prepare-site.mjs _site
 
       - name: Configure Pages
         uses: actions/configure-pages@v5

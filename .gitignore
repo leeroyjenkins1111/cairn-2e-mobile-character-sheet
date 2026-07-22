@@ -3,5 +3,6 @@ node_modules/
 test-results/
 playwright-report/
 ui-review-screenshots/
+_site/
 *.log
 .DS_Store
