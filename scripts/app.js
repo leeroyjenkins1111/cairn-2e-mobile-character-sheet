@@ -4,7 +4,7 @@
 // 1. Constants
 // ============================================================
 const APP_ID = 'cairn-mobile-sheet';
-const APP_VERSION = '0.20.0';
+const APP_VERSION = '0.20.1';
 const SCHEMA_VERSION = 3;
 const STORAGE_KEY = `${APP_ID}:state`;
 const RECOVERY_KEY = `${APP_ID}:recovery`;
@@ -2680,7 +2680,7 @@ function renderCombatLauncher() {
   ]));
 
   let title = 'Brak broni w rękach';
-  let meta = weaponItems().length ? 'Przygotuj broń lub walcz bez broni' : 'Walka bez broni zadaje k4';
+  let meta = 'k4 bez broni';
   let actionLabel = 'Atak bez broni · k4';
   let action = () => performUnarmedAttack();
   let actionAria = 'Rzuć k4 obrażeń za atak bez broni';
@@ -2693,7 +2693,7 @@ function renderCombatLauncher() {
     actionAria = `Rzuć obrażenia przygotowaną bronią: ${weapon.name}`;
   } else if (ready.length > 1) {
     title = `${ready.length} ${weaponCountLabel(ready.length)} w rękach`;
-    meta = ready.map(item => item.name).join(' · ');
+    meta = 'Wybierz broń';
     actionLabel = 'Wybierz atak';
     action = openCombatSheet;
     actionAria = 'Wybierz przygotowaną broń do ataku';
@@ -2716,7 +2716,7 @@ function renderCombatLauncher() {
       className: 'btn btn-ghost combat-utility-action',
       attrs: { 'aria-label': 'Pierwsza runda · ZRE' },
       onclick: () => performFirstRoundDexSave()
-    }, [uiIcon('round'), createEl('span', { text: 'Pierwsza runda' }), createEl('small', { text: 'ZRE' })]),
+    }, [uiIcon('round'), createEl('span', { text: 'Runda 1' }), createEl('small', { text: 'ZRE' })]),
     createEl('button', {
       type: 'button',
       className: 'btn btn-ghost combat-utility-action',
@@ -2763,8 +2763,7 @@ function renderCharacterView() {
     createEl('div', { className: 'identity-copy' }, [
       createEl('h1', { id: 'character-name', className: 'character-name', text: state.identity.name || 'Bez imienia' }),
       createEl('p', { className: 'character-background', text: state.identity.background || 'Bez tła' })
-    ]),
-    state.isDemo ? createEl('span', { className: 'demo-badge', text: 'DEMO' }) : null
+    ])
   ]);
   hero.append(identity);
 
@@ -2780,10 +2779,12 @@ function renderCharacterView() {
       createEl('span', { className: 'state-caption', text: 'unikanie obrażeń' })
     ]),
     createEl('div', { className: 'state-secondary' }, [
-      createEl('div', { className: 'secondary-stat' }, [
+      createEl('div', {
+        className: 'secondary-stat',
+        attrs: { 'aria-label': `Pancerz ${armor.effective}, ${armor.mode === 'manual' ? 'ustawiony ręcznie' : 'ze sprzętu'}` }
+      }, [
         stateLabel('Pancerz', 'armor'),
-        createEl('strong', { text: armor.effective }),
-        createEl('span', { className: 'state-caption', text: armor.mode === 'manual' ? 'ręcznie' : 'sprzęt' })
+        createEl('strong', { text: armor.effective })
       ]),
       createEl('div', { className: 'secondary-stat' }, [
         stateLabel('Miejsca', 'slots'),
