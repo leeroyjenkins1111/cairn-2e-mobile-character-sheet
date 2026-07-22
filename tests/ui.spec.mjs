@@ -16,6 +16,25 @@ test('one consolidated application stylesheet is loaded without editorial overri
   expect(loaded).toEqual(['/styles/app.css']);
 });
 
+test('local forest artwork is the fixed app background in every main view', async ({ page, request }) => {
+  const asset = await request.get('/assets/forest-background.jpg');
+  expect(asset.ok()).toBeTruthy();
+  expect(asset.headers()['content-type']).toContain('image/jpeg');
+  expect((await asset.body()).byteLength).toBeGreaterThan(100_000);
+
+  await loadDemo(page);
+  for (const name of ['Postać', 'Ekwipunek', 'Kości', 'Dziennik']) {
+    await page.getByRole('button', { name, exact: true }).click();
+    const art = await page.evaluate(() => {
+      const style = getComputedStyle(document.querySelector('.app-shell'), '::before');
+      return { image: style.backgroundImage, position: style.position, pointerEvents: style.pointerEvents };
+    });
+    expect(art.image).toContain('forest-background.jpg');
+    expect(art.position).toBe('fixed');
+    expect(art.pointerEvents).toBe('none');
+  }
+});
+
 test('all four views expose distinct app-like structures and the header names the active view', async ({ page }) => {
   await loadDemo(page);
   await expect(page.locator('#headerTitle')).toHaveText('Postać');
@@ -48,7 +67,7 @@ test('character state prepares direct saves before rolling and preserves the ann
   await expect(page.locator('.secondary-stat')).toHaveCount(2);
   await expect(page.locator('.secondary-action-grid .compact-action')).toHaveCount(3);
   await expect(page.locator('.damage-primary-action')).toHaveCount(1);
-  await expect(page.locator('.character-forest-motif[aria-hidden="true"]')).toHaveCount(1);
+  await expect(page.locator('.character-forest-motif')).toHaveCount(0);
   await expect(page.locator('.character-state')).not.toContainText('najczęstsze przy stole');
   await expect(page.locator('.combat-launcher')).not.toContainText('ataki trafiają automatycznie');
   await expect(page.locator('.state-label-icon svg')).toHaveCount(3);
@@ -112,15 +131,18 @@ test('matte visual system avoids glossy panels and a brass-filled damage CTA', a
   const character = await page.evaluate(() => {
     const damage = getComputedStyle(document.querySelector('.damage-primary-action'));
     const shell = getComputedStyle(document.querySelector('.app-shell'));
+    const artwork = getComputedStyle(document.querySelector('.app-shell'), '::before');
     return {
       damageShadow: damage.boxShadow,
       damageBackgroundImage: damage.backgroundImage,
-      shellTexture: shell.backgroundImage
+      shellTexture: shell.backgroundImage,
+      artworkTexture: artwork.backgroundImage
     };
   });
   expect(character.damageShadow).toBe('none');
   expect(character.damageBackgroundImage).toBe('none');
-  expect(character.shellTexture).toContain('repeating-linear-gradient');
+  expect(character.shellTexture).toBe('none');
+  expect(character.artworkTexture).toContain('forest-background.jpg');
 
   await page.getByRole('button', { name: 'Ekwipunek', exact: true }).click();
   await expect(page.locator('.inventory-overview')).toHaveCSS('border-top-width', '0px');
@@ -426,10 +448,12 @@ test('forced colors keeps primary actions and navigation perceivable', async ({ 
   const result = await page.evaluate(() => ({
     activeNavBg: getComputedStyle(document.querySelector('.nav-btn[aria-current="page"]')).backgroundColor,
     primaryBg: getComputedStyle(document.querySelector('.damage-primary-action')).backgroundColor,
-    bodyBg: getComputedStyle(document.body).backgroundColor
+    bodyBg: getComputedStyle(document.body).backgroundColor,
+    artDisplay: getComputedStyle(document.querySelector('.app-shell'), '::before').display
   }));
   expect(result.activeNavBg).not.toBe(result.bodyBg);
   expect(result.primaryBg).not.toBe('rgba(0, 0, 0, 0)');
+  expect(result.artDisplay).toBe('none');
 });
 
 test('journal orders session, quick note, recent entries, then dossier', async ({ page }) => {

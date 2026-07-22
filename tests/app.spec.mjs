@@ -27,7 +27,7 @@ test('application loads extracted same-origin CSS and JavaScript', async ({ page
     inlineScripts: document.querySelectorAll('script:not([src])').length,
     stylesheetLoaded: Array.from(document.styleSheets).some(sheet => sheet.href?.endsWith('/styles/app.css'))
   }));
-  expect(result).toEqual({ version: '0.21.0', inlineStyles: 0, inlineScripts: 0, stylesheetLoaded: true });
+  expect(result).toEqual({ version: '0.22.0', inlineStyles: 0, inlineScripts: 0, stylesheetLoaded: true });
 });
 
 test('full and legacy exports round-trip without losing character data', async ({ page }) => {
@@ -109,9 +109,17 @@ test('application shell reloads while offline after Service Worker activation', 
   await page.goto('/');
   await page.evaluate(() => navigator.serviceWorker.ready);
   await page.reload();
+  await expect.poll(() => page.evaluate(async () => {
+    const cache = await caches.open('cairn-mobile-sheet-v0.22.0');
+    const requests = await cache.keys();
+    return requests.some(request => new URL(request.url).pathname.endsWith('/assets/forest-background.jpg'));
+  })).toBe(true);
   await context.setOffline(true);
   await page.reload({ waitUntil: 'domcontentloaded' });
   await expect(page.getByRole('heading', { name: 'Twoja wyprawa w zasięgu kciuka' })).toBeVisible();
+  await expect.poll(() => page.locator('.app-shell').evaluate(element =>
+    getComputedStyle(element, '::before').backgroundImage
+  )).toContain('forest-background.jpg');
   await context.setOffline(false);
 });
 

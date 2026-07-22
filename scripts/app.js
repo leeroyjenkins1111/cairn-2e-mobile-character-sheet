@@ -4,7 +4,7 @@
 // 1. Constants
 // ============================================================
 const APP_ID = 'cairn-mobile-sheet';
-const APP_VERSION = '0.21.0';
+const APP_VERSION = '0.22.0';
 const SCHEMA_VERSION = 3;
 const STORAGE_KEY = `${APP_ID}:state`;
 const RECOVERY_KEY = `${APP_ID}:recovery`;
@@ -1907,31 +1907,6 @@ function uiIcon(name) {
   return svg;
 }
 
-function characterForestMotif() {
-  const ns = 'http://www.w3.org/2000/svg';
-  const svg = document.createElementNS(ns, 'svg');
-  svg.classList.add('character-forest-motif');
-  svg.setAttribute('viewBox', '0 0 360 220');
-  svg.setAttribute('preserveAspectRatio', 'xMidYMid slice');
-  svg.setAttribute('aria-hidden', 'true');
-  svg.setAttribute('focusable', 'false');
-
-  const shapes = [
-    ['path', { class: 'forest-haze', d: 'M0 159c50-18 88-13 126 4 48 22 84 25 126 5 42-20 75-20 108-7v59H0z' }],
-    ['circle', { class: 'forest-moon', cx: '292', cy: '42', r: '19' }],
-    ['path', { class: 'forest-trunk forest-trunk-far', d: 'M25 220c1-48 7-89 1-128C22 65 25 34 44 5M29 91C15 77 9 60 4 38M32 70c17-12 28-31 35-55M106 220c-2-43 2-77-8-108-6-19-3-44 8-67M99 113c-18-12-26-27-34-44M102 91c18-14 28-28 35-46' }],
-    ['path', { class: 'forest-trunk', d: 'M304 220c-8-51-5-88-15-119-10-30-7-62 3-96M292 102c-22-17-34-39-44-66M292 77c22-17 36-34 46-58M319 220c1-47 8-80 5-110-3-24 4-49 23-72M328 111c-13-13-22-29-27-45' }],
-    ['path', { class: 'forest-branch', d: 'M0 28c43 5 73 20 99 45 18 18 42 26 72 26M62 51C86 38 104 20 115 0M145 96c20-20 38-45 45-77M360 28c-42 8-72 27-91 56' }],
-    ['path', { class: 'forest-mark', d: 'M215 45l5 8-5 8-5-8zM215 38v-5M215 68v5' }]
-  ];
-  for (const [tag, attrs] of shapes) {
-    const node = document.createElementNS(ns, tag);
-    for (const [key, value] of Object.entries(attrs)) node.setAttribute(key, value);
-    svg.append(node);
-  }
-  return svg;
-}
-
 function stateLabel(label, icon) {
   return createEl('span', { className: 'state-label state-label-icon' }, [uiIcon(icon), createEl('span', { text: label })]);
 }
@@ -2760,7 +2735,6 @@ function renderCharacterView() {
   const usage = calculateInventoryUsage();
   const sessionLayout = createEl('div', { className: 'character-session' });
   const hero = createEl('section', { className: 'character-state', attrs: { 'aria-labelledby': 'character-name' } });
-  hero.append(characterForestMotif());
   const identity = createEl('div', { className: 'identity-row' }, [
     createEl('div', { className: 'avatar', text: initials(state.identity.name) }),
     createEl('div', { className: 'identity-copy' }, [
