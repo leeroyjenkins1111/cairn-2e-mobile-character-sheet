@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cairn-mobile-sheet-v0.18.0';
+const CACHE_NAME = 'cairn-mobile-sheet-v0.19.0';
 const APP_SHELL = ['./', './index.html', './styles/app.css', './scripts/app.js', './manifest.webmanifest', './icon.svg', './service-worker.js'];
 
 self.addEventListener('install', event => {
