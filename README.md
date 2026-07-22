@@ -6,14 +6,14 @@ Szybki, dotykowy companion jednej lokalnej postaci do Cairn 2e. Aplikacja dział
 
 https://leeroyjenkins1111.github.io/cairn-2e-mobile-character-sheet/
 
-## Wersja 0.19.0
+## Wersja 0.19.1
 
 Interfejs został strukturalnie przebudowany pod krótkie użycie na telefonie przy stole:
 
 - **Postać** pokazuje jeden panel bieżącego stanu z dominującą OCHR, pancerzem, miejscami i dotykowymi rzutami SIŁ/ZRE/WOL;
 - **Ekwipunek** używa kompaktowego podsumowania, dziesięciu wizualnych miejsc i pełnych dotykowych wierszy z maksymalnie jedną szybką akcją;
 - **Kości** działają jak konsola z dużym ostatnim wynikiem, rail-em szybkich kości, lekkim powtórzeniem i historią;
-- wyniki rzutów otrzymały krótką animację przestrzennej kości z wartością na jej powierzchni oraz opcjonalną haptykę na wspieranych urządzeniach;
+- wyniki rzutów otrzymały animację obracanej bryły 3D z wartością ujawnianą po zatrzymaniu oraz zsynchronizowane tyknięcia haptyczne na wspieranych urządzeniach;
 - **Dziennik** zaczyna się od sesji i szybkiej notatki, a dossier oraz rzadsze korekty znajdują się niżej;
 - top bar pokazuje bieżący widok, a dolny pasek działa jak stały mobilny tab bar z obsługą safe area;
 - jeden docelowy arkusz `styles/app.css` zawiera cały system wizualny, jasny motyw, forced colors i reduced motion.
@@ -36,7 +36,7 @@ Interfejs został strukturalnie przebudowany pod krótkie użycie na telefonie p
 
 Dane są zapisywane wyłącznie w `localStorage` tej przeglądarki i urządzenia. Wyczyszczenie danych przeglądarki usuwa kartę, dlatego regularnie używaj **Pobierz pełną kopię**.
 
-Wersja aplikacji 0.19.0 nadal używa `schemaVersion: 3`. Animacje i haptyka nie zmieniają formatu importu, backupu ani punktów odzyskiwania i nie wymagają migracji danych. Zapisy ze `schemaVersion: 2` są nadal migrowane automatycznie, a starsze eksporty pozostają obsługiwane.
+Wersja aplikacji 0.19.1 nadal używa `schemaVersion: 3`. Animacje i haptyka nie zmieniają formatu importu, backupu ani punktów odzyskiwania i nie wymagają migracji danych. Zapisy ze `schemaVersion: 2` są nadal migrowane automatycznie, a starsze eksporty pozostają obsługiwane.
 
 ## Struktura aplikacji
 

@@ -241,7 +241,7 @@ test('every quick die rolls immediately and repeat plus history stay close to th
   await expect(page.locator('#sheetTitle')).toHaveText('Historia rzutów');
 });
 
-test('latest roll settles on a spatial die and a newer roll interrupts the previous animation', async ({ page }) => {
+test('latest roll settles on a rendered 3D polyhedron and a newer roll interrupts the previous animation', async ({ page }) => {
   await loadDemo(page);
   await page.getByRole('button', { name: 'Kości', exact: true }).click();
   await page.getByRole('button', { name: 'Rzuć kością k8', exact: true }).click();
@@ -253,9 +253,34 @@ test('latest roll settles on a spatial die and a newer roll interrupts the previ
   await expect(object).toHaveAttribute('data-sides', '20');
   await expect(object).toHaveAttribute('data-value', /^(?:[1-9]|1\d|20)$/);
   await expect(result.locator('.result-die-value')).toHaveText(/^(?:[1-9]|1\d|20)$/);
-  const depth = await result.locator('.result-die-face').evaluate(element => ({ transform: getComputedStyle(element).transform, perspective: getComputedStyle(element.closest('.result-die-scene')).perspective }));
-  expect(depth.transform).toContain('matrix3d');
-  expect(depth.perspective).not.toBe('none');
+  const render = await result.locator('canvas.result-die-canvas').evaluate(canvas => {
+    const pixels = canvas.getContext('2d').getImageData(0, 0, canvas.width, canvas.height).data;
+    let painted = 0;
+    for (let index = 3; index < pixels.length; index += 4) if (pixels[index] > 0) painted += 1;
+    return { width: canvas.width, height: canvas.height, painted };
+  });
+  expect(render.width).toBeGreaterThan(100);
+  expect(render.height).toBeGreaterThan(100);
+  expect(render.painted).toBeGreaterThan(500);
+});
+
+test('physical roll hides the value until it settles and emits gentle rotation ticks', async ({ page }) => {
+  await page.addInitScript(() => {
+    const calls = [];
+    Object.defineProperty(globalThis, '__cairnHapticCalls', { value: calls });
+    Object.defineProperty(navigator, 'vibrate', { configurable: true, value: pattern => { calls.push(pattern); return true; } });
+  });
+  await loadDemo(page);
+  await page.getByRole('button', { name: 'Kości', exact: true }).click();
+  await page.getByRole('button', { name: 'Rzuć kością k12', exact: true }).click();
+  const result = page.locator('#diceResult .animated-dice-result');
+  await expect(result).toHaveClass(/rolling/);
+  await expect(result.locator('.result-die-value')).toBeEmpty();
+  await expect.poll(async () => page.evaluate(() => globalThis.__cairnHapticCalls.filter(pattern => Array.isArray(pattern) && pattern.join(',') === '6').length)).toBeGreaterThanOrEqual(4);
+  await expect(result).toHaveClass(/settled/);
+  await expect(result.locator('.result-die-value')).toHaveText(/^(?:[1-9]|1[0-2])$/);
+  const calls = await page.evaluate(() => globalThis.__cairnHapticCalls);
+  expect(calls.filter(pattern => Array.isArray(pattern) && pattern.join(',') === '6').length).toBe(9);
 });
 
 test('in-app motion setting settles dice immediately and persists the preference', async ({ page }) => {
