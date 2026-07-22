@@ -33,6 +33,11 @@ jobs:
       - name: Check application JavaScript syntax
         run: node --check scripts/app.js
 
+      - name: Verify Pages artifact
+        run: |
+          node scripts/prepare-site.mjs _site
+          test -s _site/assets/forest-background.jpg
+
       - name: Run browser regression suite
         id: browser_tests
         continue-on-error: true
