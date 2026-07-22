@@ -27,7 +27,7 @@ test('application loads extracted same-origin CSS and JavaScript', async ({ page
     inlineScripts: document.querySelectorAll('script:not([src])').length,
     stylesheetLoaded: Array.from(document.styleSheets).some(sheet => sheet.href?.endsWith('/styles/app.css'))
   }));
-  expect(result).toEqual({ version: '0.19.1', inlineStyles: 0, inlineScripts: 0, stylesheetLoaded: true });
+  expect(result).toEqual({ version: '0.19.2', inlineStyles: 0, inlineScripts: 0, stylesheetLoaded: true });
 });
 
 test('full and legacy exports round-trip without losing character data', async ({ page }) => {
@@ -62,6 +62,25 @@ for (const viewport of [{ width: 320, height: 568 }, { width: 375, height: 812 }
     }
     const undersized = await page.locator('button:visible').evaluateAll(buttons => buttons.map(button => ({ label: button.getAttribute('aria-label') || button.textContent.trim(), rect: button.getBoundingClientRect() })).filter(entry => entry.rect.width < 44 || entry.rect.height < 44));
     expect(undersized).toEqual([]);
+  });
+}
+
+for (const viewport of [{ width: 320, height: 568 }, { width: 375, height: 667 }, { width: 390, height: 744 }, { width: 414, height: 896 }]) {
+  test(`character session fits above the tab bar without vertical scrolling at ${viewport.width}x${viewport.height}`, async ({ page }) => {
+    await page.setViewportSize(viewport);
+    await loadDemo(page);
+    await page.evaluate(() => window.scrollTo(0, 0));
+    const layout = await page.evaluate(() => {
+      const session = document.querySelector('.character-session')?.getBoundingClientRect();
+      const nav = document.querySelector('.bottom-nav')?.getBoundingClientRect();
+      return {
+        scrollDelta: document.documentElement.scrollHeight - window.innerHeight,
+        sessionBottom: session?.bottom ?? Number.POSITIVE_INFINITY,
+        navTop: nav?.top ?? Number.NEGATIVE_INFINITY
+      };
+    });
+    expect(layout.scrollDelta).toBeLessThanOrEqual(1);
+    expect(layout.sessionBottom).toBeLessThanOrEqual(layout.navTop + 1);
   });
 }
 

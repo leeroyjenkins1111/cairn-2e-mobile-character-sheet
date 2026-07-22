@@ -143,6 +143,15 @@ svg { display: block; }
   padding: 16px var(--side) calc(var(--tab-height) + env(safe-area-inset-bottom) + 30px);
 }
 .view { display: grid; gap: 18px; min-width: 0; animation: view-in 170ms ease-out; }
+:root[data-active-view="character"] .main { padding-top: 10px; padding-bottom: calc(var(--tab-height) + env(safe-area-inset-bottom) + 8px); }
+#view-character { gap: 10px; }
+.character-session {
+  min-width: 0;
+  min-height: min(650px, calc(100dvh - 60px - var(--tab-height) - env(safe-area-inset-top) - env(safe-area-inset-bottom) - 18px));
+  display: grid;
+  align-content: space-between;
+  gap: 12px;
+}
 
 .bottom-nav {
   position: fixed;
@@ -265,34 +274,34 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .character-state {
   overflow: hidden;
   border: 1px solid var(--line);
-  border-radius: 18px 18px 8px 8px;
+  border-radius: 15px 15px 7px 7px;
   background: var(--surface);
 }
-.identity-row { min-width: 0; padding: 15px 16px 13px; display: flex; align-items: center; gap: 11px; border-bottom: 1px solid var(--line); }
-.avatar { width: 42px; height: 42px; flex: 0 0 auto; border: 1px solid var(--moss); border-radius: 50%; display: grid; place-items: center; color: var(--moss); font: 650 1rem/1 var(--font-display); }
+.identity-row { min-width: 0; min-height: 58px; padding: 8px 12px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--line); }
+.avatar { width: 38px; height: 38px; flex: 0 0 auto; border: 1px solid var(--moss); border-radius: 50%; display: grid; place-items: center; color: var(--moss); font: 650 .92rem/1 var(--font-display); }
 .identity-copy { min-width: 0; flex: 1; }
-.character-name { overflow: hidden; font: 650 1.48rem/1.08 var(--font-display); text-overflow: ellipsis; white-space: nowrap; }
-.character-background { overflow: hidden; margin-top: 2px; color: var(--text-soft); font-size: .82rem; text-overflow: ellipsis; white-space: nowrap; }
+.character-name { overflow: hidden; font: 650 1.32rem/1.04 var(--font-display); text-overflow: ellipsis; white-space: nowrap; }
+.character-background { overflow: hidden; margin-top: 1px; color: var(--text-soft); font-size: .78rem; text-overflow: ellipsis; white-space: nowrap; }
 .demo-badge, .tag, .condition-chip { min-height: 24px; padding: 3px 8px; border: 1px solid var(--line-strong); border-radius: 999px; display: inline-flex; align-items: center; color: var(--text-soft); font-size: .72rem; line-height: 1.2; }
 .demo-badge { color: var(--brass-bright); }
 .state-values { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(112px, .9fr); }
-.protection-control { min-width: 0; min-height: 138px; padding: 16px; border: 0; border-right: 1px solid var(--line); display: grid; align-content: center; justify-items: start; background: transparent; color: var(--text); text-align: left; cursor: pointer; }
+.protection-control { min-width: 0; min-height: 110px; padding: 10px 12px; border: 0; border-right: 1px solid var(--line); display: grid; align-content: center; justify-items: start; background: transparent; color: var(--text); text-align: left; cursor: pointer; }
 .state-label { max-width: 100%; color: var(--moss); font-size: clamp(.52rem, 3vw, .72rem); font-weight: 760; letter-spacing: .05em; overflow-wrap: anywhere; text-transform: uppercase; }
-.protection-value { font: 650 clamp(3.8rem, 19vw, 5.7rem)/.88 var(--font-display); letter-spacing: -.05em; }
+.protection-value { font: 650 clamp(3.35rem, 16vw, 4.6rem)/.84 var(--font-display); letter-spacing: -.05em; }
 .protection-value small { color: var(--text-soft); font-size: .34em; letter-spacing: -.02em; }
 .state-caption { color: var(--text-faint); font-size: .72rem; }
 .state-secondary { min-width: 0; display: grid; align-content: stretch; }
-.secondary-stat { min-width: 0; max-width: 100%; padding: 13px; display: grid; align-content: center; gap: 1px; }
+.secondary-stat { min-width: 0; max-width: 100%; padding: 8px 11px; display: grid; align-content: center; gap: 0; }
 .secondary-stat > * { min-width: 0; max-width: 100%; }
 .secondary-stat + .secondary-stat { border-top: 1px solid var(--line); }
-.secondary-stat strong { font: 650 1.7rem/1 var(--font-display); }
-.protection-meter { position: relative; height: 4px; background: var(--surface-soft); }
+.secondary-stat strong { font: 650 1.48rem/.96 var(--font-display); }
+.protection-meter { position: relative; height: 3px; background: var(--surface-soft); }
 .protection-meter::after { content: ""; position: absolute; inset: 0 auto 0 0; width: calc(var(--protection-ratio) * 100%); background: var(--moss); transition: width 180ms ease; }
 .attribute-row { min-width: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.attribute-control { width: 100%; min-width: 0; min-height: 58px; padding: 7px 5px; overflow: hidden; border: 0; border-right: 1px solid var(--line); display: flex; flex-wrap: wrap; align-items: baseline; justify-content: center; gap: 4px; background: transparent; color: var(--text-soft); cursor: pointer; }
+.attribute-control { width: 100%; min-width: 0; min-height: 48px; padding: 5px; overflow: hidden; border: 0; border-right: 1px solid var(--line); display: flex; flex-wrap: wrap; align-items: baseline; justify-content: center; gap: 4px; background: transparent; color: var(--text-soft); cursor: pointer; }
 .attribute-control:last-child { border-right: 0; }
 .attribute-control span { font-size: .73rem; font-weight: 760; letter-spacing: .06em; }
-.attribute-control strong { color: var(--text); font: 650 1.32rem/1 var(--font-display); }
+.attribute-control strong { color: var(--text); font: 650 1.22rem/1 var(--font-display); }
 
 .session-alert { padding: 15px 16px; border: 1px solid var(--line-strong); border-left: 3px solid var(--ember); border-radius: 4px 12px 12px 4px; display: grid; gap: 7px; background: var(--surface); }
 .session-alert-info { border-left-color: var(--moss); }
@@ -300,21 +309,21 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .session-alert > p:not(.section-kicker) { color: var(--text-soft); font-size: .9rem; }
 .session-alert-actions { margin-top: 3px; display: flex; flex-wrap: wrap; gap: 7px; }
 
-.game-actions { display: grid; gap: 10px; }
-.damage-primary-action { width: 100%; min-height: 62px; justify-content: flex-start; padding-inline: 17px; text-align: left; }
+.game-actions { display: grid; gap: 6px; }
+.damage-primary-action { width: 100%; min-height: 54px; justify-content: flex-start; padding: 7px 14px; text-align: left; }
 .damage-primary-action > span { display: grid; gap: 2px; }
 .damage-primary-action strong { font-size: 1rem; }
 .damage-primary-action small { font-size: .74rem; font-weight: 570; opacity: .78; }
-.secondary-action-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
-.compact-action { min-height: 56px; padding: 7px 4px; flex-direction: column; gap: 3px; background: var(--surface); }
+.secondary-action-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+.compact-action { min-height: 48px; padding: 4px; flex-direction: column; gap: 2px; background: var(--surface); }
 .compact-action span { overflow: hidden; max-width: 100%; font-size: .72rem; text-overflow: ellipsis; white-space: nowrap; }
-.combat-launcher { min-width: 0; padding: 12px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); display: grid; gap: 9px; }
+.combat-launcher { min-width: 0; padding: 8px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); display: grid; gap: 6px; }
 .combat-weapon-row { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; }
 .combat-weapon-copy, .compact-condition-copy { min-width: 0; display: grid; gap: 2px; }
 .combat-weapon-copy strong { overflow: hidden; font: 650 1.12rem/1.15 var(--font-display); text-overflow: ellipsis; white-space: nowrap; }
 .combat-weapon-copy span { overflow: hidden; color: var(--text-soft); font-size: .78rem; text-overflow: ellipsis; white-space: nowrap; }
 .combat-weapon-action { min-width: 104px; }
-.combat-quick-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.combat-quick-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; }
 .combat-quick-actions .btn { min-height: 44px; padding-inline: 8px; font-size: .76rem; }
 .condition-summary { min-width: 0; padding: 12px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .condition-list { display: flex; flex-wrap: wrap; gap: 5px; }
@@ -535,13 +544,13 @@ input[type="checkbox"] { width: 45px; min-width: 45px; height: 45px; min-height:
   .app-header { padding-inline: 12px; }
   .nav-btn { font-size: .58rem; }
   .state-values { grid-template-columns: minmax(0, 1.5fr) minmax(98px, .82fr); }
-  .protection-control { min-height: 126px; padding: 13px; }
-  .secondary-stat { padding: 10px; }
+  .protection-control { min-height: 104px; padding: 9px 10px; }
+  .secondary-stat { padding: 7px 9px; }
   .secondary-action-grid { gap: 5px; }
   .compact-action { padding-inline: 2px; }
   .compact-action span { font-size: .63rem; }
-  .combat-weapon-row { grid-template-columns: 1fr; }
-  .combat-weapon-action { width: 100%; }
+  .combat-weapon-row { grid-template-columns: minmax(0, 1fr) auto; gap: 6px; }
+  .combat-weapon-action { width: auto; min-width: 96px; padding-inline: 9px; }
   .condition-summary { align-items: stretch; flex-direction: column; }
   .form-grid.two, .scenario-grid { grid-template-columns: 1fr; }
   .save-picker-grid { grid-template-columns: 1fr; }
@@ -550,7 +559,43 @@ input[type="checkbox"] { width: 45px; min-width: 45px; height: 45px; min-height:
   .die-button { width: 100%; min-width: 0; }
 }
 
+@media (max-height: 700px) {
+  :root[data-active-view="character"] .main { padding-top: 7px; padding-bottom: calc(var(--tab-height) + env(safe-area-inset-bottom) + 3px); }
+  .character-session { gap: 8px; }
+  .identity-row { min-height: 54px; padding-block: 7px; }
+  .protection-control { min-height: 102px; }
+  .combat-launcher { padding-block: 6px; gap: 4px; }
+  .game-actions { gap: 4px; }
+}
+
 @media (max-height: 620px) {
+  :root[data-active-view="character"] .main { padding-top: 5px; padding-bottom: calc(var(--tab-height) + env(safe-area-inset-bottom)); }
+  .character-session { gap: 6px; }
+  .identity-row { min-height: 46px; padding: 4px 10px; gap: 8px; }
+  .avatar { width: 36px; height: 36px; font-size: .86rem; }
+  .character-name { font-size: 1.18rem; }
+  .character-background { font-size: .7rem; }
+  .protection-control { min-height: 92px; padding: 5px 9px; }
+  .protection-value { font-size: clamp(3rem, 15vw, 3.6rem); }
+  .state-label { font-size: .58rem; line-height: 1.1; }
+  .state-caption { font-size: .6rem; line-height: 1.15; }
+  .secondary-stat { padding: 2px 8px; }
+  .secondary-stat strong { font-size: 1.24rem; line-height: .9; }
+  .attribute-control { min-height: 44px; padding-block: 3px; }
+  .combat-launcher { padding-block: 4px; gap: 3px; }
+  .combat-launcher .section-heading, .game-actions .section-heading { gap: 5px; }
+  .combat-launcher .section-heading h2, .game-actions .section-heading h2 { font-size: 1.08rem; }
+  .combat-launcher .section-caption, .game-actions .section-caption { font-size: .67rem; }
+  .combat-weapon-copy strong { font-size: 1rem; }
+  .combat-weapon-copy span { font-size: .7rem; }
+  .combat-quick-actions { gap: 3px; }
+  .combat-quick-actions .btn { min-height: 44px; }
+  .game-actions { gap: 3px; }
+  .damage-primary-action { min-height: 46px; padding-block: 5px; }
+  .damage-primary-action strong { font-size: .92rem; }
+  .damage-primary-action small { font-size: .68rem; }
+  .compact-action { min-height: 44px; padding-block: 3px; }
+  .compact-action svg { width: 18px; height: 18px; }
   .dice-result { min-height: 190px; padding-block: 8px; }
   .result-die-scene { width: 126px; height: 126px; }
   .result-die-object { width: 112px; height: 112px; }

@@ -42,6 +42,9 @@ test('all four views expose distinct app-like structures and the header names th
 test('character state prepares direct saves before rolling and preserves the announced stake', async ({ page }) => {
   await loadDemo(page);
   await expect(page.locator('.state-values > .protection-control')).toHaveCount(1);
+  await expect(page.locator('.character-session > .character-state')).toHaveCount(1);
+  await expect(page.locator('.character-session > .combat-launcher')).toHaveCount(1);
+  await expect(page.locator('.character-session > .game-actions')).toHaveCount(1);
   await expect(page.locator('.secondary-stat')).toHaveCount(2);
   await expect(page.locator('.secondary-action-grid .compact-action')).toHaveCount(3);
   await expect(page.locator('.damage-primary-action')).toHaveCount(1);

@@ -22,6 +22,9 @@ test('capture structural UI review screenshots', async ({ page, browserName }) =
   await loadDemo(page);
 
   await shot(page, '01-character-dark-390x844');
+  await page.setViewportSize({ width: 390, height: 744 });
+  await shot(page, '01a-character-compact-dark-390x744');
+  await page.setViewportSize({ width: 390, height: 844 });
   await page.locator('.combat-launcher').getByRole('button', { name: 'Opcje walki' }).click();
   await expect(page.locator('#sheetTitle')).toHaveText('Walka');
   await shot(page, '01b-combat-flow-dark-390x844');
