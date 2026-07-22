@@ -4,7 +4,7 @@
 // 1. Constants
 // ============================================================
 const APP_ID = 'cairn-mobile-sheet';
-const APP_VERSION = '0.19.1';
+const APP_VERSION = '0.19.2';
 const SCHEMA_VERSION = 3;
 const STORAGE_KEY = `${APP_ID}:state`;
 const RECOVERY_KEY = `${APP_ID}:recovery`;
@@ -1817,6 +1817,7 @@ function updateViewAccessibility(announceChange = false) {
 
 function setView(view, { announceChange = false } = {}) {
   activeView = VIEW_META[view] ? view : 'character';
+  document.documentElement.dataset.activeView = activeView;
   for (const section of $$('[data-view]')) section.hidden = section.dataset.view !== activeView;
   for (const nav of $$('[data-nav]')) {
     if (nav.dataset.nav === activeView) nav.setAttribute('aria-current', 'page');
@@ -1833,6 +1834,7 @@ function setView(view, { announceChange = false } = {}) {
 function renderAll() {
   document.documentElement.dataset.theme = state.settings.theme === 'light' ? 'light' : 'dark';
   document.documentElement.dataset.reduceMotion = state.settings.reducedMotionOverride === true ? 'true' : 'false';
+  document.documentElement.dataset.activeView = activeView;
   $('#headerTitle').textContent = (VIEW_META[activeView] || VIEW_META.character).label;
   $('#quickUndoBtn').disabled = !safeArray(state.changeHistory).some(entry => entry.undoable);
   renderCharacterView();
@@ -2689,6 +2691,7 @@ function renderCharacterView() {
 
   const armor = deriveArmor();
   const usage = calculateInventoryUsage();
+  const sessionLayout = createEl('div', { className: 'character-session' });
   const hero = createEl('section', { className: 'character-state', attrs: { 'aria-labelledby': 'character-name' } });
   const identity = createEl('div', { className: 'identity-row' }, [
     createEl('div', { className: 'avatar', text: initials(state.identity.name) }),
@@ -2709,7 +2712,7 @@ function renderCharacterView() {
     }, [
       createEl('span', { className: 'state-label', text: 'OCHR' }),
       createEl('span', { className: 'protection-value' }, [String(state.stats.hp.current), createEl('small', { text: ` / ${state.stats.hp.max}` })]),
-      createEl('span', { className: 'state-caption', text: 'unikanie obrażeń · wyjaśnij lub popraw' })
+      createEl('span', { className: 'state-caption', text: 'unikanie obrażeń · edytuj' })
     ]),
     createEl('div', { className: 'state-secondary' }, [
       createEl('div', { className: 'secondary-stat' }, [
@@ -2746,11 +2749,11 @@ function renderCharacterView() {
       createEl('strong', { text: state.stats[key].current })
     ]))
   ]));
-  root.append(hero);
+  sessionLayout.append(hero);
 
   const sessionPrompt = renderSessionPrompt();
-  if (sessionPrompt) root.append(sessionPrompt);
-  root.append(renderCombatLauncher());
+  if (sessionPrompt) sessionLayout.append(sessionPrompt);
+  sessionLayout.append(renderCombatLauncher());
 
   const gameActions = createEl('section', { className: 'game-actions', attrs: { 'aria-labelledby': 'game-actions-title' } });
   gameActions.append(createEl('div', { className: 'section-heading' }, [
@@ -2767,7 +2770,7 @@ function renderCharacterView() {
     compactActionButton('Odpoczynek', 'rest', openRestSheet),
     compactActionButton('Stany', 'more', openConditionsSheet)
   ]));
-  root.append(gameActions);
+  sessionLayout.append(gameActions);
 
 
   if (renderConditionChips(true).childElementCount) {
@@ -2785,7 +2788,7 @@ function renderCharacterView() {
       }, [createEl('span', { text: 'Rzut WOL' })]));
     }
     actions.append(iconButton('Zarządzaj stanami', 'arrow', openConditionsSheet));
-    root.append(createEl('section', { className: 'condition-summary', attrs: { 'aria-label': 'Aktywne stany postaci' } }, [
+    sessionLayout.append(createEl('section', { className: 'condition-summary', attrs: { 'aria-label': 'Aktywne stany postaci' } }, [
       createEl('div', { className: 'compact-condition-copy' }, [
         createEl('strong', { text: 'Aktywne stany' }),
         renderConditionChips(true)
@@ -2793,6 +2796,8 @@ function renderCharacterView() {
       actions
     ]));
   }
+
+  root.append(sessionLayout);
 
 }
 

@@ -6,11 +6,12 @@ Szybki, dotykowy companion jednej lokalnej postaci do Cairn 2e. Aplikacja dział
 
 https://leeroyjenkins1111.github.io/cairn-2e-mobile-character-sheet/
 
-## Wersja 0.19.1
+## Wersja 0.19.2
 
 Interfejs został strukturalnie przebudowany pod krótkie użycie na telefonie przy stole:
 
 - **Postać** pokazuje jeden panel bieżącego stanu z dominującą OCHR, pancerzem, miejscami i dotykowymi rzutami SIŁ/ZRE/WOL;
+- ekran **Postać** skaluje pionowy rytm do wysokości telefonu, dzięki czemu stan, walka i najczęstsze akcje mieszczą się nad tab barem bez przewijania na typowych viewportach iPhone’a;
 - **Ekwipunek** używa kompaktowego podsumowania, dziesięciu wizualnych miejsc i pełnych dotykowych wierszy z maksymalnie jedną szybką akcją;
 - **Kości** działają jak konsola z dużym ostatnim wynikiem, rail-em szybkich kości, lekkim powtórzeniem i historią;
 - wyniki rzutów otrzymały animację obracanej bryły 3D z wartością ujawnianą po zatrzymaniu oraz zsynchronizowane tyknięcia haptyczne na wspieranych urządzeniach;
@@ -36,7 +37,7 @@ Interfejs został strukturalnie przebudowany pod krótkie użycie na telefonie p
 
 Dane są zapisywane wyłącznie w `localStorage` tej przeglądarki i urządzenia. Wyczyszczenie danych przeglądarki usuwa kartę, dlatego regularnie używaj **Pobierz pełną kopię**.
 
-Wersja aplikacji 0.19.1 nadal używa `schemaVersion: 3`. Animacje i haptyka nie zmieniają formatu importu, backupu ani punktów odzyskiwania i nie wymagają migracji danych. Zapisy ze `schemaVersion: 2` są nadal migrowane automatycznie, a starsze eksporty pozostają obsługiwane.
+Wersja aplikacji 0.19.2 nadal używa `schemaVersion: 3`. Zmiana proporcji ekranu Postać nie zmienia formatu importu, backupu ani punktów odzyskiwania i nie wymaga migracji danych. Zapisy ze `schemaVersion: 2` są nadal migrowane automatycznie, a starsze eksporty pozostają obsługiwane.
 
 ## Struktura aplikacji
 
