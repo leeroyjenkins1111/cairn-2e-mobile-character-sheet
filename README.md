@@ -1,47 +1,51 @@
 # Cairn 2e Mobile Character Sheet
 
-Lekka, mobilna karta jednej postaci do Cairn 2e. Aplikacja działa bez konta i backendu, a dane pozostają w pamięci przeglądarki.
+Szybki, dotykowy companion jednej lokalnej postaci do Cairn 2e. Aplikacja działa bez konta i backendu, a dane pozostają wyłącznie w pamięci przeglądarki.
 
 ## Aplikacja
 
 https://leeroyjenkins1111.github.io/cairn-2e-mobile-character-sheet/
 
+## Wersja 0.18.0
+
+Interfejs został strukturalnie przebudowany pod krótkie użycie na telefonie przy stole:
+
+- **Postać** pokazuje jeden panel bieżącego stanu z dominującą OCHR, pancerzem, miejscami i dotykowymi rzutami SIŁ/ZRE/WOL;
+- **Ekwipunek** używa kompaktowego podsumowania, dziesięciu wizualnych miejsc i pełnych dotykowych wierszy z maksymalnie jedną szybką akcją;
+- **Kości** działają jak konsola z dużym ostatnim wynikiem, rail-em szybkich kości, lekkim powtórzeniem i historią;
+- **Dziennik** zaczyna się od sesji i szybkiej notatki, a dossier oraz rzadsze korekty znajdują się niżej;
+- top bar pokazuje bieżący widok, a dolny pasek działa jak stały mobilny tab bar z obsługą safe area;
+- jeden docelowy arkusz `styles/app.css` zawiera cały system wizualny, jasny motyw, forced colors i reduced motion.
+
 ## Najważniejsze funkcje
 
-- Ochrona, SIŁ, ZRE, WOL, pancerz, złoto i stany;
-- rozliczanie obrażeń, Blizn i obrażeń krytycznych;
-- kompaktowy, grupowany ekwipunek według sposobu noszenia, ze zmęczeniem, drobiazgami, przedmiotami nieporęcznymi i użyciami;
+- OCHR jako unikanie obrażeń, SIŁ, ZRE, WOL, pancerz, złoto i stany;
+- rozliczanie obrażeń w kolejności pancerz → OCHR → SIŁ, Blizny i obrażenia krytyczne;
+- grupowany ekwipunek ze zmęczeniem, drobiazgami, przedmiotami nieporęcznymi i użyciami;
 - broń, podmuch, dwie bronie i wielu atakujących;
-- kości, rzuty obronne i Kość Losu, z historią rzutów oraz bezpiecznym ponawianiem zwykłych rzutów i rzutów obronnych;
+- rzuty obronne, Kość Losu, rzut własny, historia i bezpieczne powtarzanie;
 - import postaci z JSON Kettlewright;
-- pełna, odtwarzalna kopia zapasowa JSON;
-- trzy lokalne punkty odzyskiwania przed importem, resetem lub odtworzeniem;
-- dostępność mobilna: link pomijający nawigację, semantyczne przełączanie widoków, fokus dialogów, wsparcie klawiatury ekranowej i wysokiego kontrastu;
-- Undo dla zmian stanu postaci;
-- instalacja jako lekka PWA i ponowne uruchomienie offline po pierwszym poprawnym otwarciu;
-- kontekstowy tryb sesji z kartą „Co teraz?”, aktywnymi stanami i szybkimi korektami;
-- gameplay-first ekran Postać: bieżący stan, cztery główne akcje i aktywna broń bez powielania notatek oraz historii rzutów;
-- spójny editorial fantasy visual system: warstwowe powierzchnie, matowy mosiądz, przygaszona zieleń, wyraźna hierarchia typografii, subtelna faktura i mikroanimacje bez zewnętrznych assetów;
-- jawny log sesji: rozpoczęcie, aktywny zapis zmian i rzutów, zakończenie, podsumowanie oraz eksport Markdown/JSON;
-- osobny Dziennik postaci, podczas gdy backup, instalacja i operacje techniczne są dostępne w ustawieniach nagłówka.
+- pełna kopia zapasowa JSON i trzy lokalne punkty odzyskiwania;
+- log aktywnej sesji, podsumowania i eksport Markdown/JSON;
+- Undo każdej operacji zmieniającej kartę;
+- instalacja jako PWA i ponowne uruchomienie offline po pierwszym poprawnym otwarciu;
+- dostępność klawiatury, fokusu, 200% tekstu, jasnego/ciemnego motywu, reduced motion i wysokiego kontrastu.
 
 ## Dane i kopie zapasowe
 
-Dane są zapisywane wyłącznie w `localStorage` tej przeglądarki i urządzenia. Wyczyszczenie danych przeglądarki usuwa kartę. Regularnie używaj przycisku **Pobierz pełną kopię**.
+Dane są zapisywane wyłącznie w `localStorage` tej przeglądarki i urządzenia. Wyczyszczenie danych przeglądarki usuwa kartę, dlatego regularnie używaj **Pobierz pełną kopię**.
 
-Wersja aplikacji 0.16.0 nadal używa `schemaVersion: 3`. Warstwa editorial visual system nie zmienia danych ani formatu kopii. Trzy najnowsze punkty odzyskiwania są przechowywane osobno w `localStorage` i nie wchodzą do pełnej kopii postaci. Chronią przed przypadkowym importem, resetem lub odtworzeniem, ale znikają po wyczyszczeniu danych przeglądarki i nie zastępują pobranej kopii JSON. Historia rzutów może zawierać opcjonalne metadane bezpiecznego powtórzenia, ale starsze wpisy bez tych danych pozostają czytelne i nie wymagają migracji. Zapisy i kopie ze `schemaVersion: 2` są migrowane automatycznie, a starsze pliki `cairn-*-eksport.json` z wersji 0.6.0 nadal mogą zostać odtworzone. Raport sesji Markdown/JSON jest czytelnym wyciągiem i nie zastępuje pełnej kopii zapasowej.
+Wersja aplikacji 0.18.0 nadal używa `schemaVersion: 3`. Redesign nie zmienia formatu importu, backupu ani punktów odzyskiwania i nie wymaga migracji danych. Zapisy ze `schemaVersion: 2` są nadal migrowane automatycznie, a starsze eksporty pozostają obsługiwane.
 
 ## Struktura aplikacji
 
-Warstwa statyczna jest rozdzielona bez zmiany funkcji lub modelu danych:
+- `index.html` — semantyczny shell, cztery widoki, tab bar i bottom sheet;
+- `styles/app.css` — jedyne źródło layoutu, komponentów i systemu wizualnego;
+- `scripts/app.js` — model danych, logika Cairn, renderowanie i interakcje;
+- `service-worker.js` — jawny cache lokalnych plików do pracy offline;
+- `tests/` — regresja funkcjonalna, dostępnościowa i screenshoty do review.
 
-- `index.html` zawiera semantyczny szkielet dokumentu;
-- `styles/app.css` zawiera bazowy układ i komponenty;
-- `styles/editorial.css` zawiera system powierzchni, typografię, kolory, teksturę i dopracowanie wszystkich ekranów;
-- `scripts/app.js` zawiera logikę aplikacji;
-- Service Worker jawnie buforuje oba arkusze stylów i logikę do pracy offline.
-
-Ten etap nie wprowadza bundlera ani modułów runtime. Rozdzielenie logiki JavaScript na mniejsze moduły pozostaje możliwym późniejszym refaktorem, ale nie jest wymagane do korzystania z aplikacji.
+Runtime nie używa frameworka, bundlera, zewnętrznych fontów ani zależności sieciowych.
 
 ## Uruchomienie lokalne
 
@@ -51,19 +55,17 @@ python3 -m http.server 4173
 
 Następnie otwórz `http://127.0.0.1:4173`.
 
-Samo otwarcie `index.html` nadal pozwala korzystać z podstawowej karty, ale Service Worker i test offline wymagają serwera HTTP.
-
 ## Testy
-
-Runtime aplikacji nie ma zewnętrznych bibliotek. Playwright jest używany wyłącznie jako zależność deweloperska.
 
 ```bash
 npm ci
 npx playwright install chromium webkit
+node --check scripts/app.js
+sha256sum -c checksums.sha256
 npm test
 ```
 
-CI uruchamia testy domenowe osadzone w aplikacji, kontrolę składni, testy mobilnych viewportów, klawiatury i fokusu, powiększenia tekstu do 200%, reduced motion, round-trip kopii, test offline oraz kontrolę załadowania lokalnego visual system.
+CI udostępnia nieblokujący wizualny zestaw review jako artefakt `ui-review-screenshots`.
 
 ## Publikacja
 

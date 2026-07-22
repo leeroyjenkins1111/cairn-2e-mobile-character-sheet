@@ -10,6 +10,8 @@ async function loadDemo(page) {
 test('all embedded domain regression tests pass', async ({ page }) => {
   await page.goto('/?selftest=1');
   const marker = page.locator('#selftestMarker');
+  const failures = await page.evaluate(() => globalThis.CairnSheetDev.runTests().filter(result => !result.pass));
+  expect(failures).toEqual([]);
   await expect(marker).toHaveAttribute('data-passed', '102');
   await expect(marker).toHaveAttribute('data-total', '102');
 });
@@ -25,7 +27,7 @@ test('application loads extracted same-origin CSS and JavaScript', async ({ page
     inlineScripts: document.querySelectorAll('script:not([src])').length,
     stylesheetLoaded: Array.from(document.styleSheets).some(sheet => sheet.href?.endsWith('/styles/app.css'))
   }));
-  expect(result).toEqual({ version: '0.16.0', inlineStyles: 0, inlineScripts: 0, stylesheetLoaded: true });
+  expect(result).toEqual({ version: '0.18.0', inlineStyles: 0, inlineScripts: 0, stylesheetLoaded: true });
 });
 
 test('full and legacy exports round-trip without losing character data', async ({ page }) => {
@@ -90,14 +92,14 @@ test('application shell reloads while offline after Service Worker activation', 
   await page.reload();
   await context.setOffline(true);
   await page.reload({ waitUntil: 'domcontentloaded' });
-  await expect(page.getByText('Mobilna karta postaci')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Twoja wyprawa w zasięgu kciuka' })).toBeVisible();
   await context.setOffline(false);
 });
 
 test('settings and technical data are separated from the player journal', async ({ page }) => {
   await loadDemo(page);
   await page.getByRole('button', { name: 'Dziennik', exact: true }).click();
-  await expect(page.getByRole('heading', { name: 'Dziennik postaci' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Dossier postaci' })).toBeVisible();
   await expect(page.getByText('Dane i kopie zapasowe')).toHaveCount(0);
   await page.getByRole('button', { name: 'Ustawienia i dane' }).click();
   await expect(page.getByRole('heading', { name: 'Ustawienia i dane' })).toBeVisible();
@@ -108,13 +110,13 @@ test('settings and technical data are separated from the player journal', async 
 
 test('session prompt appears for urgent character state', async ({ page }) => {
   await loadDemo(page);
-  await page.getByRole('button', { name: 'Stany postaci' }).click();
+  await page.locator('.secondary-action-grid').getByRole('button', { name: 'Stany', exact: true }).click();
   await page.getByRole('checkbox', { name: 'Panika' }).evaluate(toggle => {
     toggle.checked = true;
     toggle.dispatchEvent(new Event('change', { bubbles: true }));
   });
   await page.getByRole('button', { name: 'Oznacz panikę i 0 Ochrony' }).click();
-  const prompt = page.locator('.session-prompt');
+  const prompt = page.locator('.session-alert');
   await expect(prompt.getByText('Co teraz?')).toBeVisible();
   await expect(prompt.getByRole('heading', { name: 'Postać jest spanikowana' })).toBeVisible();
   await expect(prompt.getByRole('button', { name: 'Rzut WOL', exact: true })).toBeVisible();
@@ -138,7 +140,8 @@ test('quick carry change updates automatic armor', async ({ page }) => {
   await loadDemo(page);
   await page.getByRole('button', { name: 'Ekwipunek', exact: true }).click();
   const leather = page.locator('[data-item-id]').filter({ hasText: 'Skórzany kaftan' });
-  await leather.getByRole('button', { name: /Zmień sposób noszenia: Skórzany kaftan/ }).click();
+  await leather.getByRole('button', { name: /Szczegóły przedmiotu: Skórzany kaftan/ }).click();
+  await page.locator('#sheet').getByRole('button', { name: /Sposób noszenia:/ }).click();
   await page.locator('#sheet').getByRole('button', { name: 'Schowane', exact: true }).click();
   const result = await page.evaluate(() => {
     const dev = globalThis.CairnSheetDev;
@@ -161,7 +164,7 @@ test('inventory quick use and detail sheet preserve session workflows', async ({
   await expect.poll(async () => page.evaluate(() => globalThis.CairnSheetDev.getState().inventory.items.find(item => item.name === 'Pochodnia')?.uses.current)).toBe(1);
 
   const bow = page.locator('[data-item-id]').filter({ hasText: 'Krótki łuk' });
-  await bow.getByRole('button', { name: 'Szczegóły przedmiotu Krótki łuk' }).click();
+  await bow.getByRole('button', { name: /Szczegóły przedmiotu: Krótki łuk/ }).click();
   await expect(page.locator('#sheet').getByRole('heading', { name: 'Szczegóły przedmiotu' })).toBeVisible();
   await expect(page.locator('#sheet').getByText('Lekki łuk myśliwski.')).toBeVisible();
 });
@@ -170,7 +173,8 @@ test('spent inventory is grouped and hides primary use actions', async ({ page }
   await loadDemo(page);
   await page.getByRole('button', { name: 'Ekwipunek', exact: true }).click();
   const torch = page.locator('[data-item-id]').filter({ hasText: 'Pochodnia' });
-  await torch.getByRole('button', { name: /Zmień sposób noszenia: Pochodnia/ }).click();
+  await torch.getByRole('button', { name: /Szczegóły przedmiotu: Pochodnia/ }).click();
+  await page.locator('#sheet').getByRole('button', { name: /Sposób noszenia:/ }).click();
   await page.locator('#sheet').getByRole('button', { name: 'Zużyte', exact: true }).click();
   const spent = page.locator('details[data-inventory-group="spent"]');
   await expect(spent).toBeVisible();
@@ -366,18 +370,35 @@ test('core screens remain usable with 200 percent root text size', async ({ page
   await page.evaluate(() => { document.documentElement.style.fontSize = '200%'; });
   for (const name of ['Postać', 'Ekwipunek', 'Kości', 'Dziennik']) {
     await page.getByRole('button', { name, exact: true }).click();
-    const layout = await page.evaluate(() => ({
-      overflow: document.documentElement.scrollWidth - window.innerWidth,
-      clippedButtons: Array.from(document.querySelectorAll('button')).filter(button => {
-        const style = getComputedStyle(button);
-        if (style.display === 'none' || style.visibility === 'hidden') return false;
-        const rect = button.getBoundingClientRect();
-        if (!rect.width || !rect.height) return false;
-        return rect.left < -1 || rect.right > window.innerWidth + 1;
-      }).length
-    }));
-    expect(layout.overflow).toBeLessThanOrEqual(1);
-    expect(layout.clippedButtons).toBe(0);
+    const layout = await page.evaluate(() => {
+      window.scrollTo(1000, 0);
+      const horizontalScroll = window.scrollX;
+      window.scrollTo(0, 0);
+      return {
+        reportedOverflow: document.documentElement.scrollWidth - window.innerWidth,
+        horizontalScroll,
+        overflowingElements: Array.from(document.querySelectorAll('body *')).map(element => {
+          const style = getComputedStyle(element);
+          const rect = element.getBoundingClientRect();
+          return { element, style, rect };
+        }).filter(({ style, rect }) => style.display !== 'none' && style.visibility !== 'hidden' && rect.width && (rect.left < -1 || rect.right > window.innerWidth + 1)).map(({ element, rect }) => ({
+          selector: `${element.tagName.toLowerCase()}${element.id ? `#${element.id}` : ''}${Array.from(element.classList).map(name => `.${name}`).join('')}`,
+          left: Math.round(rect.left * 10) / 10,
+          right: Math.round(rect.right * 10) / 10,
+          width: Math.round(rect.width * 10) / 10
+        })).slice(0, 12),
+        clippedButtons: Array.from(document.querySelectorAll('button')).filter(button => {
+          const style = getComputedStyle(button);
+          if (style.display === 'none' || style.visibility === 'hidden') return false;
+          const rect = button.getBoundingClientRect();
+          if (!rect.width || !rect.height) return false;
+          return rect.left < -1 || rect.right > window.innerWidth + 1;
+        }).map(button => button.getAttribute('aria-label') || button.textContent.trim())
+      };
+    });
+    expect(layout.horizontalScroll, `WebKit reported ${layout.reportedOverflow}px intrinsic overflow`).toBeLessThanOrEqual(1);
+    expect(layout.overflowingElements).toEqual([]);
+    expect(layout.clippedButtons).toEqual([]);
   }
 });
 
@@ -385,10 +406,10 @@ test('game view keeps current state and core table actions without duplicate sum
   await loadDemo(page);
   await expect(page.getByRole('heading', { name: 'Przy stole' })).toHaveCount(0);
   await expect(page.getByText('Ostatni rzut', { exact: true })).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'Obrażenia', exact: true })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Rozlicz obrażenia', exact: false })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Rzut obronny', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Odpoczynek', exact: true })).toBeVisible();
-  await expect(page.locator('.gameplay-weapon-card')).toContainText('Krótki łuk');
+  await expect(page.locator('.weapon-row')).toContainText('Krótki łuk');
 
   await page.getByRole('button', { name: 'Rzut obronny', exact: true }).click();
   await expect(page.locator('#sheet').getByRole('heading', { name: 'Rzut obronny' })).toBeVisible();

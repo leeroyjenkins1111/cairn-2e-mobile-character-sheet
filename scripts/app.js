@@ -4,7 +4,7 @@
 // 1. Constants
 // ============================================================
 const APP_ID = 'cairn-mobile-sheet';
-const APP_VERSION = '0.16.0';
+const APP_VERSION = '0.18.0';
 const SCHEMA_VERSION = 3;
 const STORAGE_KEY = `${APP_ID}:state`;
 const RECOVERY_KEY = `${APP_ID}:recovery`;
@@ -1697,6 +1697,8 @@ function updateViewAccessibility(announceChange = false) {
   const meta = VIEW_META[activeView] || VIEW_META.character;
   const characterName = state.initialized ? trimText(state.identity.name, 'Karta Wędrowca') : 'Karta Wędrowca';
   document.title = `${characterName} — ${meta.label} — Cairn 2e`;
+  const headerTitle = $('#headerTitle');
+  if (headerTitle) headerTitle.textContent = meta.label;
   if (!announceChange) return;
   const live = $('#viewLiveRegion');
   if (!live) return;
@@ -1721,7 +1723,7 @@ function setView(view, { announceChange = false } = {}) {
 
 function renderAll() {
   document.documentElement.dataset.theme = state.settings.theme === 'light' ? 'light' : 'dark';
-  $('#headerTitle').textContent = state.initialized ? state.identity.name || 'Karta Wędrowca' : 'Karta Wędrowca';
+  $('#headerTitle').textContent = (VIEW_META[activeView] || VIEW_META.character).label;
   $('#quickUndoBtn').disabled = !safeArray(state.changeHistory).some(entry => entry.undoable);
   renderCharacterView();
   renderInventoryView();
@@ -1902,7 +1904,7 @@ function animateDiceResult(container, value, label, sides = 6, tone = 'neutral')
   container.replaceChildren(shell);
   if (shouldReduceMotion()) return;
   const started = performance.now();
-  const duration = 460;
+  const duration = 200;
   const tick = now => {
     if (token !== diceAnimationToken || !shell.isConnected) return;
     const progress = Math.min(1, (now - started) / duration);
@@ -2037,13 +2039,16 @@ function renderSessionPrompt() {
   const prompt = sessionPromptFor();
   if (!prompt) return null;
   const primary = button(prompt.primaryLabel, prompt.primaryAction, 'btn btn-primary');
-  const conditions = button('Stany', openConditionsSheet, 'btn btn-ghost');
-  return card([
-    createEl('p', { className: 'session-prompt-kicker', text: 'Co teraz?' }),
-    createEl('h2', { text: prompt.title }),
+  const conditions = button('Wszystkie stany', openConditionsSheet, 'btn btn-ghost');
+  return createEl('aside', {
+    className: `session-alert session-alert-${prompt.tone}`,
+    attrs: { 'aria-labelledby': `session-alert-${prompt.id}` }
+  }, [
+    createEl('p', { className: 'section-kicker', text: 'Co teraz?' }),
+    createEl('h2', { id: `session-alert-${prompt.id}`, text: prompt.title }),
     createEl('p', { text: prompt.message }),
-    createEl('div', { className: 'session-prompt-actions' }, [primary, conditions])
-  ], `session-prompt session-prompt-${prompt.tone}`);
+    createEl('div', { className: 'session-alert-actions' }, [primary, conditions])
+  ]);
 }
 
 function openSavePickerSheet() {
@@ -2070,16 +2075,17 @@ function renderActiveWeaponShortcut() {
   const weapon = activeEquipmentItems().find(item => item.damageFormula && item.carryState !== 'spent');
   if (!weapon) return null;
   const notation = formatDamageFormula(weapon.damageFormula);
-  return card([
-    createEl('div', { className: 'gameplay-weapon-copy' }, [
-      createEl('p', { className: 'eyebrow', text: 'Gotowe do użycia' }),
+  const traits = [weapon.damageFormula.blast ? 'podmuch' : '', ...safeArray(weapon.traits).slice(0, 2)].filter(Boolean);
+  return createEl('section', { className: 'weapon-row', attrs: { 'aria-label': 'Aktywna broń' } }, [
+    createEl('div', { className: 'weapon-row-copy' }, [
+      createEl('span', { className: 'section-kicker', text: 'Aktywna broń' }),
       createEl('strong', { text: weapon.name }),
-      createEl('span', { text: `${notation}${weapon.damageFormula.blast ? ' · podmuch' : ''}` })
+      createEl('span', { text: [notation, ...traits].join(' · ') })
     ]),
-    button(`Rzuć ${notation}`, () => runItemAttack(weapon), 'btn btn-primary gameplay-weapon-action', {
+    button('Rzuć obrażenia', () => runItemAttack(weapon), 'btn btn-quiet weapon-row-action', {
       'aria-label': `Rzuć obrażenia aktywną bronią: ${weapon.name}`
     })
-  ], 'card-pad gameplay-weapon-card');
+  ]);
 }
 
 function renderCharacterView() {
@@ -2087,13 +2093,14 @@ function renderCharacterView() {
   if (!root) return;
   root.replaceChildren();
   if (!state.initialized) {
-    const welcome = card([], 'onboarding');
+    const welcome = createEl('section', { className: 'onboarding' });
     welcome.append(
-      createEl('div', { className: 'onboarding-mark', text: '◇', attrs: { 'aria-hidden': 'true' } }),
-      createEl('h1', { text: 'Mobilna karta postaci' }),
-      createEl('p', { text: 'Lekka karta Cairn 2e. Dane pozostają w tej przeglądarce.' }),
+      createEl('div', { className: 'onboarding-mark', text: 'C', attrs: { 'aria-hidden': 'true' } }),
+      createEl('p', { className: 'section-kicker', text: 'Cairn 2e przy stole' }),
+      createEl('h1', { text: 'Twoja wyprawa w zasięgu kciuka' }),
+      createEl('p', { text: 'Jedna lokalna postać, szybki stan, ekwipunek i rzuty. Bez konta — dane zostają na tym urządzeniu.' }),
       createEl('div', { className: 'onboarding-actions' }, [
-        button('Utwórz pustą postać', openCreateCharacterSheet, 'btn btn-primary btn-block'),
+        button('Utwórz postać', openCreateCharacterSheet, 'btn btn-primary btn-block'),
         button('Importuj z Kettlewright', () => $('#importFileInput').click(), 'btn btn-block'),
         button('Tryb demonstracyjny', () => openConfirmSheet({ title: 'Dane demonstracyjne', message: 'Tryb demonstracyjny zastąpi obecną pustą kartę przykładową postacią.', confirmLabel: 'Wczytaj demo', onConfirm: () => { state = createDemoState(); saveNow(); renderAll(); showToast('Wczytano dane demonstracyjne.'); } }), 'btn btn-ghost btn-block')
       ])
@@ -2109,37 +2116,39 @@ function renderCharacterView() {
 
   const armor = deriveArmor();
   const usage = calculateInventoryUsage();
-  const hero = card([], 'compact-hero session-hero');
+  const hero = createEl('section', { className: 'character-state', attrs: { 'aria-labelledby': 'character-name' } });
   const identity = createEl('div', { className: 'identity-row' }, [
     createEl('div', { className: 'avatar', text: initials(state.identity.name) }),
-    createEl('div', {}, [
-      createEl('h1', { className: 'character-name', text: state.identity.name || 'Bez imienia' }),
+    createEl('div', { className: 'identity-copy' }, [
+      createEl('h1', { id: 'character-name', className: 'character-name', text: state.identity.name || 'Bez imienia' }),
       createEl('p', { className: 'character-background', text: state.identity.background || 'Bez tła' })
     ]),
     state.isDemo ? createEl('span', { className: 'demo-badge', text: 'DEMO' }) : null
   ]);
   hero.append(identity);
 
-  const statusStrip = createEl('div', { className: 'status-strip' }, [
+  const statusStrip = createEl('div', { className: 'state-values' }, [
     createEl('button', {
       type: 'button',
-      className: 'status-tile status-tile-primary protection-tile',
+      className: 'protection-control',
       attrs: { 'aria-label': `Ochrona ${state.stats.hp.current} z ${state.stats.hp.max}. Ochrona przed trafieniem (OCHR) opisuje zdolność unikania obrażeń. Otwórz wyjaśnienie i edycję.` },
       onclick: openProtectionSheet
     }, [
-      createEl('span', { className: 'status-label', text: 'Ochrona' }),
-      createEl('span', { className: 'status-value' }, [String(state.stats.hp.current), createEl('small', { text: ` / ${state.stats.hp.max}` })]),
-      createEl('span', { className: 'status-meta', text: 'unikanie obrażeń' })
+      createEl('span', { className: 'state-label', text: 'OCHR' }),
+      createEl('span', { className: 'protection-value' }, [String(state.stats.hp.current), createEl('small', { text: ` / ${state.stats.hp.max}` })]),
+      createEl('span', { className: 'state-caption', text: 'unikanie obrażeń · dotknij, aby edytować' })
     ]),
-    createEl('div', { className: 'status-tile' }, [
-      createEl('span', { className: 'status-label', text: 'Pancerz' }),
-      createEl('span', { className: 'status-value', text: armor.effective }),
-      createEl('span', { className: 'status-meta', text: armor.mode === 'manual' ? 'ręcznie' : 'sprzęt' })
-    ]),
-    createEl('div', { className: 'status-tile' }, [
-      createEl('span', { className: 'status-label', text: 'Miejsca' }),
-      createEl('span', { className: 'status-value', text: `${usage.total}/10` }),
-      createEl('span', { className: 'status-meta', text: `${usage.fatigueSlots} zmęczenia` })
+    createEl('div', { className: 'state-secondary' }, [
+      createEl('div', { className: 'secondary-stat' }, [
+        createEl('span', { className: 'state-label', text: 'Pancerz' }),
+        createEl('strong', { text: armor.effective }),
+        createEl('span', { className: 'state-caption', text: armor.mode === 'manual' ? 'ręcznie' : 'ze sprzętu' })
+      ]),
+      createEl('div', { className: 'secondary-stat' }, [
+        createEl('span', { className: 'state-label', text: 'Miejsca' }),
+        createEl('strong', { text: `${usage.total}/10` }),
+        createEl('span', { className: 'state-caption', text: `${usage.fatigueSlots} zmęczenia` })
+      ])
     ])
   ]);
   hero.append(statusStrip);
@@ -2151,24 +2160,37 @@ function renderCharacterView() {
   protectionMeter.style.setProperty('--protection-ratio', String(protectionRatio));
   hero.append(protectionMeter);
   hero.append(createEl('div', {
-    className: 'character-attribute-line',
-    attrs: { 'aria-label': `Aktualne cechy: SIŁ ${state.stats.str.current}, ZRE ${state.stats.dex.current}, WOL ${state.stats.wil.current}` }
+    className: 'attribute-row',
+    attrs: { 'aria-label': 'Rzuty obronne według aktualnych cech' }
   }, [
-    createEl('span', { text: `SIŁ ${state.stats.str.current}` }),
-    createEl('span', { text: `ZRE ${state.stats.dex.current}` }),
-    createEl('span', { text: `WOL ${state.stats.wil.current}` })
+    ...['str', 'dex', 'wil'].map(key => createEl('button', {
+      type: 'button',
+      className: 'attribute-control',
+      attrs: { 'aria-label': `Rzut obronny ${ATTRS[key].full}, aktualna wartość ${state.stats[key].current}` },
+      onclick: () => performSave(key)
+    }, [
+      createEl('span', { text: ATTRS[key].label }),
+      createEl('strong', { text: state.stats[key].current })
+    ]))
   ]));
   root.append(hero);
 
   const sessionPrompt = renderSessionPrompt();
   if (sessionPrompt) root.append(sessionPrompt);
-  const gameActions = card([], 'card-pad gameplay-actions');
-  gameActions.append(sectionHead('Akcje w grze', createEl('span', { className: 'muted micro', text: 'najczęstsze przy stole' })));
-  gameActions.append(createEl('div', { className: 'gameplay-action-grid' }, [
-    compactActionButton('Obrażenia', 'damage', openDamageSheet, true),
+  const gameActions = createEl('section', { className: 'game-actions', attrs: { 'aria-labelledby': 'game-actions-title' } });
+  gameActions.append(createEl('div', { className: 'section-heading' }, [
+    createEl('h2', { id: 'game-actions-title', text: 'Akcje w grze' }),
+    createEl('span', { className: 'section-caption', text: 'najczęstsze przy stole' })
+  ]));
+  gameActions.append(createEl('button', {
+    type: 'button',
+    className: 'btn btn-primary damage-primary-action',
+    onclick: openDamageSheet
+  }, [uiIcon('damage'), createEl('span', {}, [createEl('strong', { text: 'Rozlicz obrażenia' }), createEl('small', { text: 'Pancerz → OCHR → SIŁ' })])]));
+  gameActions.append(createEl('div', { className: 'secondary-action-grid' }, [
     compactActionButton('Rzut obronny', 'dice', openSavePickerSheet),
     compactActionButton('Odpoczynek', 'rest', openRestSheet),
-    compactActionButton('Stany postaci', 'more', openConditionsSheet)
+    compactActionButton('Stany', 'more', openConditionsSheet)
   ]));
   root.append(gameActions);
 
@@ -2191,13 +2213,13 @@ function renderCharacterView() {
       }, [createEl('span', { text: 'Rzut WOL' })]));
     }
     actions.append(iconButton('Zarządzaj stanami', 'arrow', openConditionsSheet));
-    root.append(card([
+    root.append(createEl('section', { className: 'condition-summary', attrs: { 'aria-label': 'Aktywne stany postaci' } }, [
       createEl('div', { className: 'compact-condition-copy' }, [
         createEl('strong', { text: 'Aktywne stany' }),
-        createEl('span', { text: activeConditionLabels.join(' · ') })
+        renderConditionChips(true)
       ]),
       actions
-    ], 'compact-condition-summary'));
+    ]));
   }
 
 }
@@ -2587,31 +2609,35 @@ function renderInventoryView() {
   }
   const usage = calculateInventoryUsage();
   const armor = deriveArmor();
-  const overview = card([], 'inventory-summary');
+  const overview = createEl('section', { className: 'inventory-overview', attrs: { 'aria-label': 'Stan ekwipunku' } });
   overview.append(createEl('div', { className: 'inventory-summary-head' }, [
     createEl('div', {}, [
-      createEl('p', { className: 'eyebrow', text: 'Wyposażenie' }),
-      createEl('h1', { className: 'inventory-summary-title', text: 'Ekwipunek' })
+      createEl('strong', { className: 'inventory-summary-title', text: `${usage.total}/10 miejsc` }),
+      createEl('span', { className: 'section-caption', text: usage.total === 10 ? 'Pełny ekwipunek · OCHR krytyczne' : `${10 - usage.total} wolnych` })
     ]),
     createEl('div', { className: 'inventory-summary-actions' }, [
-      button(`Złoto: ${state.stats.gold}`, openGoldSheet, 'btn btn-quiet gold-button', { 'aria-label': `Złoto: ${state.stats.gold}. Otwórz szybką korektę.` }),
+      button('Zmień złoto', openGoldSheet, 'btn btn-ghost gold-button', { 'aria-label': `Złoto: ${state.stats.gold}. Otwórz szybką korektę.` }),
       iconButton('Dodaj przedmiot', 'plus', () => openItemSheet(), 'btn btn-icon btn-primary')
     ])
   ]));
   overview.append(createEl('div', { className: 'inventory-summary-stats' }, [
-    createEl('div', { className: 'inventory-summary-stat', dataset: { inventoryStat: 'slots' } }, [createEl('strong', { text: `${usage.total}/10` }), createEl('span', { text: `${usage.fatigueSlots} zmęczenia` })]),
-    createEl('div', { className: 'inventory-summary-stat', dataset: { inventoryStat: 'armor' } }, [createEl('strong', { text: armor.effective }), createEl('span', { text: 'pancerz' })])
+    createEl('div', { className: 'inventory-summary-stat', dataset: { inventoryStat: 'fatigue' } }, [createEl('strong', { text: usage.fatigueSlots }), createEl('span', { text: 'zmęczenie' })]),
+    createEl('div', { className: 'inventory-summary-stat', dataset: { inventoryStat: 'armor' } }, [createEl('strong', { text: armor.effective }), createEl('span', { text: 'pancerz' })]),
+    createEl('div', { className: 'inventory-summary-stat', dataset: { inventoryStat: 'gold' } }, [createEl('strong', { text: state.stats.gold }), createEl('span', { text: 'złoto' })])
   ]));
   overview.append(renderSlotMeter(usage));
   overview.append(createEl('p', { className: 'inventory-legend', text: 'Drobiazg 0 · zwykły 1 · nieporęczny 2 · zmęczenie 1' }));
-  overview.append(createEl('div', { className: 'inventory-tools inventory-tools-focused' }, [
-    createEl('button', { type: 'button', className: 'btn inventory-tool', onclick: openAddFatigueSheet }, [uiIcon('fatigue'), createEl('span', { text: 'Dodaj zmęczenie' })]),
-    createEl('button', { type: 'button', className: 'btn inventory-tool', onclick: openArmorSheet }, [uiIcon('armor'), createEl('span', { text: 'Ustaw pancerz' })])
+  overview.append(createEl('div', { className: 'inventory-tools' }, [
+    button('Dodaj zmęczenie', openAddFatigueSheet, 'btn btn-ghost inventory-tool'),
+    button('Ustaw pancerz', openArmorSheet, 'btn btn-ghost inventory-tool')
   ]));
   root.append(overview);
 
-  const listCard = card([], 'card-pad card-flat');
-  listCard.append(sectionHead('Przedmioty', createEl('span', { className: 'muted micro', text: `${state.inventory.items.length + state.inventory.fatigue.length} wpisów` })));
+  const listCard = createEl('section', { className: 'inventory-list', attrs: { 'aria-labelledby': 'inventory-list-title' } });
+  listCard.append(createEl('div', { className: 'section-heading' }, [
+    createEl('h2', { id: 'inventory-list-title', text: 'Przedmioty' }),
+    createEl('span', { className: 'section-caption', text: `${state.inventory.items.length + state.inventory.fatigue.length} wpisów` })
+  ]));
   const groups = createEl('div', { className: 'inventory-groups' });
   const grouped = groupInventoryEntries();
   if (!grouped.length) groups.append(createEl('p', { className: 'muted small', text: 'Brak przedmiotów.' }));
@@ -2636,30 +2662,40 @@ function renderItemCard(item) {
     className: `inventory-item inventory-row${spent ? ' inventory-row-spent' : ''}`,
     dataset: { itemId: item.id }
   });
-  const row = createEl('div', { className: 'inventory-row-main' });
-  row.append(createEl('div', { className: 'inventory-row-title' }, [
-    createEl('h3', { text: item.name }),
-    createEl('span', { className: 'tag item-slot', text: formatSlotLabel(item.slots) })
-  ]));
-
-  const tags = createEl('div', { className: 'inventory-row-tags' });
-  if (item.damageFormula) tags.append(createEl('span', { className: 'tag', text: formatDamageFormula(item.damageFormula) }));
-  if (item.damageFormula?.blast) tags.append(createEl('span', { className: 'tag', text: 'podmuch' }));
-  if (item.armorValue) tags.append(createEl('span', { className: 'tag', text: `pancerz +${item.armorValue}` }));
-  if (item.uses.current !== null || item.uses.max !== null) tags.append(createEl('span', { className: 'tag', text: `użycia ${formatUses(item.uses)}` }));
-  for (const trait of safeArray(item.traits).slice(0, 2)) tags.append(createEl('span', { className: 'tag', text: trait }));
-  if (tags.childElementCount) row.append(tags);
-
-  const actions = [];
-  if (!spent && item.damageFormula?.blast) actions.push(button(`Podmuch ${formatDamageFormula(item.damageFormula)}`, () => runItemAttack(item), 'btn btn-quiet', { 'aria-label': `Rzuć obrażenia podmuchu: ${item.name}` }));
-  else if (!spent && item.damageFormula) actions.push(button(`Rzuć ${formatDamageFormula(item.damageFormula)}`, () => runItemAttack(item), 'btn btn-quiet', { 'aria-label': `Rzuć obrażenia: ${item.name}` }));
-  else if (!spent && item.uses.current !== null) actions.push(button('Użyj', () => openUseItemSheet(item.id), 'btn btn-primary', { disabled: item.uses.current <= 0, 'aria-label': `Użyj ${item.name}` }));
   const carryLabel = CARRY_STATES[item.carryState] || 'inny stan';
-  actions.push(button(carryLabel, () => openQuickCarrySheet(item.id), 'btn btn-quiet inventory-carry-button', { 'aria-label': `Zmień sposób noszenia: ${item.name}. Aktualnie ${carryLabel}.` }));
-  actions.push(iconButton(`Szczegóły przedmiotu ${item.name}`, 'more', () => openItemActionsSheet(item.id), 'btn btn-icon btn-ghost inventory-details-button'));
-  row.append(createEl('div', { className: `inventory-row-actions actions-${actions.length}` }, actions));
-  if (item.uses.current === 0) row.append(createEl('p', { className: 'item-warning', text: 'Brak użyć. Przywrócenie jest dostępne w szczegółach.' }));
-  wrap.append(row);
+  const facts = [
+    formatSlotLabel(item.slots),
+    item.damageFormula ? formatDamageFormula(item.damageFormula) : '',
+    item.armorValue ? `pancerz +${item.armorValue}` : '',
+    item.uses.current !== null || item.uses.max !== null ? `użycia ${formatUses(item.uses)}` : '',
+    ...safeArray(item.traits).slice(0, 2)
+  ].filter(Boolean).slice(0, 4);
+  const main = createEl('button', {
+    type: 'button',
+    className: 'inventory-row-main',
+    attrs: { 'aria-label': `Szczegóły przedmiotu: ${item.name}. ${facts.join(', ')}. ${carryLabel}.` },
+    onclick: () => openItemActionsSheet(item.id)
+  }, [
+    createEl('span', { className: 'inventory-row-title' }, [
+      createEl('strong', { text: item.name }),
+      createEl('span', { className: 'carry-status', text: carryLabel })
+    ]),
+    createEl('span', { className: 'inventory-row-facts' }, facts.map(fact => createEl('span', { text: fact }))),
+    item.uses.current === 0 ? createEl('span', { className: 'item-warning', text: 'Brak użyć · otwórz szczegóły' }) : null
+  ]);
+  let trailing = null;
+  if (!spent && item.damageFormula) {
+    trailing = button(formatDamageFormula(item.damageFormula), () => runItemAttack(item), 'btn btn-quiet inventory-trailing-action', {
+      'aria-label': `Rzuć obrażenia: ${item.name}`
+    });
+  } else if (!spent && item.uses.current !== null) {
+    trailing = button('Użyj', () => openUseItemSheet(item.id), 'btn btn-quiet inventory-trailing-action', {
+      disabled: item.uses.current <= 0,
+      'aria-label': `Użyj ${item.name}`
+    });
+  }
+  wrap.append(main);
+  if (trailing) wrap.append(trailing);
   return wrap;
 }
 
@@ -2718,18 +2754,22 @@ function openItemActionsSheet(itemId) {
   body.append(copy);
 
   const primary = createEl('div', { className: 'inventory-detail-actions' });
-  if (item.carryState !== 'spent' && item.damageFormula) primary.append(button(item.damageFormula.blast ? 'Rzuć podmuch' : 'Rzuć obrażenia', () => { closeSheet(); runItemAttack(item); }, 'btn'));
-  if (item.carryState !== 'spent' && item.uses.current !== null) primary.append(button('Użyj', () => { closeSheet(); openUseItemSheet(itemId); }, 'btn btn-primary', { disabled: item.uses.current <= 0 }));
+  if (item.carryState !== 'spent' && item.uses.current !== null) {
+    primary.append(button('Użyj przedmiotu', () => { closeSheet(); openUseItemSheet(itemId); }, 'btn btn-primary', { disabled: item.uses.current <= 0 }));
+    if (item.damageFormula) primary.append(button(item.damageFormula.blast ? 'Rzuć podmuch' : 'Rzuć obrażenia', () => { closeSheet(); runItemAttack(item); }, 'btn btn-quiet'));
+  } else if (item.carryState !== 'spent' && item.damageFormula) {
+    primary.append(button(item.damageFormula.blast ? 'Rzuć podmuch' : 'Rzuć obrażenia', () => { closeSheet(); runItemAttack(item); }, 'btn btn-primary'));
+  }
   primary.append(
-    button('Zmień stan', () => { closeSheet(); openQuickCarrySheet(itemId); }, 'btn'),
-    button('Edytuj', () => { closeSheet(); openItemSheet(itemId); }, 'btn')
+    button(`Sposób noszenia: ${CARRY_STATES[item.carryState] || item.carryState}`, () => { closeSheet(); openQuickCarrySheet(itemId); }, 'btn btn-quiet'),
+    button('Edytuj', () => { closeSheet(); openItemSheet(itemId); }, 'btn btn-quiet')
   );
   if (item.uses.current !== null) primary.append(button('Przywróć 1 użycie', () => { closeSheet(); openRestoreItemUseSheet(itemId); }, 'btn btn-ghost', { disabled: item.uses.max !== null && item.uses.current >= item.uses.max }));
   primary.append(button(item.carryState === 'spent' ? 'Przywróć przedmiot' : 'Oznacz jako zużyty', () => { closeSheet(); toggleItemSpent(itemId); }, 'btn btn-ghost'));
   body.append(primary);
 
   const secondary = createEl('details', { className: 'inventory-secondary-actions' });
-  secondary.append(createEl('summary', { text: 'Dalsze operacje' }));
+  secondary.append(createEl('summary', { text: 'Więcej i operacje niebezpieczne' }));
   secondary.append(createEl('div', { className: 'sheet-list' }, [
     button('Przesuń wyżej w grupie', () => { closeSheet(); moveItem(itemId, -1); }, 'btn btn-ghost', { disabled: groupPosition <= 0 }),
     button('Przesuń niżej w grupie', () => { closeSheet(); moveItem(itemId, 1); }, 'btn btn-ghost', { disabled: groupPosition < 0 || groupPosition >= groupItems.length - 1 }),
@@ -2742,15 +2782,19 @@ function openItemActionsSheet(itemId) {
 
 function renderFatigueCard(fatigue) {
   const wrap = createEl('article', { className: 'inventory-item inventory-row', dataset: { fatigueId: fatigue.id } });
-  const row = createEl('div', { className: 'inventory-row-main' }, [
-    createEl('div', { className: 'inventory-row-title' }, [
-      createEl('h3', { text: 'Zmęczenie' }),
-      createEl('span', { className: 'tag item-slot', text: '1 miejsce' })
+  wrap.append(createEl('button', {
+    type: 'button',
+    className: 'inventory-row-main fatigue-row-main',
+    attrs: { 'aria-label': 'Zmęczenie, 1 miejsce. Otwórz szczegóły regeneracji.' },
+    onclick: () => openRemoveFatigueSheet(fatigue.id)
+  }, [
+    createEl('span', { className: 'inventory-row-title' }, [
+      createEl('strong', { text: 'Zmęczenie' }),
+      createEl('span', { className: 'carry-status', text: 'część ekwipunku' })
     ]),
-    createEl('p', { className: 'inventory-row-note', text: fatigue.note || 'Zajmuje miejsce do czasu odpowiedniej regeneracji.' }),
-    button('Usuń po regeneracji', () => openRemoveFatigueSheet(fatigue.id), 'btn btn-quiet btn-block', { 'aria-label': 'Usuń jedno zmęczenie po regeneracji' })
-  ]);
-  wrap.append(row);
+    createEl('span', { className: 'inventory-row-facts' }, [createEl('span', { text: '1 miejsce' })]),
+    createEl('span', { className: 'inventory-row-note', text: fatigue.note || 'Odpoczynek może je usunąć.' })
+  ]));
   return wrap;
 }
 
@@ -3015,59 +3059,70 @@ function renderDiceView() {
   root.replaceChildren();
   const entries = safeArray(state.diceHistory);
   const latest = entries[0] || null;
-
-  const dashboard = createEl('div', { className: 'dice-dashboard-compact' });
-
-  const consoleCard = card([], 'card-pad dice-console-card');
-  const consoleHead = createEl('div', { className: 'dice-console-head' }, [
-    createEl('div', { className: 'dice-console-title' }, [
-      createEl('h2', { text: 'Rzut kością' }),
-      createEl('p', { text: 'Wybierz kość — wynik pojawi się obok.' })
-    ]),
-    createEl('button', {
-      type: 'button',
-      className: 'dice-result dice-result-inline dice-result-button',
-      id: 'diceResult',
-      disabled: !entries.length,
-      attrs: {
-        'aria-live': 'polite',
-        'aria-atomic': 'true',
-        'aria-label': latest ? `Ostatni rzut: ${latest.summary}. Otwórz historię rzutów.` : 'Brak historii rzutów'
-      },
-      onclick: openDiceHistorySheet
-    }, [createEl('div', {}, [
-      createEl('strong', { text: latest ? diceEntryResultText(latest) : '—' }),
-      createEl('span', { text: latest ? `${diceEntryTypeLabel(latest)} · ${latest.label || latest.notation || 'ostatni wynik'}` : 'Ostatni wynik' })
-    ])])
-  ]);
-  consoleCard.append(consoleHead);
-
-  const grid = createEl('div', { className: 'dice-grid dice-icon-grid' });
-  for (const sides of DICE_SIDES) {
-    grid.append(createEl('button', {
-      type: 'button',
-      className: 'btn die-button',
-      attrs: { 'aria-label': `Rzuć kością k${sides}` },
-      onclick: () => performRoll({ count: 1, sides }, `k${sides}`)
-    }, [dieIcon(sides), createEl('span', { text: `k${sides}` })]));
-  }
-  consoleCard.append(grid);
-
-  consoleCard.append(createEl('div', { className: 'dice-repeat-row' }, [
+  const consolePanel = createEl('section', { className: 'dice-console', attrs: { 'aria-labelledby': 'dice-console-title' } });
+  consolePanel.append(createEl('div', { className: 'section-heading' }, [
+    createEl('h1', { id: 'dice-console-title', text: 'Ostatni wynik' }),
+    button('Historia', openDiceHistorySheet, 'btn btn-ghost', { disabled: !entries.length })
+  ]));
+  consolePanel.append(createEl('button', {
+    type: 'button',
+    className: 'dice-result dice-result-button',
+    id: 'diceResult',
+    disabled: !entries.length,
+    attrs: {
+      'aria-live': 'polite',
+      'aria-atomic': 'true',
+      'aria-label': latest ? `Ostatni rzut: ${latest.summary}. Otwórz historię rzutów.` : 'Brak historii rzutów'
+    },
+    onclick: openDiceHistorySheet
+  }, [createEl('div', { className: 'dice-result-content' }, [
+    createEl('strong', { text: latest ? diceEntryResultText(latest) : '—' }),
+    createEl('span', { text: latest ? diceEntryTypeLabel(latest) : 'Jeszcze nie rzucano' }),
+    createEl('small', { text: latest ? latest.label || latest.notation || 'ostatni wynik' : 'Wybierz kość poniżej' })
+  ])]));
+  consolePanel.append(createEl('div', { className: 'dice-result-actions' }, [
     button(
-      latest && canRepeatDiceEntry(latest) ? `Powtórz: ${latest.label || latest.notation || 'ostatni rzut'}` : 'Brak rzutu do powtórzenia',
+      latest && canRepeatDiceEntry(latest) ? 'Powtórz' : 'Brak rzutu do powtórzenia',
       () => repeatDiceEntry(latest),
-      'btn btn-primary',
+      'btn btn-quiet',
       {
         disabled: !latest || !canRepeatDiceEntry(latest),
         'aria-label': latest && canRepeatDiceEntry(latest) ? `Powtórz ostatni rzut: ${latest.label || latest.notation || 'rzut'}` : 'Brak rzutu do powtórzenia'
       }
     ),
-    button('Historia', openDiceHistorySheet, 'btn', { disabled: !entries.length })
+    createEl('span', { className: 'section-caption', text: latest?.notation || '' })
   ]));
-  dashboard.append(consoleCard);
 
-  const scenarios = card([], 'card-pad combat-scenarios combat-scenarios-compact');
+  const quickDice = createEl('section', { className: 'quick-dice', attrs: { 'aria-labelledby': 'quick-dice-title' } });
+  quickDice.append(createEl('div', { className: 'section-heading' }, [
+    createEl('h2', { id: 'quick-dice-title', text: 'Szybkie kości' }),
+    createEl('span', { className: 'section-caption', text: 'dotknij, aby rzucić' })
+  ]));
+  const grid = createEl('div', { className: 'dice-rail' });
+  for (const sides of DICE_SIDES) {
+    grid.append(createEl('button', {
+      type: 'button',
+      className: `btn die-button${latest?.notation === `1k${sides}` || latest?.notation === `k${sides}` ? ' is-recent' : ''}`,
+      attrs: { 'aria-label': `Rzuć kością k${sides}` },
+      onclick: () => performRoll({ count: 1, sides }, `k${sides}`)
+    }, [dieIcon(sides), createEl('span', { text: `k${sides}` })]));
+  }
+  quickDice.append(grid);
+
+  const utilities = createEl('section', { className: 'dice-utilities', attrs: { 'aria-label': 'Dodatkowe rzuty' } });
+  utilities.append(createEl('button', {
+    type: 'button',
+    className: 'action-row',
+    attrs: { 'aria-label': 'Rzuć Kością Losu k6. Wynik 1 do 3 oznacza pecha, 4 do 6 zwykle sprzyja postaciom.' },
+    onclick: performFateRoll
+  }, [uiIcon('fate'), createEl('span', {}, [createEl('strong', { text: 'Kość Losu' }), createEl('small', { text: '1–3: zwykle pech · 4–6: zwykle sprzyja' })]), createEl('span', { className: 'action-row-value', text: 'k6' })]));
+  utilities.append(createEl('button', {
+    type: 'button',
+    className: 'action-row',
+    onclick: openCustomRollSheet
+  }, [uiIcon('dice'), createEl('span', {}, [createEl('strong', { text: 'Rzut własny' }), createEl('small', { text: 'wiele kości, modyfikator, najwyższy wynik' })]), createEl('span', { className: 'action-row-value', text: '›', attrs: { 'aria-hidden': 'true' } })]));
+
+  const scenarios = createEl('section', { className: 'combat-scenarios' });
   const scenarioDisclosure = createEl('details', { className: 'combat-scenarios-disclosure' });
   scenarioDisclosure.append(createEl('summary', {}, [
     createEl('span', {}, [
@@ -3081,43 +3136,26 @@ function renderDiceView() {
     createEl('div', { className: 'scenario-grid' }, combatScenarioDefinitions().map(scenarioButton))
   ]));
   scenarios.append(scenarioDisclosure);
-  dashboard.append(scenarios);
 
-  const utility = createEl('div', { className: 'dice-utility-grid' });
-  const fate = createEl('button', {
-    type: 'button',
-    className: 'btn card dice-utility-card fate-utility',
-    attrs: { 'aria-label': 'Rzuć Kością Losu k6. Wynik 1 do 3 oznacza pecha, 4 do 6 zwykle sprzyja postaciom.' },
-    onclick: performFateRoll
-  }, [
-    uiIcon('fate'),
-    createEl('span', { className: 'fate-utility-copy' }, [
-      createEl('strong', { text: 'Kość Losu' }),
-      createEl('small', { text: '1–3 pech · 4–6 sprzyja' })
-    ]),
-    createEl('span', { className: 'fate-utility-roll', text: 'k6' })
-  ]);
-  utility.append(fate);
+  root.append(consolePanel, quickDice, utilities, scenarios);
+}
 
-  const custom = card([], 'dice-utility-card custom-utility');
-  const disclosure = createEl('details', { className: 'advanced-roll' });
-  disclosure.append(createEl('summary', { text: 'Rzut własny' }));
+function openCustomRollSheet() {
   const count = numberInput(1, 1, 100);
   const sides = selectInput(DICE_SIDES.map(side => [String(side), `k${side}`]), '6');
   const modifier = numberInput(0, -999, 999);
   const keep = createEl('input', { type: 'checkbox' });
-  const form = createEl('div', { className: 'form-grid' }, [
+  const body = createEl('div', { className: 'form-grid' }, [
     createEl('div', { className: 'form-grid two' }, [field('Liczba kości', count), field('Kość', sides)]),
     field('Modyfikator', modifier),
-    createEl('label', { className: 'check-row' }, [keep, createEl('span', { text: 'Zachowaj tylko najwyższy wynik' })]),
-    button('Rzuć', () => performRoll({ count: count.value, sides: sides.value, modifier: modifier.value, keepHighest: keep.checked }, 'Rzut własny'), 'btn btn-primary btn-block')
+    createEl('label', { className: 'check-row' }, [keep, createEl('span', { text: 'Zachowaj tylko najwyższy wynik' })])
   ]);
-  disclosure.append(form);
-  custom.append(disclosure);
-  utility.append(custom);
-  dashboard.append(utility);
-
-  root.append(dashboard);
+  const roll = button('Rzuć', () => {
+    closeSheet();
+    setView('dice');
+    performRoll({ count: count.value, sides: sides.value, modifier: modifier.value, keepHighest: keep.checked }, 'Rzut własny');
+  }, 'btn btn-primary btn-block');
+  openSheet({ title: 'Rzut własny', body, footer: roll });
 }
 
 function renderDiceResult(value, label, options = {}) {
@@ -3341,7 +3379,7 @@ function openSessionDetailsSheet(sessionId) {
 function renderSessionLogCard() {
   state.sessionLog = normalizeSessionLog(state.sessionLog);
   const active = state.sessionLog.active;
-  const section = card([], 'card-pad session-log-card');
+  const section = createEl('section', { className: 'journal-section session-log-card', attrs: { 'aria-label': 'Sesja' } });
   section.append(sectionHead('Sesja', createEl('span', { className: `tag${active ? ' session-live-badge' : ''}`, text: active ? 'AKTYWNA' : `${state.sessionLog.archive.length}/20` })));
   if (!active) {
     section.append(createEl('p', { className: 'muted small', text: 'Rozpocznij sesję, aby połączyć zmiany postaci i rzuty w jeden czytelny zapis.' }));
@@ -3392,23 +3430,45 @@ function renderMoreView() {
     return;
   }
 
-  const identity = card([], 'card-pad compact-more-card journal-intro');
-  identity.append(sectionHead('Dziennik postaci', button('Edytuj dane', openEditIdentitySheet, 'btn btn-quiet btn-ghost')));
+  root.append(renderSessionLogCard());
+
+  const quickNote = createEl('section', { className: 'journal-section quick-note', attrs: { 'aria-labelledby': 'quick-note-title' } }, [
+    createEl('div', { className: 'section-heading' }, [
+      createEl('div', {}, [createEl('p', { className: 'section-kicker', text: 'Przy stole' }), createEl('h2', { id: 'quick-note-title', text: 'Szybka notatka' })]),
+      button('Zapisz', openQuickNoteSheet, 'btn btn-primary')
+    ]),
+    createEl('p', { className: `notes-preview${trimText(state.notes) ? '' : ' muted'}`, text: trimText(state.notes) || 'Zapisz trop, imię albo decyzję, zanim zniknie z rozmowy.' })
+  ]);
+  root.append(quickNote);
+
+  const recentChanges = safeArray(state.changeHistory).slice(-3).reverse();
+  const recent = createEl('section', { className: 'journal-section recent-journal', attrs: { 'aria-labelledby': 'recent-journal-title' } }, [
+    createEl('div', { className: 'section-heading' }, [
+      createEl('h2', { id: 'recent-journal-title', text: 'Ostatnie wpisy' }),
+      createEl('span', { className: 'section-caption', text: `${recentChanges.length} ostatnie` })
+    ])
+  ]);
+  if (!recentChanges.length) recent.append(createEl('p', { className: 'muted', text: 'Pierwsze zmiany postaci i notatki pojawią się tutaj.' }));
+  for (const entry of recentChanges) recent.append(createEl('div', { className: 'journal-entry-row' }, [
+    createEl('p', { text: entry.description }),
+    createEl('time', { text: formatDateTime(entry.time), dateTime: entry.time })
+  ]));
+  root.append(recent);
+
+  const identity = createEl('section', { className: 'journal-section dossier-intro' });
+  identity.append(sectionHead('Dossier postaci', button('Edytuj dane', openEditIdentitySheet, 'btn btn-quiet btn-ghost')));
   identity.append(createEl('p', { className: 'eyebrow', text: state.identity.background || 'Bez tła' }));
   identity.append(createEl('p', { text: state.identity.backgroundDescription || 'Brak opisu tła.', className: 'muted small wrap-anywhere notes-preview' }));
   root.append(identity);
 
-  const characterData = card([], 'card-pad character-data-card');
+  const characterData = createEl('section', { className: 'journal-section character-data-card' });
   characterData.append(sectionHead('Karta postaci', createEl('span', { className: 'muted micro', text: 'rzadsze korekty' })));
   characterData.append(createEl('div', { className: 'character-data-actions' }, [
     button('Edytuj statystyki', openEditStatsSheet, 'btn'),
     button('Obrażenia atrybutu', openDirectDamageSheet, 'btn')
   ]));
-  root.append(characterData);
-  root.append(renderSessionLogCard());
-
-  const notes = card([], 'card-pad');
-  notes.append(sectionHead('Notatki i opis', button('Edytuj', openNotesSheet, 'btn btn-quiet btn-ghost')));
+  const notes = createEl('section', { className: 'journal-section' });
+  notes.append(sectionHead('Opis, więzi i omeny', button('Edytuj', openNotesSheet, 'btn btn-quiet btn-ghost')));
   notes.append(
     journalDisclosure('Cechy', state.identity.traits),
     journalDisclosure('Więzi', state.identity.bonds),
@@ -3417,13 +3477,14 @@ function renderMoreView() {
   );
   root.append(notes);
 
-  const scars = card([], 'card-pad');
+  const scars = createEl('section', { className: 'journal-section' });
   scars.append(sectionHead('Blizny', button('Dodaj', () => openAddScarSheet(), 'btn btn-quiet btn-ghost')));
   if (!state.scars.length) scars.append(createEl('p', { className: 'muted small', text: 'Brak zapisanych Blizn.' }));
   for (const [index, scar] of state.scars.entries()) scars.append(journalDisclosure(`Blizna ${index + 1}`, scar.text));
   root.append(scars);
+  root.append(characterData);
 
-  const historyCard = card([], 'card-pad');
+  const historyCard = createEl('section', { className: 'journal-section history-card' });
   historyCard.append(sectionHead('Historia zmian', createEl('span', { className: 'muted small', text: `${safeArray(state.changeHistory).length} wpisów` })));
 
   const changeDetails = createEl('details', { className: 'history-disclosure' });
@@ -3536,6 +3597,18 @@ function openEditIdentitySheet() {
     commitChange('Zmieniono dane postaci', next => { next.identity.name = value; next.identity.background = trimText(background.value); next.identity.backgroundDescription = description.value; next.isDemo = false; });
   }, 'btn btn-primary btn-block');
   openSheet({ title: 'Edytuj postać', body, footer: save });
+}
+
+function openQuickNoteSheet() {
+  const note = textarea(state.notes, 8000);
+  const body = createEl('div', { className: 'form-grid' }, [
+    field('Notatka z sesji', note, 'Tropy, imiona, obietnice i rzeczy, do których chcesz wrócić.')
+  ]);
+  const save = button('Zapisz notatkę', () => {
+    closeSheet();
+    commitChange('Zmieniono szybką notatkę', next => { next.notes = note.value; });
+  }, 'btn btn-primary btn-block');
+  openSheet({ title: 'Szybka notatka', body, footer: save });
 }
 
 function openNotesSheet() {
@@ -3749,7 +3822,7 @@ function runDeveloperTests() {
   test('64. Atak przedmiotem przechodzi przez straż paniki', () => { assert(renderItemCard.toString().includes('runItemAttack') && runItemAttack.toString().includes('atak osłabiony')); });
   test('65. Co teraz priorytetyzuje obrażenia krytyczne przed Paniką', () => { const fixture = createDemoState(); fixture.conditions.criticalDamage = true; fixture.conditions.panicked = true; assert(sessionPromptFor(fixture)?.id === 'critical-damage'); });
   test('66. Pełny ekwipunek proponuje ustawienie Ochrony na 0', () => { const fixture = createDefaultState(); fixture.initialized = true; fixture.stats.hp.current = 3; fixture.inventory.items = Array.from({ length: 10 }, (_, index) => makeItem({ id:`full-${index}`, slots:1 })); assert(sessionPromptFor(fixture)?.id === 'full-inventory'); });
-  test('67. Dziennik nie zawiera ustawień technicznych', () => { const source = renderMoreView.toString(); assert(source.includes('Dziennik postaci') && !source.includes('Dane i kopie zapasowe') && !source.includes('Testy deweloperskie')); });
+  test('67. Dziennik nie zawiera ustawień technicznych', () => { const source = renderMoreView.toString(); assert(source.includes('Dossier postaci') && !source.includes('Dane i kopie zapasowe') && !source.includes('Testy deweloperskie')); });
   test('68. Ustawienia i dane są dostępne z nagłówka', () => { assert(Boolean($('#appSettingsBtn')) && typeof openAppSettingsSheet === 'function' && $('#nav-more')?.textContent.includes('Dziennik')); });
   test('69. Skróty sytuacji w walce są pełnymi zdaniami', () => { const definitions = combatScenarioDefinitions(); assert(definitions.find(entry => entry.id === 'blast').description === 'Osobny rzut dla każdego celu.' && definitions.find(entry => entry.id === 'dual').description === 'Rzuć obiema. Zachowaj wyższą.' && definitions.find(entry => entry.id === 'multiple').description === 'Rzuć wszystkie. Zachowaj najwyższą.'); });
   test('70. Grupowanie ekwipunku zachowuje ustaloną kolejność sekcji', () => { const fixture = createDefaultState(); fixture.inventory.items = [makeItem({ id:'held', carryState:'held' }), makeItem({ id:'worn', carryState:'worn' }), makeItem({ id:'stored', carryState:'stored' }), makeItem({ id:'spent', carryState:'spent' }), makeItem({ id:'other', carryState:'legacy' })]; fixture.inventory.fatigue = [makeFatigue({ id:'fatigue' })]; assert(groupInventoryEntries(fixture).map(group => group.id).join(',') === 'held,worn,stored,fatigue,spent,other'); });

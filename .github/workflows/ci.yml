@@ -39,7 +39,7 @@ jobs:
         shell: bash
         run: |
           set -o pipefail
-          npm run test:ci 2>&1 | tee playwright-output.log
+          npm test 2>&1 | tee playwright-output.log
 
       - name: Upload browser test diagnostics
         if: always()
@@ -51,6 +51,15 @@ jobs:
             test-results
             playwright-report
           if-no-files-found: warn
+
+      - name: Upload UI review screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: ui-review-screenshots
+          path: ui-review-screenshots
+          if-no-files-found: error
+          retention-days: 14
 
       - name: Fail when browser regression suite fails
         if: steps.browser_tests.outcome == 'failure'
