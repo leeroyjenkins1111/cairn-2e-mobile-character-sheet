@@ -39,15 +39,55 @@ test('all four views expose distinct app-like structures and the header names th
   await expect(page.getByRole('heading', { name: 'Dossier postaci' })).toBeVisible();
 });
 
-test('character state prioritizes one protection control and direct save targets', async ({ page }) => {
+test('character state prepares direct saves before rolling and preserves the announced stake', async ({ page }) => {
   await loadDemo(page);
   await expect(page.locator('.state-values > .protection-control')).toHaveCount(1);
   await expect(page.locator('.secondary-stat')).toHaveCount(2);
   await expect(page.locator('.secondary-action-grid .compact-action')).toHaveCount(3);
   await expect(page.locator('.damage-primary-action')).toHaveCount(1);
 
-  await page.getByRole('button', { name: /Rzut obronny Siła, aktualna wartość/ }).click();
+  await page.getByRole('button', { name: /Przygotuj rzut obronny Siła, aktualna wartość/ }).click();
+  await expect(page.locator('#sheetTitle')).toHaveText('Przygotuj rzut SIŁ');
+  await page.getByRole('textbox', { name: /Co grozi przy porażce/ }).fill('Strażnicy mnie zauważą');
+  await page.getByRole('button', { name: 'Rzuć 1k20' }).click();
   await expect(page.locator('#sheetTitle')).toHaveText('Rzut obronny SIŁ');
+  await expect(page.locator('#sheet')).toContainText('Strażnicy mnie zauważą');
+  await expect(page.locator('#sheet')).toContainText('Warden opisuje');
+  await expect.poll(async () => page.evaluate(() => globalThis.CairnSheetDev.getState().diceHistory[0]?.details)).toContain('Stawka: Strażnicy mnie zauważą');
+});
+
+test('failed save routes the Warden consequence without inventing an outcome', async ({ page }) => {
+  await loadDemo(page);
+  await page.evaluate(() => globalThis.CairnSheetDev.performSave('dex', 20, { stake: 'Pochodnia wpada do wody' }));
+  await expect(page.locator('#sheetTitle')).toHaveText('Rzut obronny ZRE');
+  await expect(page.locator('#sheet')).toContainText('Porażka uruchamia ustalony wcześniej skutek');
+  await page.getByRole('button', { name: 'Rozpatrz skutek…' }).click();
+  await expect(page.locator('#sheetTitle')).toHaveText('Rozpatrz skutek');
+  await expect(page.locator('#sheet')).toContainText('Pochodnia wpada do wody');
+  await expect(page.getByRole('button', { name: /Rozlicz obrażenia/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Obrażenia atrybutu/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Zmień stan/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Przejdź do ekwipunku/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Tylko skutek w fikcji' })).toBeVisible();
+});
+
+test('active weapon shows its damage result in place and links to history', async ({ page }) => {
+  await loadDemo(page);
+  await page.getByRole('button', { name: /Rzuć obrażenia aktywną bronią/ }).click();
+  await expect(page.locator('#sheetTitle')).toHaveText('Obrażenia broni');
+  await expect(page.locator('#sheet')).toContainText('Atak trafia automatycznie');
+  await expect(page.locator('#sheet .dice-result strong')).toHaveText(/^[1-9]\d*$/);
+  await page.getByRole('button', { name: 'Historia', exact: true }).click();
+  await expect(page.locator('#sheetTitle')).toHaveText('Historia rzutów');
+  await expect(page.locator('#sheet')).toContainText('Krótki łuk');
+});
+
+test('rest requires explicit confirmation of safe fictional conditions', async ({ page }) => {
+  await loadDemo(page);
+  await page.getByRole('button', { name: 'Odpoczynek', exact: true }).click();
+  await expect(page.locator('#sheetTitle')).toHaveText('Krótki odpoczynek');
+  await expect(page.locator('#sheet')).toContainText('Potwierdź z Wardenem');
+  await expect(page.getByRole('button', { name: /Warunki są bezpieczne — przywróć OCHR/ })).toBeVisible();
 });
 
 test('inventory rows are fully tappable and expose at most one trailing action', async ({ page }) => {
