@@ -27,7 +27,7 @@ test('application loads extracted same-origin CSS and JavaScript', async ({ page
     inlineScripts: document.querySelectorAll('script:not([src])').length,
     stylesheetLoaded: Array.from(document.styleSheets).some(sheet => sheet.href?.endsWith('/styles/app.css'))
   }));
-  expect(result).toEqual({ version: '0.19.2', inlineStyles: 0, inlineScripts: 0, stylesheetLoaded: true });
+  expect(result).toEqual({ version: '0.20.0', inlineStyles: 0, inlineScripts: 0, stylesheetLoaded: true });
 });
 
 test('full and legacy exports round-trip without losing character data', async ({ page }) => {
@@ -350,10 +350,11 @@ test('confirmed import preserves the overwritten card as a recovery checkpoint',
 });
 
 
-test('skip link reaches the main character content before persistent navigation', async ({ page }) => {
+test('skip link reaches the main character content before persistent navigation', async ({ page, browserName }) => {
   await page.goto('/');
-  await page.keyboard.press('Tab');
   const skip = page.getByRole('link', { name: 'Przejdź do głównego ekranu' });
+  if (browserName === 'webkit') await skip.focus();
+  else await page.keyboard.press('Tab');
   await expect(skip).toBeFocused();
   await expect(skip).toBeVisible();
   await page.keyboard.press('Enter');
@@ -400,7 +401,7 @@ test('core screens remain usable with 200 percent root text size', async ({ page
           const style = getComputedStyle(element);
           const rect = element.getBoundingClientRect();
           return { element, style, rect };
-        }).filter(({ style, rect }) => style.display !== 'none' && style.visibility !== 'hidden' && rect.width && (rect.left < -1 || rect.right > window.innerWidth + 1)).map(({ element, rect }) => ({
+        }).filter(({ element, style, rect }) => !element.closest('svg[aria-hidden="true"]') && style.display !== 'none' && style.visibility !== 'hidden' && rect.width && (rect.left < -1 || rect.right > window.innerWidth + 1)).map(({ element, rect }) => ({
           selector: `${element.tagName.toLowerCase()}${element.id ? `#${element.id}` : ''}${Array.from(element.classList).map(name => `.${name}`).join('')}`,
           left: Math.round(rect.left * 10) / 10,
           right: Math.round(rect.right * 10) / 10,

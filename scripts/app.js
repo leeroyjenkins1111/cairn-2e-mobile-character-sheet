@@ -4,7 +4,7 @@
 // 1. Constants
 // ============================================================
 const APP_ID = 'cairn-mobile-sheet';
-const APP_VERSION = '0.19.2';
+const APP_VERSION = '0.20.0';
 const SCHEMA_VERSION = 3;
 const STORAGE_KEY = `${APP_ID}:state`;
 const RECOVERY_KEY = `${APP_ID}:recovery`;
@@ -1704,10 +1704,20 @@ function exportBackup() {
 // 11. Sheet controller
 // ============================================================
 let lastFocusedElement = null;
+let lastInvokingControl = null;
 let closeHandler = null;
 
+document.addEventListener('pointerdown', event => {
+  const control = event.target instanceof Element ? event.target.closest('button, a, input, select, textarea, summary') : null;
+  if (control) lastInvokingControl = control;
+}, true);
+
 function openSheet({ title, body, footer = null, onClose = null }) {
-  lastFocusedElement = document.activeElement;
+  const activeElement = document.activeElement;
+  const activeControl = activeElement instanceof Element && activeElement.matches('button, a, input, select, textarea, summary')
+    ? activeElement
+    : null;
+  lastFocusedElement = activeControl || lastInvokingControl || activeElement;
   closeHandler = onClose;
   $('#sheetTitle').textContent = title;
   $('#sheetBody').replaceChildren(body instanceof Node ? body : createEl('p', { text: body }));
@@ -1749,6 +1759,7 @@ function closeSheet() {
   };
   restoreFocus();
   requestAnimationFrame(restoreFocus);
+  setTimeout(restoreFocus, 0);
 }
 
 function getSheetFocusable() {
@@ -1878,7 +1889,12 @@ function uiIcon(name) {
     blast: [['circle', { cx: '12', cy: '12', r: '3' }], ['path', { d: 'M12 2v4M12 18v4M2 12h4M18 12h4M5 5l3 3M16 16l3 3M19 5l-3 3M8 16l-3 3' }]],
     dual: [['path', { d: 'M6 4l12 16M18 4L6 20' }], ['path', { d: 'M5 5l3-1-1 3M19 5l-3-1 1 3' }]],
     group: [['circle', { cx: '8', cy: '9', r: '2.5' }], ['circle', { cx: '16', cy: '9', r: '2.5' }], ['path', { d: 'M3.5 19c.5-3.3 2-5 4.5-5s4 1.7 4.5 5M11.5 19c.5-3.3 2-5 4.5-5s4 1.7 4.5 5' }]],
-    fate: [['path', { d: 'M12 3l7 4v10l-7 4-7-4V7z' }], ['path', { d: 'M9 9h.01M15 15h.01M15 9h.01M9 15h.01' }]]
+    fate: [['path', { d: 'M12 3l7 4v10l-7 4-7-4V7z' }], ['path', { d: 'M9 9h.01M15 15h.01M15 9h.01M9 15h.01' }]],
+    protection: [['path', { d: 'M3.5 12s3.2-5.2 8.5-5.2 8.5 5.2 8.5 5.2-3.2 5.2-8.5 5.2S3.5 12 3.5 12z' }], ['circle', { cx: '12', cy: '12', r: '2.4' }]],
+    weapon: [['path', { d: 'M5 19L19 5M15 5h4v4M7 15l2 2M4 20l3-1-2-2z' }], ['path', { d: 'M5 5l14 14M5 9V5h4M15 17l2-2M20 20l-3-1 2-2z' }]],
+    slots: [['path', { d: 'M7 7V5.5A2.5 2.5 0 0 1 9.5 3h5A2.5 2.5 0 0 1 17 5.5V7' }], ['path', { d: 'M5 7h14v13H5zM8 11h8M8 15h8' }]],
+    conditions: [['path', { d: 'M12 3v3M5.6 5.6l2.1 2.1M3 12h3M5.6 18.4l2.1-2.1M12 21v-3M18.4 18.4l-2.1-2.1M21 12h-3M18.4 5.6l-2.1 2.1' }], ['circle', { cx: '12', cy: '12', r: '3' }]],
+    action: [['path', { d: 'M12 3l1.5 5.5L19 10l-5.5 1.5L12 17l-1.5-5.5L5 10l5.5-1.5z' }], ['path', { d: 'M18.5 16l.7 2.3 2.3.7-2.3.7-.7 2.3-.7-2.3-2.3-.7 2.3-.7z' }]]
   };
   for (const [tag, attrs] of paths[name] || paths.more) {
     const node = document.createElementNS(ns, tag);
@@ -1886,6 +1902,39 @@ function uiIcon(name) {
     svg.append(node);
   }
   return svg;
+}
+
+function characterForestMotif() {
+  const ns = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(ns, 'svg');
+  svg.classList.add('character-forest-motif');
+  svg.setAttribute('viewBox', '0 0 360 220');
+  svg.setAttribute('preserveAspectRatio', 'xMidYMid slice');
+  svg.setAttribute('aria-hidden', 'true');
+  svg.setAttribute('focusable', 'false');
+
+  const shapes = [
+    ['path', { class: 'forest-haze', d: 'M0 159c50-18 88-13 126 4 48 22 84 25 126 5 42-20 75-20 108-7v59H0z' }],
+    ['circle', { class: 'forest-moon', cx: '292', cy: '42', r: '19' }],
+    ['path', { class: 'forest-trunk forest-trunk-far', d: 'M25 220c1-48 7-89 1-128C22 65 25 34 44 5M29 91C15 77 9 60 4 38M32 70c17-12 28-31 35-55M106 220c-2-43 2-77-8-108-6-19-3-44 8-67M99 113c-18-12-26-27-34-44M102 91c18-14 28-28 35-46' }],
+    ['path', { class: 'forest-trunk', d: 'M304 220c-8-51-5-88-15-119-10-30-7-62 3-96M292 102c-22-17-34-39-44-66M292 77c22-17 36-34 46-58M319 220c1-47 8-80 5-110-3-24 4-49 23-72M328 111c-13-13-22-29-27-45' }],
+    ['path', { class: 'forest-branch', d: 'M0 28c43 5 73 20 99 45 18 18 42 26 72 26M62 51C86 38 104 20 115 0M145 96c20-20 38-45 45-77M360 28c-42 8-72 27-91 56' }],
+    ['path', { class: 'forest-mark', d: 'M215 45l5 8-5 8-5-8zM215 38v-5M215 68v5' }]
+  ];
+  for (const [tag, attrs] of shapes) {
+    const node = document.createElementNS(ns, tag);
+    for (const [key, value] of Object.entries(attrs)) node.setAttribute(key, value);
+    svg.append(node);
+  }
+  return svg;
+}
+
+function stateLabel(label, icon) {
+  return createEl('span', { className: 'state-label state-label-icon' }, [uiIcon(icon), createEl('span', { text: label })]);
+}
+
+function characterSectionTitle(id, label, icon) {
+  return createEl('div', { className: 'section-title' }, [uiIcon(icon), createEl('h2', { id, text: label })]);
 }
 
 function iconButton(label, icon, onClick, className = 'btn btn-icon btn-ghost', attrs = {}) {
@@ -2626,8 +2675,8 @@ function renderCombatLauncher() {
   const panicked = state.conditions.panicked;
   const section = createEl('section', { className: 'combat-launcher', attrs: { 'aria-labelledby': 'combat-launcher-title' } });
   section.append(createEl('div', { className: 'section-heading' }, [
-    createEl('h2', { id: 'combat-launcher-title', text: 'Walka' }),
-    createEl('span', { className: 'section-caption', text: panicked ? 'ataki osłabione' : 'ataki trafiają automatycznie' })
+    characterSectionTitle('combat-launcher-title', 'Walka', 'weapon'),
+    panicked ? createEl('span', { className: 'combat-status', text: 'Osłabione' }) : null
   ]));
 
   let title = 'Brak broni w rękach';
@@ -2654,11 +2703,26 @@ function renderCombatLauncher() {
       createEl('strong', { text: title }),
       createEl('span', { text: meta })
     ]),
-    button(actionLabel, action, 'btn btn-quiet combat-weapon-action', { 'aria-label': actionAria })
+    createEl('button', {
+      type: 'button',
+      className: 'btn btn-quiet combat-weapon-action',
+      attrs: { 'aria-label': actionAria },
+      onclick: action
+    }, [uiIcon('roll'), createEl('span', { text: actionLabel })])
   ]));
   section.append(createEl('div', { className: 'combat-quick-actions' }, [
-    button('Pierwsza runda · ZRE', () => performFirstRoundDexSave(), 'btn btn-ghost'),
-    button('Opcje walki', openCombatSheet, 'btn btn-ghost')
+    createEl('button', {
+      type: 'button',
+      className: 'btn btn-ghost combat-utility-action',
+      attrs: { 'aria-label': 'Pierwsza runda · ZRE' },
+      onclick: () => performFirstRoundDexSave()
+    }, [uiIcon('round'), createEl('span', { text: 'Pierwsza runda' }), createEl('small', { text: 'ZRE' })]),
+    createEl('button', {
+      type: 'button',
+      className: 'btn btn-ghost combat-utility-action',
+      attrs: { 'aria-label': 'Opcje walki' },
+      onclick: openCombatSheet
+    }, [uiIcon('more'), createEl('span', { text: 'Opcje' })])
   ]));
   return section;
 }
@@ -2693,6 +2757,7 @@ function renderCharacterView() {
   const usage = calculateInventoryUsage();
   const sessionLayout = createEl('div', { className: 'character-session' });
   const hero = createEl('section', { className: 'character-state', attrs: { 'aria-labelledby': 'character-name' } });
+  hero.append(characterForestMotif());
   const identity = createEl('div', { className: 'identity-row' }, [
     createEl('div', { className: 'avatar', text: initials(state.identity.name) }),
     createEl('div', { className: 'identity-copy' }, [
@@ -2710,20 +2775,20 @@ function renderCharacterView() {
       attrs: { 'aria-label': `Ochrona ${state.stats.hp.current} z ${state.stats.hp.max}. Ochrona przed trafieniem (OCHR) opisuje zdolność unikania obrażeń. Otwórz wyjaśnienie i edycję.` },
       onclick: openProtectionSheet
     }, [
-      createEl('span', { className: 'state-label', text: 'OCHR' }),
+      stateLabel('OCHR', 'protection'),
       createEl('span', { className: 'protection-value' }, [String(state.stats.hp.current), createEl('small', { text: ` / ${state.stats.hp.max}` })]),
-      createEl('span', { className: 'state-caption', text: 'unikanie obrażeń · edytuj' })
+      createEl('span', { className: 'state-caption', text: 'unikanie obrażeń' })
     ]),
     createEl('div', { className: 'state-secondary' }, [
       createEl('div', { className: 'secondary-stat' }, [
-        createEl('span', { className: 'state-label', text: 'Pancerz' }),
+        stateLabel('Pancerz', 'armor'),
         createEl('strong', { text: armor.effective }),
-        createEl('span', { className: 'state-caption', text: armor.mode === 'manual' ? 'ręcznie' : 'ze sprzętu' })
+        createEl('span', { className: 'state-caption', text: armor.mode === 'manual' ? 'ręcznie' : 'sprzęt' })
       ]),
       createEl('div', { className: 'secondary-stat' }, [
-        createEl('span', { className: 'state-label', text: 'Miejsca' }),
+        stateLabel('Miejsca', 'slots'),
         createEl('strong', { text: `${usage.total}/10` }),
-        createEl('span', { className: 'state-caption', text: `${usage.fatigueSlots} zmęczenia` })
+        createEl('span', { className: 'state-caption state-caption-icon', attrs: { 'aria-label': `${usage.fatigueSlots} zmęczenia` } }, [uiIcon('fatigue'), createEl('span', { text: usage.fatigueSlots })])
       ])
     ])
   ]);
@@ -2757,8 +2822,7 @@ function renderCharacterView() {
 
   const gameActions = createEl('section', { className: 'game-actions', attrs: { 'aria-labelledby': 'game-actions-title' } });
   gameActions.append(createEl('div', { className: 'section-heading' }, [
-    createEl('h2', { id: 'game-actions-title', text: 'Akcje w grze' }),
-    createEl('span', { className: 'section-caption', text: 'najczęstsze przy stole' })
+    characterSectionTitle('game-actions-title', 'Akcje', 'action')
   ]));
   gameActions.append(createEl('button', {
     type: 'button',
@@ -2768,7 +2832,7 @@ function renderCharacterView() {
   gameActions.append(createEl('div', { className: 'secondary-action-grid' }, [
     compactActionButton('Rzut obronny', 'dice', openSavePickerSheet),
     compactActionButton('Odpoczynek', 'rest', openRestSheet),
-    compactActionButton('Stany', 'more', openConditionsSheet)
+    compactActionButton('Stany', 'conditions', openConditionsSheet)
   ]));
   sessionLayout.append(gameActions);
 
