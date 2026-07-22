@@ -90,7 +90,7 @@ test('character state prepares direct saves before rolling and preserves the ann
   await expect.poll(async () => page.evaluate(() => globalThis.CairnSheetDev.getState().diceHistory[0]?.details)).toContain('Stawka: Strażnicy mnie zauważą');
 });
 
-test('compact character layout groups stats with spacing and does not clip interface copy', async ({ page }) => {
+test('open character layout aligns sections, removes nested cards and does not clip interface copy', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 568 });
   await loadDemo(page);
 
@@ -109,18 +109,35 @@ test('compact character layout groups stats with spacing and does not clip inter
       .map(element => element.textContent.trim());
     return {
       characterBorder: style('.character-state').borderTopWidth,
+      characterBackground: style('.character-state').backgroundColor,
       protectionDivider: style('.protection-control').borderRightWidth,
       secondaryDivider: style('.secondary-stat + .secondary-stat').borderTopWidth,
       attributeBorder: style('.attribute-control').borderTopWidth,
+      attributeBackground: style('.attribute-control').backgroundColor,
+      attributeSeparator: style('.attribute-control + .attribute-control').borderLeftWidth,
+      combatBackground: style('.combat-launcher').backgroundColor,
+      actionsBackground: style('.game-actions').backgroundColor,
+      damageBorder: style('.damage-primary-action').borderTopWidth,
+      damageBackground: style('.damage-primary-action').backgroundColor,
+      sectionLeftEdges: ['.identity-row', '.state-values', '.combat-launcher', '.game-actions']
+        .map(selector => Math.round(document.querySelector(selector).getBoundingClientRect().left * 10) / 10),
       clipped
     };
   });
 
   expect(presentation).toEqual({
     characterBorder: '0px',
+    characterBackground: 'rgba(0, 0, 0, 0)',
     protectionDivider: '0px',
     secondaryDivider: '0px',
-    attributeBorder: '1px',
+    attributeBorder: '0px',
+    attributeBackground: 'rgba(0, 0, 0, 0)',
+    attributeSeparator: '1px',
+    combatBackground: 'rgba(0, 0, 0, 0)',
+    actionsBackground: 'rgba(0, 0, 0, 0)',
+    damageBorder: '0px',
+    damageBackground: 'rgba(0, 0, 0, 0)',
+    sectionLeftEdges: [14, 14, 14, 14],
     clipped: []
   });
   await expect(page.locator('.combat-utility-action').first()).toContainText('Runda 1');
