@@ -4,7 +4,7 @@
 // 1. Constants
 // ============================================================
 const APP_ID = 'cairn-mobile-sheet';
-const APP_VERSION = '0.19.0';
+const APP_VERSION = '0.19.1';
 const SCHEMA_VERSION = 3;
 const STORAGE_KEY = `${APP_ID}:state`;
 const RECOVERY_KEY = `${APP_ID}:recovery`;
@@ -1993,6 +1993,7 @@ function scenarioButton(definition) {
 }
 
 const HAPTIC_PATTERNS = Object.freeze({
+  tick: Object.freeze([6]),
   selection: Object.freeze([8]),
   roll: Object.freeze([8, 22, 14]),
   success: Object.freeze([10, 20, 18]),
@@ -2039,22 +2040,197 @@ function diceEntrySides(entry) {
   return match ? Number(match[1]) : 20;
 }
 
+const DIE_ROLL_DURATION = 1250;
+const DIE_HAPTIC_TICKS = Object.freeze([0.07, 0.14, 0.22, 0.31, 0.41, 0.52, 0.64, 0.77, 0.89]);
+const DIE_MESH_CACHE = new Map();
+
+function vectorCross(a, b) {
+  return [a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]];
+}
+
+function vectorDot(a, b) {
+  return a[0] * b[0] + a[1] * b[1] + a[2] * b[2];
+}
+
+function vectorNormalize(value) {
+  const length = Math.hypot(...value) || 1;
+  return value.map(entry => entry / length);
+}
+
+function normalizeDieVertices(vertices) {
+  const radius = Math.max(...vertices.map(vertex => Math.hypot(...vertex))) || 1;
+  return vertices.map(vertex => vertex.map(entry => entry / radius));
+}
+
+function orientFacesOutward(vertices, faces) {
+  return faces.map(face => {
+    const [a, b, c] = face.map(index => vertices[index]);
+    const normal = vectorCross(b.map((entry, index) => entry - a[index]), c.map((entry, index) => entry - a[index]));
+    const center = face.reduce((sum, index) => sum.map((entry, axis) => entry + vertices[index][axis]), [0, 0, 0]).map(entry => entry / face.length);
+    return vectorDot(normal, center) < 0 ? [...face].reverse() : [...face];
+  });
+}
+
+function convexHullFaces(vertices) {
+  const planes = new Map();
+  const epsilon = 1e-5;
+  for (let a = 0; a < vertices.length - 2; a += 1) {
+    for (let b = a + 1; b < vertices.length - 1; b += 1) {
+      for (let c = b + 1; c < vertices.length; c += 1) {
+        const ab = vertices[b].map((entry, axis) => entry - vertices[a][axis]);
+        const ac = vertices[c].map((entry, axis) => entry - vertices[a][axis]);
+        const rawNormal = vectorCross(ab, ac);
+        if (Math.hypot(...rawNormal) < epsilon) continue;
+        let normal = vectorNormalize(rawNormal);
+        let distance = vectorDot(normal, vertices[a]);
+        const offsets = vertices.map(vertex => vectorDot(normal, vertex) - distance);
+        if (!(offsets.every(offset => offset <= epsilon) || offsets.every(offset => offset >= -epsilon))) continue;
+        if (distance < 0) {
+          normal = normal.map(entry => -entry);
+          distance *= -1;
+        }
+        const key = [...normal, distance].map(entry => entry.toFixed(4)).join(':');
+        if (planes.has(key)) continue;
+        const face = vertices.map((vertex, index) => Math.abs(vectorDot(normal, vertex) - distance) <= epsilon * 4 ? index : -1).filter(index => index >= 0);
+        if (face.length < 3) continue;
+        const center = face.reduce((sum, index) => sum.map((entry, axis) => entry + vertices[index][axis]), [0, 0, 0]).map(entry => entry / face.length);
+        const reference = vectorNormalize(Math.abs(normal[0]) < 0.8 ? vectorCross(normal, [1, 0, 0]) : vectorCross(normal, [0, 1, 0]));
+        const tangent = vectorCross(normal, reference);
+        face.sort((left, right) => {
+          const l = vertices[left].map((entry, axis) => entry - center[axis]);
+          const r = vertices[right].map((entry, axis) => entry - center[axis]);
+          return Math.atan2(vectorDot(l, tangent), vectorDot(l, reference)) - Math.atan2(vectorDot(r, tangent), vectorDot(r, reference));
+        });
+        planes.set(key, face);
+      }
+    }
+  }
+  return orientFacesOutward(vertices, [...planes.values()]);
+}
+
+function createDieMesh(sides) {
+  const numericSides = DICE_SIDES.includes(Number(sides)) ? Number(sides) : 20;
+  if (DIE_MESH_CACHE.has(numericSides)) return DIE_MESH_CACHE.get(numericSides);
+  let vertices;
+  let faces;
+  if (numericSides === 4) {
+    vertices = [[1, 1, 1], [-1, -1, 1], [-1, 1, -1], [1, -1, -1]];
+    faces = [[0, 2, 1], [0, 1, 3], [0, 3, 2], [1, 2, 3]];
+  } else if (numericSides === 6) {
+    vertices = [[-1,-1,-1],[1,-1,-1],[1,1,-1],[-1,1,-1],[-1,-1,1],[1,-1,1],[1,1,1],[-1,1,1]];
+    faces = [[0,3,2,1],[4,5,6,7],[0,1,5,4],[1,2,6,5],[2,3,7,6],[3,0,4,7]];
+  } else if (numericSides === 8) {
+    vertices = [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]];
+    faces = [[0,2,4],[2,1,4],[1,3,4],[3,0,4],[2,0,5],[1,2,5],[3,1,5],[0,3,5]];
+  } else if (numericSides === 10 || numericSides === 100) {
+    vertices = [[0, 0, 1.2], [0, 0, -1.2]];
+    for (let index = 0; index < 5; index += 1) {
+      const angle = (index / 5) * Math.PI * 2 - Math.PI / 2;
+      vertices.push([Math.cos(angle), Math.sin(angle), 0]);
+    }
+    faces = [];
+    for (let index = 0; index < 5; index += 1) {
+      const current = index + 2;
+      const next = ((index + 1) % 5) + 2;
+      faces.push([0, current, next], [1, next, current]);
+    }
+  } else {
+    const phi = (1 + Math.sqrt(5)) / 2;
+    vertices = numericSides === 12
+      ? [[1,1,1],[1,1,-1],[1,-1,1],[1,-1,-1],[-1,1,1],[-1,1,-1],[-1,-1,1],[-1,-1,-1],[0,1/phi,phi],[0,1/phi,-phi],[0,-1/phi,phi],[0,-1/phi,-phi],[1/phi,phi,0],[1/phi,-phi,0],[-1/phi,phi,0],[-1/phi,-phi,0],[phi,0,1/phi],[phi,0,-1/phi],[-phi,0,1/phi],[-phi,0,-1/phi]]
+      : [[-1,phi,0],[1,phi,0],[-1,-phi,0],[1,-phi,0],[0,-1,phi],[0,1,phi],[0,-1,-phi],[0,1,-phi],[phi,0,-1],[phi,0,1],[-phi,0,-1],[-phi,0,1]];
+    faces = convexHullFaces(vertices);
+  }
+  const normalized = normalizeDieVertices(vertices);
+  const mesh = { vertices: normalized, faces: orientFacesOutward(normalized, faces), sides: numericSides };
+  DIE_MESH_CACHE.set(numericSides, mesh);
+  return mesh;
+}
+
+function rotateDiePoint(point, rotation) {
+  const [sinX, cosX] = [Math.sin(rotation.x), Math.cos(rotation.x)];
+  const [sinY, cosY] = [Math.sin(rotation.y), Math.cos(rotation.y)];
+  const [sinZ, cosZ] = [Math.sin(rotation.z), Math.cos(rotation.z)];
+  const afterX = [point[0], point[1] * cosX - point[2] * sinX, point[1] * sinX + point[2] * cosX];
+  const afterY = [afterX[0] * cosY + afterX[2] * sinY, afterX[1], -afterX[0] * sinY + afterX[2] * cosY];
+  return [afterY[0] * cosZ - afterY[1] * sinZ, afterY[0] * sinZ + afterY[1] * cosZ, afterY[2]];
+}
+
+function finalDieRotation(sides, value) {
+  return { x: 0.5 + (Number(value) % 4) * 0.17, y: 0.65 + (Number(value) % 7) * 0.11, z: -0.12 + (Number(sides) % 5) * 0.045 };
+}
+
+function paintResultDie(canvas, sides, rotation, lift = 0) {
+  const context = canvas?.getContext?.('2d');
+  if (!context) return false;
+  const bounds = canvas.getBoundingClientRect();
+  const cssSize = Math.max(104, Math.round(Math.min(bounds.width || 132, bounds.height || 132)));
+  const pixelRatio = Math.min(2, globalThis.devicePixelRatio || 1);
+  const targetSize = Math.round(cssSize * pixelRatio);
+  if (canvas.width !== targetSize || canvas.height !== targetSize) {
+    canvas.width = targetSize;
+    canvas.height = targetSize;
+  }
+  context.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+  context.clearRect(0, 0, cssSize, cssSize);
+  const mesh = createDieMesh(sides);
+  const transformed = mesh.vertices.map(vertex => rotateDiePoint(vertex, rotation));
+  const center = cssSize / 2;
+  const radius = cssSize * (mesh.sides === 4 ? 0.42 : 0.39);
+  const project = point => {
+    const perspective = 3.8 / (3.8 - point[2]);
+    return [center + point[0] * radius * perspective, center + lift + point[1] * radius * perspective];
+  };
+  const light = vectorNormalize([-0.35, -0.55, 0.9]);
+  const isLight = document.documentElement.dataset.theme === 'light';
+  const visibleFaces = mesh.faces.map(face => {
+    const [a, b, c] = face.map(index => transformed[index]);
+    const normal = vectorNormalize(vectorCross(b.map((entry, axis) => entry - a[axis]), c.map((entry, axis) => entry - a[axis])));
+    return { face, normal, depth: face.reduce((sum, index) => sum + transformed[index][2], 0) / face.length };
+  }).filter(entry => entry.normal[2] > -0.03).sort((left, right) => left.depth - right.depth);
+  for (const entry of visibleFaces) {
+    const brightness = clamp(0.2 + Math.max(0, vectorDot(entry.normal, light)) * 0.8, 0.2, 1);
+    const points = entry.face.map(index => project(transformed[index]));
+    context.beginPath();
+    points.forEach(([x, y], index) => index ? context.lineTo(x, y) : context.moveTo(x, y));
+    context.closePath();
+    const lightness = isLight ? 34 + brightness * 34 : 13 + brightness * 29;
+    context.fillStyle = `hsl(38 34% ${lightness}%)`;
+    context.fill();
+    context.lineWidth = 1.15;
+    context.strokeStyle = isLight ? 'rgba(70, 48, 20, .72)' : 'rgba(226, 197, 139, .76)';
+    context.stroke();
+  }
+  return true;
+}
+
 function createResultDie(value, sides, rolling = false) {
   const numericSides = DICE_SIDES.includes(Number(sides)) ? Number(sides) : 20;
-  const face = createEl('div', { className: 'result-die-face' }, [
-    dieIcon(numericSides),
-    createEl('span', { className: 'result-die-notation', text: `k${numericSides}` }),
-    createEl('strong', { className: 'result-die-value', text: rolling ? '—' : String(value) })
-  ]);
-  const depth = createEl('div', { className: 'result-die-depth', attrs: { 'aria-hidden': 'true' } }, [dieIcon(numericSides)]);
+  const canvases = numericSides === 100
+    ? [
+        createEl('canvas', { className: 'result-die-canvas percentile-die percentile-die-first', attrs: { 'aria-hidden': 'true' } }),
+        createEl('canvas', { className: 'result-die-canvas percentile-die percentile-die-second', attrs: { 'aria-hidden': 'true' } })
+      ]
+    : [createEl('canvas', { className: 'result-die-canvas', attrs: { 'aria-hidden': 'true' } })];
   const object = createEl('div', {
     className: `result-die-object${rolling ? ' is-tumbling' : ''}`,
     attrs: { 'data-sides': String(numericSides), 'data-value': String(value) }
-  }, [depth, face]);
-  return createEl('div', { className: 'result-die-scene' }, [
+  }, [
+    ...canvases,
+    createEl('span', { className: 'result-die-notation', text: `k${numericSides}` }),
+    createEl('strong', { className: 'result-die-value', text: rolling ? '' : String(value) })
+  ]);
+  const scene = createEl('div', { className: 'result-die-scene' }, [
     object,
     createEl('span', { className: 'result-die-shadow', attrs: { 'aria-hidden': 'true' } })
   ]);
+  requestAnimationFrame(() => canvases.forEach((canvas, index) => paintResultDie(
+    canvas,
+    numericSides === 100 ? 10 : numericSides,
+    { ...finalDieRotation(numericSides, value), y: finalDieRotation(numericSides, value).y + index * 0.72 },
+    index ? 2 : -2
+  )));
+  return scene;
 }
 
 function createDiceResultVisual(value, label, sides = 6, tone = 'neutral', rolling = false) {
@@ -2087,6 +2263,8 @@ function animateDiceResult(container, value, label, sides = 6, tone = 'neutral')
   const number = shell.querySelector('.result-die-value');
   const copy = shell.querySelector('.result-die-copy');
   const object = shell.querySelector('.result-die-object');
+  const canvases = [...shell.querySelectorAll('.result-die-canvas')];
+  const shadow = shell.querySelector('.result-die-shadow');
   if (!reduced) shell.setAttribute('aria-hidden', 'true');
   container.replaceChildren(shell);
   if (reduced) {
@@ -2094,21 +2272,45 @@ function animateDiceResult(container, value, label, sides = 6, tone = 'neutral')
     return;
   }
   const started = performance.now();
-  const duration = 220;
+  const finalRotation = finalDieRotation(numericSides, value);
+  let nextHapticTick = 0;
+  const paintCanvases = (rotation, lift = 0) => canvases.forEach((canvas, index) => paintResultDie(
+    canvas,
+    numericSides === 100 ? 10 : numericSides,
+    { ...rotation, x: rotation.x + index * 0.44, y: rotation.y + index * 0.72 },
+    lift + (index ? 2 : -2)
+  ));
   const tick = now => {
     if (token !== diceAnimationToken || !shell.isConnected) return;
-    const progress = Math.min(1, (now - started) / duration);
-    const frame = Math.floor(progress * 11);
-    number.textContent = progress < 1 ? String(((frame * 7 + numericSides) % numericSides) + 1) : String(value);
+    const progress = Math.min(1, (now - started) / DIE_ROLL_DURATION);
+    const eased = 1 - Math.pow(1 - progress, 3);
+    const remaining = 1 - eased;
+    const rotation = {
+      x: finalRotation.x + remaining * Math.PI * 7,
+      y: finalRotation.y + remaining * Math.PI * 11,
+      z: finalRotation.z + remaining * Math.PI * 4
+    };
+    const lift = -Math.sin(progress * Math.PI) * 8;
+    paintCanvases(rotation, lift);
+    if (shadow) {
+      shadow.style.opacity = String(0.42 + eased * 0.5);
+      shadow.style.transform = `scaleX(${0.56 + eased * 0.28})`;
+    }
+    while (nextHapticTick < DIE_HAPTIC_TICKS.length && progress >= DIE_HAPTIC_TICKS[nextHapticTick]) {
+      triggerHaptic('tick');
+      nextHapticTick += 1;
+    }
     if (progress < 1) {
       requestAnimationFrame(tick);
       return;
     }
+    number.textContent = String(value);
     copy.textContent = label;
     shell.removeAttribute('aria-hidden');
     shell.classList.remove('rolling');
     shell.classList.add('settled');
     object?.classList.remove('is-tumbling');
+    paintCanvases(finalRotation);
     triggerHaptic(resultHapticForTone(tone));
   };
   requestAnimationFrame(tick);
@@ -4330,9 +4532,10 @@ function runDeveloperTests() {
   test('107. Launcher walki udostępnia pierwszą rundę i odwrót', () => { const source = openCombatSheet.toString(); assert(source.includes('performFirstRoundDexSave') && source.includes('openRetreatSheet') && source.includes('openDamageSheet')); });
   test('108. Helper dwóch broni wybiera rzeczywiście trzymane przedmioty', () => { const source = openDualWeaponsSheet.toString(); assert(source.includes('heldWeaponItems') && !source.includes("[['4','k4']")); });
   test('109. Starszy zapis otrzymuje domyślnie włączoną haptykę', () => { const fixture = createDemoState(); delete fixture.settings.hapticsEnabled; assert(sanitizeLoadedState(fixture).settings.hapticsEnabled === true); });
-  test('110. Wzorce haptyki są krótkie i rozróżniają wynik', () => { const roll = hapticPatternFor('roll'); const danger = hapticPatternFor('danger'); assert(roll.reduce((sum, value) => sum + value, 0) < 100 && danger.reduce((sum, value) => sum + value, 0) < 100 && roll.join(',') !== danger.join(',')); });
+  test('110. Wzorce haptyki są krótkie, a obrót używa delikatnego tyknięcia', () => { const tick = hapticPatternFor('tick'); const roll = hapticPatternFor('roll'); const danger = hapticPatternFor('danger'); assert(tick.join(',') === '6' && roll.reduce((sum, value) => sum + value, 0) < 100 && danger.reduce((sum, value) => sum + value, 0) < 100 && roll.join(',') !== danger.join(',')); });
   test('111. Wynik rozpoznaje typ kości z powtórzenia, obrony i notacji', () => { assert(diceEntrySides({ repeat:{kind:'roll',config:{sides:8}} }) === 8 && diceEntrySides({ repeat:{kind:'save',attrKey:'dex'} }) === 20 && diceEntrySides({ notation:'2d12' }) === 12); });
-  test('112. Przestrzenna kość przechowuje wynik i liczbę ścian', () => { const die = createResultDie(7, 8); const object = die.querySelector('.result-die-object'); assert(object?.dataset.sides === '8' && object.dataset.value === '7' && die.querySelector('.result-die-value')?.textContent === '7'); });
+  test('112. Przestrzenna kość przechowuje wynik, typ i płótno bryły', () => { const die = createResultDie(7, 8); const object = die.querySelector('.result-die-object'); assert(object?.dataset.sides === '8' && object.dataset.value === '7' && die.querySelector('.result-die-value')?.textContent === '7' && Boolean(die.querySelector('canvas.result-die-canvas'))); });
+  test('113. Każdy typ wyniku ma rzeczywistą siatkę wielościanu', () => { const meshes = DICE_SIDES.map(createDieMesh); assert(meshes.every(mesh => mesh.vertices.length >= 4 && mesh.faces.length >= 4) && createDieMesh(6).faces.length === 6 && createDieMesh(20).faces.length === 20 && DIE_ROLL_DURATION >= 1000); });
   return results;
 }
 
@@ -4532,7 +4735,7 @@ function openAppSettingsSheet() {
     if (hapticsToggle.checked) triggerHaptic('selection');
   });
   const hapticsHelp = supportsHapticFeedback()
-    ? 'Krótkie impulsy podkreślają wynik rzutu i ważne zmiany.'
+    ? 'Delikatne tyknięcia towarzyszą obrotowi kości; mocniejszy impuls podkreśla wynik.'
     : 'Ta przeglądarka nie udostępnia haptyki; ustawienie pozostaje bezpiecznym no-opem.';
   const appRows = createEl('div', { className: 'settings-list' }, [
     createEl('label', { className: 'settings-row settings-row-toggle' }, [
@@ -4713,6 +4916,8 @@ function initialize() {
     diceEntryTypeLabel,
     diceEntrySides,
     createResultDie,
+    createDieMesh,
+    paintResultDie,
     hapticPatternFor,
     supportsHapticFeedback,
     triggerHaptic,
