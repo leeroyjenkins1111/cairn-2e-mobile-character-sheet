@@ -12,8 +12,8 @@ test('all embedded domain regression tests pass', async ({ page }) => {
   const marker = page.locator('#selftestMarker');
   const failures = await page.evaluate(() => globalThis.CairnSheetDev.runTests().filter(result => !result.pass));
   expect(failures).toEqual([]);
-  await expect(marker).toHaveAttribute('data-passed', '102');
-  await expect(marker).toHaveAttribute('data-total', '102');
+  await expect(marker).toHaveAttribute('data-passed', '108');
+  await expect(marker).toHaveAttribute('data-total', '108');
 });
 
 
@@ -409,7 +409,7 @@ test('game view keeps current state and core table actions without duplicate sum
   await expect(page.getByRole('button', { name: 'Rozlicz obrażenia', exact: false })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Rzut obronny', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Odpoczynek', exact: true })).toBeVisible();
-  await expect(page.locator('.weapon-row')).toContainText('Krótki łuk');
+  await expect(page.locator('.combat-launcher')).toContainText('Krótki łuk');
 
   await page.getByRole('button', { name: 'Rzut obronny', exact: true }).click();
   await expect(page.locator('#sheet').getByRole('heading', { name: 'Rzut obronny' })).toBeVisible();

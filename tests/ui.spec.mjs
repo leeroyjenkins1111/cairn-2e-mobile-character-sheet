@@ -71,15 +71,114 @@ test('failed save routes the Warden consequence without inventing an outcome', a
   await expect(page.getByRole('button', { name: 'Tylko skutek w fikcji' })).toBeVisible();
 });
 
-test('active weapon shows its damage result in place and links to history', async ({ page }) => {
+test('prepared weapon shows its damage result in place and links to history', async ({ page }) => {
   await loadDemo(page);
-  await page.getByRole('button', { name: /Rzuć obrażenia aktywną bronią/ }).click();
+  await page.getByRole('button', { name: /Rzuć obrażenia przygotowaną bronią/ }).click();
   await expect(page.locator('#sheetTitle')).toHaveText('Obrażenia broni');
   await expect(page.locator('#sheet')).toContainText('Atak trafia automatycznie');
   await expect(page.locator('#sheet .dice-result strong')).toHaveText(/^[1-9]\d*$/);
   await page.getByRole('button', { name: 'Historia', exact: true }).click();
   await expect(page.locator('#sheetTitle')).toHaveText('Historia rzutów');
   await expect(page.locator('#sheet')).toContainText('Krótki łuk');
+});
+
+test('combat flow exposes first round, current equipment and Warden-bounded next steps', async ({ page }) => {
+  await loadDemo(page);
+  const launcher = page.locator('.combat-launcher');
+  await expect(launcher.getByRole('heading', { name: 'Walka' })).toBeVisible();
+  await expect(launcher).toContainText('Krótki łuk');
+  await expect(launcher.getByRole('button', { name: 'Pierwsza runda · ZRE' })).toBeVisible();
+
+  await page.evaluate(() => globalThis.CairnSheetDev.performFirstRoundDexSave(1));
+  await expect(page.locator('#sheetTitle')).toHaveText('Pierwsza runda walki');
+  await expect(page.locator('#sheet')).toContainText('Zadeklaruj ruch i jedno działanie');
+  await page.getByRole('button', { name: 'Wybierz działanie' }).click();
+  await expect(page.locator('#sheetTitle')).toHaveText('Walka');
+  await expect(page.locator('#sheet')).toContainText('Ataki trafiają automatycznie');
+  await expect(page.getByRole('button', { name: /Odwrót/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /Otrzymaj obrażenia/ })).toBeVisible();
+  await page.getByRole('button', { name: /Odwrót/ }).click();
+  await expect(page.locator('#sheetTitle')).toHaveText('Przygotuj odwrót');
+  await page.getByRole('textbox', { name: /Dokąd się wycofujesz/ }).fill('Za kamienne drzwi');
+  await page.getByRole('button', { name: 'Rzuć ZRE na odwrót' }).click();
+  await expect(page.locator('#sheetTitle')).toHaveText('Rzut obronny ZRE');
+  await expect(page.locator('#sheet')).toContainText('Nie docieram bezpiecznie do: Za kamienne drzwi');
+});
+
+test('panic changes combat affordances to impaired attacks without hiding the Warden boundary', async ({ page }) => {
+  await loadDemo(page);
+  await page.locator('.secondary-action-grid').getByRole('button', { name: 'Stany', exact: true }).click();
+  await page.getByRole('checkbox', { name: 'Panika' }).evaluate(toggle => {
+    toggle.checked = true;
+    toggle.dispatchEvent(new Event('change', { bubbles: true }));
+  });
+  await page.getByRole('button', { name: 'Oznacz panikę i 0 Ochrony' }).click();
+
+  const launcher = page.locator('.combat-launcher');
+  await expect(launcher).toContainText('ataki osłabione');
+  await expect(launcher.getByRole('button', { name: /Rzuć obrażenia przygotowaną bronią/ })).toContainText('Rzuć k4');
+  await launcher.getByRole('button', { name: 'Opcje walki' }).click();
+  await expect(page.locator('#sheet')).toContainText('Ataki są osłabione do k4');
+  await expect(page.getByRole('button', { name: /Wzmocniony/ })).toHaveCount(0);
+  await expect(page.locator('#sheet')).toContainText('Warden może rozstrzygnąć szczególną sytuację inaczej');
+});
+
+test('multiple held weapons are chosen explicitly and dual attack uses their formulas', async ({ page }) => {
+  await page.goto('/');
+  const fixture = await page.evaluate(() => {
+    const dev = globalThis.CairnSheetDev;
+    const next = dev.createDemoState();
+    next.inventory.items.push({
+      ...next.inventory.items[0],
+      id: 'test-sword',
+      name: 'Żelazny miecz',
+      damageFormula: dev.parseDamageFormulaNotation('d8'),
+      carryState: 'held'
+    });
+    return next;
+  });
+  await page.addInitScript(value => localStorage.setItem('cairn-mobile-sheet:state', JSON.stringify(value)), fixture);
+  await page.reload();
+
+  const launcher = page.locator('.combat-launcher');
+  await expect(launcher).toContainText('2 bronie w rękach');
+  await expect(launcher.getByRole('button', { name: /Rzuć obrażenia przygotowaną bronią/ })).toHaveCount(0);
+  await launcher.getByRole('button', { name: 'Wybierz przygotowaną broń do ataku' }).click();
+  await expect(page.locator('#sheet')).toContainText('Krótki łuk');
+  await expect(page.locator('#sheet')).toContainText('Żelazny miecz');
+  await page.getByRole('button', { name: /Dwie bronie/ }).click();
+  await expect(page.locator('#sheetTitle')).toHaveText('Dwie bronie');
+  await expect(page.getByLabel('Pierwsza broń')).toContainText('Krótki łuk');
+  await expect(page.getByLabel('Druga broń')).toContainText('Żelazny miecz');
+  await page.getByRole('button', { name: 'Rzuć obiema' }).click();
+  await expect(page.locator('#sheet')).toContainText('najwyższy');
+});
+
+test('stored weapon must be prepared before it receives a quick damage action', async ({ page }) => {
+  await page.goto('/');
+  const fixture = await page.evaluate(() => {
+    const dev = globalThis.CairnSheetDev;
+    const next = dev.createDemoState();
+    next.inventory.items.push({
+      ...next.inventory.items[0],
+      id: 'stored-spear',
+      name: 'Schowana włócznia',
+      damageFormula: dev.parseDamageFormulaNotation('d8'),
+      carryState: 'stored'
+    });
+    return next;
+  });
+  await page.addInitScript(value => localStorage.setItem('cairn-mobile-sheet:state', JSON.stringify(value)), fixture);
+  await page.reload();
+  await page.getByRole('button', { name: 'Ekwipunek', exact: true }).click();
+  const spear = page.locator('[data-item-id="stored-spear"]');
+  await expect(spear.locator('.inventory-trailing-action')).toHaveCount(0);
+  await spear.locator('.inventory-row-main').click();
+  await page.getByRole('button', { name: 'Przygotuj do walki' }).click();
+  await expect(page.locator('#sheetTitle')).toHaveText('Walka');
+  await expect.poll(async () => page.evaluate(() => globalThis.CairnSheetDev.getState().inventory.items.find(item => item.id === 'stored-spear')?.carryState)).toBe('held');
+  await page.getByRole('button', { name: 'Wróć do gry' }).click();
+  await expect(page.locator('[data-item-id="stored-spear"] .inventory-trailing-action')).toBeVisible();
 });
 
 test('rest requires explicit confirmation of safe fictional conditions', async ({ page }) => {
