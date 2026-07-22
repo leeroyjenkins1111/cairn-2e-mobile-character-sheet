@@ -1073,22 +1073,99 @@ function performRoll(config, label = '') {
   }
 }
 
-function performSave(attrKey, forcedRoll = null) {
+function performSave(attrKey, forcedRoll = null, options = {}) {
   const attr = state.stats[attrKey];
   if (!attr) return;
+  const stake = trimText(options?.stake).slice(0, 200);
   let roll;
   try { roll = forcedRoll ?? rollDie(20); }
   catch (error) { showToast(error.message, 'error'); return; }
   const result = resolveSave(attr.current, roll);
   const natural = result.naturalSuccess ? ' — naturalne 1' : result.naturalFailure ? ' — naturalne 20' : '';
   const summary = `Rzut obronny ${ATTRS[attrKey].label}: ${roll} vs ${attr.current} — ${result.success ? 'sukces' : 'porażka'}${natural}`;
-  addDiceHistory({ type: 'save', attr: attrKey, label: `Rzut obronny ${ATTRS[attrKey].label}`, summary, notation: '1k20', result: roll, success: result.success, details: `Cel: ${attr.current}`, repeat: { kind: 'save', attrKey } });
+  const historyDetails = [`Cel: ${attr.current}`, stake ? `Stawka: ${stake}` : 'Stawka ustalona przy stole'].join(' · ');
+  addDiceHistory({ type: 'save', attr: attrKey, label: `Rzut obronny ${ATTRS[attrKey].label}`, summary, notation: '1k20', result: roll, success: result.success, details: historyDetails, repeat: { kind: 'save', attrKey } });
   announce(summary);
-  openResultSheet(`Rzut obronny ${ATTRS[attrKey].label}`, roll, result.success ? 'Sukces' : 'Porażka', [
-    `Aktualna wartość: ${attr.current}`,
-    result.naturalSuccess ? 'Naturalne 1 zawsze oznacza sukces.' : result.naturalFailure ? 'Naturalne 20 zawsze oznacza porażkę.' : `Wynik ${roll} jest ${result.success ? 'równy lub niższy' : 'wyższy'} od ${attr.current}.`
-  ], result.success ? 'success' : 'danger', { sides: 20 });
+  openSaveResultSheet(attrKey, roll, result, stake);
   return result;
+}
+
+function transitionFromSheet(openNext) {
+  closeSheet();
+  requestAnimationFrame(() => openNext?.());
+}
+
+function openSaveResultSheet(attrKey, roll, result, stake = '') {
+  const attr = state.stats[attrKey];
+  if (!attr) return;
+  const success = Boolean(result?.success);
+  const body = createEl('div', { className: 'sheet-list save-result-flow' });
+  const resultPanel = createEl('div', { className: 'dice-result', attrs: { 'aria-live': 'polite', 'aria-atomic': 'true' } });
+  body.append(resultPanel);
+  body.append(createEl('div', { className: 'report-block save-result-stake' }, [
+    createEl('span', { className: 'section-kicker', text: stake ? 'Ustalona stawka' : 'Skutek ustalony przy stole' }),
+    createEl('strong', { text: stake || 'Zastosuj konsekwencję zapowiedzianą przed rzutem.' })
+  ]));
+  body.append(createEl('p', {
+    text: success
+      ? 'Unikasz zapowiedzianego negatywnego skutku. Warden opisuje, co dzieje się dalej.'
+      : 'Porażka uruchamia ustalony wcześniej skutek. Warden opisuje zmianę sytuacji.'
+  }));
+  body.append(createEl('p', {
+    className: 'muted small',
+    text: result.naturalSuccess
+      ? 'Naturalne 1 zawsze oznacza sukces.'
+      : result.naturalFailure
+        ? 'Naturalne 20 zawsze oznacza porażkę.'
+        : `Wynik ${roll} jest ${success ? 'równy lub niższy' : 'wyższy'} od ${attr.current}.`
+  }));
+
+  const back = button('Wróć do gry', closeSheet, 'btn btn-primary');
+  const footer = success
+    ? back
+    : createEl('div', { className: 'button-row' }, [
+        button('Rozpatrz skutek…', () => transitionFromSheet(() => openSaveConsequenceSheet(stake)), 'btn btn-ghost'),
+        back
+      ]);
+  openSheet({ title: `Rzut obronny ${ATTRS[attrKey].label}`, body, footer });
+  animateDiceResult(resultPanel, roll, success ? 'Sukces' : 'Porażka', 20, success ? 'success' : 'danger');
+}
+
+function consequenceAction(label, description, icon, action) {
+  return createEl('button', {
+    type: 'button',
+    className: 'action-row',
+    onclick: action
+  }, [
+    uiIcon(icon),
+    createEl('span', {}, [createEl('strong', { text: label }), createEl('small', { text: description })]),
+    createEl('span', { className: 'action-row-value', text: '›', attrs: { 'aria-hidden': 'true' } })
+  ]);
+}
+
+function openSaveConsequenceSheet(stake = '') {
+  const body = createEl('div', { className: 'save-consequence-list' });
+  body.append(createEl('p', {
+    className: 'muted small',
+    text: stake
+      ? `Ustalona stawka: ${stake}`
+      : 'Wybierz narzędzie tylko wtedy, gdy odpowiada konsekwencji opisanej przez Wardena.'
+  }));
+  body.append(
+    consequenceAction('Rozlicz obrażenia', 'Pancerz → OCHR → SIŁ', 'damage', () => transitionFromSheet(openDamageSheet)),
+    consequenceAction('Obrażenia atrybutu', 'Bezpośrednia utrata SIŁ, ZRE lub WOL', 'attribute', () => transitionFromSheet(openDirectDamageSheet)),
+    consequenceAction('Zmień stan', 'Panika, pozbawienie lub inny stan', 'more', () => transitionFromSheet(openConditionsSheet)),
+    consequenceAction('Przejdź do ekwipunku', 'Użycie, utrata lub zmiana przedmiotu', 'box', () => {
+      closeSheet();
+      setView('inventory', { announceChange: true });
+    }),
+    consequenceAction('Zapisz konsekwencję', 'Dodaj ją do szybkiej notatki', 'dice', () => transitionFromSheet(() => openQuickNoteSheet(stake)))
+  );
+  openSheet({
+    title: 'Rozpatrz skutek',
+    body,
+    footer: button('Tylko skutek w fikcji', closeSheet, 'btn btn-primary btn-block')
+  });
 }
 
 function normalizeForcedDie(value, sides) {
@@ -1627,6 +1704,7 @@ function openSheet({ title, body, footer = null, onClose = null }) {
 function closeSheet() {
   const backdrop = $('#sheetBackdrop');
   if (!backdrop.classList.contains('open')) return;
+  const focusTarget = lastFocusedElement;
   backdrop.classList.remove('open');
   backdrop.setAttribute('aria-hidden', 'true');
   const appShell = $('.app-shell');
@@ -1639,7 +1717,11 @@ function closeSheet() {
   const handler = closeHandler;
   closeHandler = null;
   if (handler) handler();
-  if (lastFocusedElement?.focus) lastFocusedElement.focus();
+  const restoreFocus = () => {
+    if (focusTarget?.isConnected && focusTarget.focus) focusTarget.focus({ preventScroll: true });
+  };
+  restoreFocus();
+  requestAnimationFrame(restoreFocus);
 }
 
 function getSheetFocusable() {
@@ -2056,19 +2138,38 @@ function openSavePickerSheet() {
   for (const key of ['str', 'dex', 'wil']) {
     const attr = state.stats[key];
     body.append(button(`${ATTRS[key].label} ${attr.current}`, () => {
-      closeSheet();
-      requestAnimationFrame(() => performSave(key));
+      transitionFromSheet(() => openSavePreparationSheet(key));
     }, 'btn save-picker-button', {
-      'aria-label': `Rzut obronny ${ATTRS[key].full}, aktualna wartość ${attr.current}`
+      'aria-label': `Przygotuj rzut obronny ${ATTRS[key].full}, aktualna wartość ${attr.current}`
     }));
   }
   openSheet({
     title: 'Rzut obronny',
     body: createEl('div', { className: 'form-grid' }, [
-      createEl('p', { className: 'muted small', text: 'Wybierz cechę wskazaną przez Wardena. Sukces wymaga wyniku 1k20 równego lub niższego od aktualnej wartości.' }),
+      createEl('p', { className: 'muted small', text: 'Wybierz cechę wskazaną przez Wardena. Przed rzutem ustalcie, jaki negatywny skutek grozi przy porażce.' }),
       body
     ])
   });
+}
+
+function openSavePreparationSheet(attrKey) {
+  const attr = state.stats[attrKey];
+  if (!attr) return;
+  const stake = textInput('', 200);
+  const body = createEl('div', { className: 'form-grid save-preparation-flow' }, [
+    createEl('div', { className: 'report-block save-target' }, [
+      createEl('span', { className: 'section-kicker', text: `Rzut obronny ${ATTRS[attrKey].label}` }),
+      createEl('strong', { text: `1k20 ≤ ${attr.current}` }),
+      createEl('p', { className: 'muted small', text: 'Rzucaj, gdy Warden wskaże ryzyko. Naturalne 1 zawsze oznacza sukces, a naturalne 20 — porażkę.' })
+    ]),
+    field('Co grozi przy porażce? (opcjonalnie)', stake, 'Możesz zapisać ustaloną stawkę, np. „Strażnicy mnie zauważą”. Bez wpisywania aplikacja nadal przeprowadzi rzut.'),
+    createEl('p', { className: 'help', text: 'Aplikacja pokaże wynik, ale nie wymyśli konsekwencji za Wardena.' })
+  ]);
+  const roll = button('Rzuć 1k20', () => {
+    const announcedStake = trimText(stake.value).slice(0, 200);
+    transitionFromSheet(() => performSave(attrKey, null, { stake: announcedStake }));
+  }, 'btn btn-primary btn-block');
+  openSheet({ title: `Przygotuj rzut ${ATTRS[attrKey].label}`, body, footer: roll });
 }
 
 function renderActiveWeaponShortcut() {
@@ -2136,7 +2237,7 @@ function renderCharacterView() {
     }, [
       createEl('span', { className: 'state-label', text: 'OCHR' }),
       createEl('span', { className: 'protection-value' }, [String(state.stats.hp.current), createEl('small', { text: ` / ${state.stats.hp.max}` })]),
-      createEl('span', { className: 'state-caption', text: 'unikanie obrażeń · dotknij, aby edytować' })
+      createEl('span', { className: 'state-caption', text: 'unikanie obrażeń · wyjaśnij lub popraw' })
     ]),
     createEl('div', { className: 'state-secondary' }, [
       createEl('div', { className: 'secondary-stat' }, [
@@ -2166,8 +2267,8 @@ function renderCharacterView() {
     ...['str', 'dex', 'wil'].map(key => createEl('button', {
       type: 'button',
       className: 'attribute-control',
-      attrs: { 'aria-label': `Rzut obronny ${ATTRS[key].full}, aktualna wartość ${state.stats[key].current}` },
-      onclick: () => performSave(key)
+      attrs: { 'aria-label': `Przygotuj rzut obronny ${ATTRS[key].full}, aktualna wartość ${state.stats[key].current}` },
+      onclick: () => openSavePreparationSheet(key)
     }, [
       createEl('span', { text: ATTRS[key].label }),
       createEl('strong', { text: state.stats[key].current })
@@ -2412,11 +2513,11 @@ function openRestSheet() {
   if (state.conditions.panicked) blockers.push('Spanikowana postać ma 0 Ochrony; najpierw rozpatrz panikę.');
   if (usage.total === 10) blockers.push('Pełny ekwipunek sprowadza Ochronę do 0; najpierw zwolnij miejsce.');
   const body = createEl('div', { className: 'sheet-list' }, [
-    createEl('p', { text: 'Krótki odpoczynek i woda mogą przywrócić Ochronę, ale wymagają odpowiednich warunków w fikcji. Warden ocenia, czy miejsce i czas są bezpieczne.' }),
+    createEl('p', { text: 'Potwierdź z Wardenem, że macie kilka chwil, wodę i bezpieczne miejsce. W podziemiach odpoczynek zajmuje turę i może wystawić drużynę na niebezpieczeństwo.' }),
     createEl('p', { className: 'help', text: 'Ta akcja nie przywraca atrybutów, nie usuwa zmęczenia, stanów ani użyć przedmiotów.' })
   ]);
   for (const blocker of blockers) body.append(createEl('div', { className: 'alert' }, [createEl('strong', { text: 'Blokada' }), createEl('p', { className: 'small', text: blocker })]));
-  const apply = button(`Przywróć Ochronę do ${state.stats.hp.max}`, () => {
+  const apply = button(`Warunki są bezpieczne — przywróć OCHR do ${state.stats.hp.max}`, () => {
     closeSheet();
     commitChange('Krótki odpoczynek: przywrócono Ochronę', next => { next.stats.hp.current = next.stats.hp.max; });
   }, 'btn btn-primary btn-block', { disabled: blockers.length > 0 || state.stats.hp.current === state.stats.hp.max });
@@ -2446,6 +2547,25 @@ function openEditStatsSheet() {
   openSheet({ title: 'Edytuj statystyki', body, footer: save });
 }
 
+function openItemDamageResultSheet(item, result, options = {}) {
+  const impaired = options.impaired === true;
+  const resultPanel = createEl('div', { className: 'dice-result', attrs: { 'aria-live': 'polite', 'aria-atomic': 'true' } });
+  const body = createEl('div', { className: 'sheet-list item-damage-result' }, [
+    resultPanel,
+    createEl('div', { className: 'report-block' }, [
+      createEl('span', { className: 'section-kicker', text: impaired ? 'Atak osłabiony' : 'Atak trafia automatycznie' }),
+      createEl('strong', { text: `${item.name} · ${impaired ? 'k4' : result.notation}` }),
+      createEl('p', { className: 'muted small', text: 'Przekaż wynik Wardenowi. Pancerz celu i skutki obrażeń są rozpatrywane osobno.' })
+    ])
+  ]);
+  const footer = createEl('div', { className: 'button-row' }, [
+    button('Historia', () => transitionFromSheet(openDiceHistorySheet), 'btn btn-ghost'),
+    button('Gotowe', closeSheet, 'btn btn-primary')
+  ]);
+  openSheet({ title: 'Obrażenia broni', body, footer });
+  animateDiceResult(resultPanel, result.total, 'obrażeń', impaired ? 4 : (result.rolls?.[0]?.sides || 6), 'success');
+}
+
 function performDamageFormulaRoll(item) {
   try {
     const result = rollDamageFormula(item.damageFormula);
@@ -2456,6 +2576,7 @@ function performDamageFormulaRoll(item) {
     addDiceHistory({ type: 'damage', label: item.name, summary, notation: result.notation, result: result.total, details: `${rollText}${keepText}${blastText}` });
     renderDiceResult(result.total, `${item.name} · ${rollText}${keepText}${blastText}`, { sides: result.rolls[0]?.sides || 6 });
     announce(`${summary}. ${rollText}${keepText}.`);
+    openItemDamageResultSheet(item, result);
     return result;
   } catch (error) {
     showToast(error.message, 'error');
@@ -2477,7 +2598,10 @@ function runItemAttack(item) {
   const impaired = button('Rzuć osłabiony k4', () => {
     closeSheet();
     if (item.damageFormula.blast) openBlastAttackSheet(item, { impaired: true });
-    else performRoll({ count: 1, sides: 4 }, `${item.name} — atak osłabiony przez panikę`);
+    else {
+      const result = performRoll({ count: 1, sides: 4 }, `${item.name} — atak osłabiony przez panikę`);
+      if (result) openItemDamageResultSheet(item, result, { impaired: true });
+    }
   }, 'btn btn-primary');
   const override = button('Warden pozwala użyć broni', () => {
     closeSheet();
@@ -3599,8 +3723,12 @@ function openEditIdentitySheet() {
   openSheet({ title: 'Edytuj postać', body, footer: save });
 }
 
-function openQuickNoteSheet() {
-  const note = textarea(state.notes, 8000);
+function openQuickNoteSheet(seed = '') {
+  const consequence = trimText(seed).slice(0, 200);
+  const initialNote = consequence
+    ? [trimText(state.notes), `Konsekwencja: ${consequence}`].filter(Boolean).join('\n\n')
+    : state.notes;
+  const note = textarea(initialNote, 8000);
   const body = createEl('div', { className: 'form-grid' }, [
     field('Notatka z sesji', note, 'Tropy, imiona, obietnice i rzeczy, do których chcesz wrócić.')
   ]);
@@ -4147,6 +4275,11 @@ function bindEvents() {
   $('#sheetCloseBtn').addEventListener('click', closeSheet);
   $('#sheetBackdrop').addEventListener('click', event => { if (event.target === $('#sheetBackdrop')) closeSheet(); });
   $('#sheet').addEventListener('keydown', trapSheetFocus);
+  document.addEventListener('keydown', event => {
+    if (event.key !== 'Escape' || !$('#sheetBackdrop').classList.contains('open')) return;
+    event.preventDefault();
+    closeSheet();
+  });
   $('#sheet').addEventListener('focusin', keepSheetControlVisible);
   window.addEventListener('resize', syncVisualViewport);
   globalThis.visualViewport?.addEventListener('resize', syncVisualViewport);
@@ -4173,6 +4306,7 @@ function initialize() {
     runTests: runDeveloperTests,
     calculateDamage,
     resolveSave,
+    performSave,
     resolvePanicRecovery,
     normalizeKettlewright,
     parseDamageFormulaNotation,

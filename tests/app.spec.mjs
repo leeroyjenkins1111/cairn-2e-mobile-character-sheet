@@ -413,7 +413,7 @@ test('game view keeps current state and core table actions without duplicate sum
 
   await page.getByRole('button', { name: 'Rzut obronny', exact: true }).click();
   await expect(page.locator('#sheet').getByRole('heading', { name: 'Rzut obronny' })).toBeVisible();
-  await expect(page.locator('#sheet').getByRole('button', { name: /Rzut obronny Siła/ })).toBeVisible();
+  await expect(page.locator('#sheet').getByRole('button', { name: /Przygotuj rzut obronny Siła/ })).toBeVisible();
   await page.getByRole('button', { name: 'Zamknij panel' }).click();
 
   await page.getByRole('button', { name: 'Kości', exact: true }).click();
