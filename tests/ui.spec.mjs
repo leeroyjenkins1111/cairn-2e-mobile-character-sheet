@@ -52,7 +52,12 @@ test('character state prepares direct saves before rolling and preserves the ann
   await expect(page.locator('.character-state')).not.toContainText('najczęstsze przy stole');
   await expect(page.locator('.combat-launcher')).not.toContainText('ataki trafiają automatycznie');
   await expect(page.locator('.state-label-icon svg')).toHaveCount(3);
-  await expect(page.locator('.section-title svg')).toHaveCount(2);
+  await expect(page.locator('.section-title svg')).toHaveCount(1);
+  await expect(page.locator('.attribute-glyph svg')).toHaveCount(3);
+  await expect(page.locator('.protection-control')).not.toContainText('unikanie obrażeń');
+  await expect(page.locator('.state-caption-icon')).toHaveCount(0);
+  await expect(page.locator('.combat-launcher')).not.toContainText('Brak broni w rękach');
+  await expect(page.locator('.combat-launcher')).not.toContainText('Atak bez broni');
   await expect(page.locator('.demo-badge')).toHaveCount(0);
   await expect(page.locator('.secondary-stat').first()).not.toContainText('sprzęt');
 
@@ -77,7 +82,7 @@ test('compact character layout groups stats with spacing and does not clip inter
       '.character-background',
       '.combat-weapon-copy strong',
       '.combat-weapon-copy span',
-      '.combat-utility-action span',
+      '.combat-utility-action span:not(.sr-only)',
       '.compact-action span'
     ];
     const clipped = copySelectors.flatMap(selector => Array.from(document.querySelectorAll(selector)))
@@ -96,10 +101,31 @@ test('compact character layout groups stats with spacing and does not clip inter
     characterBorder: '0px',
     protectionDivider: '0px',
     secondaryDivider: '0px',
-    attributeBorder: '0px',
+    attributeBorder: '1px',
     clipped: []
   });
   await expect(page.locator('.combat-utility-action').first()).toContainText('Runda 1');
+});
+
+test('matte visual system avoids glossy panels and a brass-filled damage CTA', async ({ page }) => {
+  await loadDemo(page);
+  const character = await page.evaluate(() => {
+    const damage = getComputedStyle(document.querySelector('.damage-primary-action'));
+    const shell = getComputedStyle(document.querySelector('.app-shell'));
+    return {
+      damageShadow: damage.boxShadow,
+      damageBackgroundImage: damage.backgroundImage,
+      shellTexture: shell.backgroundImage
+    };
+  });
+  expect(character.damageShadow).toBe('none');
+  expect(character.damageBackgroundImage).toBe('none');
+  expect(character.shellTexture).toContain('repeating-linear-gradient');
+
+  await page.getByRole('button', { name: 'Ekwipunek', exact: true }).click();
+  await expect(page.locator('.inventory-overview')).toHaveCSS('border-top-width', '0px');
+  await page.getByRole('button', { name: 'Dziennik', exact: true }).click();
+  await expect(page.locator('.quick-note')).toHaveCSS('border-left-width', '0px');
 });
 
 test('failed save routes the Warden consequence without inventing an outcome', async ({ page }) => {
@@ -162,7 +188,7 @@ test('panic changes combat affordances to impaired attacks without hiding the Wa
 
   const launcher = page.locator('.combat-launcher');
   await expect(launcher).toContainText('Osłabione');
-  await expect(launcher.getByRole('button', { name: /Rzuć obrażenia przygotowaną bronią/ })).toContainText('Rzuć k4');
+  await expect(launcher.getByRole('button', { name: /Rzuć obrażenia przygotowaną bronią/ })).toContainText('k4');
   await launcher.getByRole('button', { name: 'Opcje walki' }).click();
   await expect(page.locator('#sheet')).toContainText('Ataki są osłabione do k4');
   await expect(page.getByRole('button', { name: /Wzmocniony/ })).toHaveCount(0);
