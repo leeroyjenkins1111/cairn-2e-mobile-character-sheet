@@ -58,7 +58,7 @@
 }
 
 * { box-sizing: border-box; }
-html { min-width: 100%; min-height: 100%; background: var(--bg-deep); }
+html { min-width: 100%; min-height: 100%; overflow-x: hidden; background: var(--bg-deep); }
 body {
   min-width: 100%;
   min-height: 100dvh;

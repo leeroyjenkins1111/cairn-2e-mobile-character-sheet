@@ -370,27 +370,34 @@ test('core screens remain usable with 200 percent root text size', async ({ page
   await page.evaluate(() => { document.documentElement.style.fontSize = '200%'; });
   for (const name of ['Postać', 'Ekwipunek', 'Kości', 'Dziennik']) {
     await page.getByRole('button', { name, exact: true }).click();
-    const layout = await page.evaluate(() => ({
-      overflow: document.documentElement.scrollWidth - window.innerWidth,
-      overflowingElements: Array.from(document.querySelectorAll('body *')).map(element => {
-        const style = getComputedStyle(element);
-        const rect = element.getBoundingClientRect();
-        return { element, style, rect };
-      }).filter(({ style, rect }) => style.display !== 'none' && style.visibility !== 'hidden' && rect.width && (rect.left < -1 || rect.right > window.innerWidth + 1)).map(({ element, rect }) => ({
-        selector: `${element.tagName.toLowerCase()}${element.id ? `#${element.id}` : ''}${Array.from(element.classList).map(name => `.${name}`).join('')}`,
-        left: Math.round(rect.left * 10) / 10,
-        right: Math.round(rect.right * 10) / 10,
-        width: Math.round(rect.width * 10) / 10
-      })).slice(0, 12),
-      clippedButtons: Array.from(document.querySelectorAll('button')).filter(button => {
-        const style = getComputedStyle(button);
-        if (style.display === 'none' || style.visibility === 'hidden') return false;
-        const rect = button.getBoundingClientRect();
-        if (!rect.width || !rect.height) return false;
-        return rect.left < -1 || rect.right > window.innerWidth + 1;
-      }).map(button => button.getAttribute('aria-label') || button.textContent.trim())
-    }));
-    expect(layout.overflow, JSON.stringify(layout.overflowingElements)).toBeLessThanOrEqual(1);
+    const layout = await page.evaluate(() => {
+      window.scrollTo(1000, 0);
+      const horizontalScroll = window.scrollX;
+      window.scrollTo(0, 0);
+      return {
+        reportedOverflow: document.documentElement.scrollWidth - window.innerWidth,
+        horizontalScroll,
+        overflowingElements: Array.from(document.querySelectorAll('body *')).map(element => {
+          const style = getComputedStyle(element);
+          const rect = element.getBoundingClientRect();
+          return { element, style, rect };
+        }).filter(({ style, rect }) => style.display !== 'none' && style.visibility !== 'hidden' && rect.width && (rect.left < -1 || rect.right > window.innerWidth + 1)).map(({ element, rect }) => ({
+          selector: `${element.tagName.toLowerCase()}${element.id ? `#${element.id}` : ''}${Array.from(element.classList).map(name => `.${name}`).join('')}`,
+          left: Math.round(rect.left * 10) / 10,
+          right: Math.round(rect.right * 10) / 10,
+          width: Math.round(rect.width * 10) / 10
+        })).slice(0, 12),
+        clippedButtons: Array.from(document.querySelectorAll('button')).filter(button => {
+          const style = getComputedStyle(button);
+          if (style.display === 'none' || style.visibility === 'hidden') return false;
+          const rect = button.getBoundingClientRect();
+          if (!rect.width || !rect.height) return false;
+          return rect.left < -1 || rect.right > window.innerWidth + 1;
+        }).map(button => button.getAttribute('aria-label') || button.textContent.trim())
+      };
+    });
+    expect(layout.horizontalScroll, `WebKit reported ${layout.reportedOverflow}px intrinsic overflow`).toBeLessThanOrEqual(1);
+    expect(layout.overflowingElements).toEqual([]);
     expect(layout.clippedButtons).toEqual([]);
   }
 });
