@@ -6,13 +6,14 @@ Szybki, dotykowy companion jednej lokalnej postaci do Cairn 2e. Aplikacja dział
 
 https://leeroyjenkins1111.github.io/cairn-2e-mobile-character-sheet/
 
-## Wersja 0.20.0
+## Wersja 0.20.1
 
 Interfejs został strukturalnie przebudowany pod krótkie użycie na telefonie przy stole:
 
 - **Postać** pokazuje jeden panel bieżącego stanu z dominującą OCHR, pancerzem, miejscami i dotykowymi rzutami SIŁ/ZRE/WOL;
 - ekran **Postać** używa autorskiej, sylwetkowej grafiki lasu, wyprawowej pieczęci i ikon inspirowanych fizycznym dziennikiem; dekoracja pozostaje subtelna i nie zastępuje informacji ani dostępnych nazw;
 - opisowe dopiski bez znaczenia w rozgrywce zostały usunięte, a skrócone etykiety zachowują mechanicznie istotne informacje;
+- otwarty panel stanu grupuje statystyki odstępami zamiast ramek, a obramowane powierzchnie pozostają zarezerwowane dla działań;
 - ekran **Postać** skaluje pionowy rytm do wysokości telefonu, dzięki czemu stan, walka i najczęstsze akcje mieszczą się nad tab barem bez przewijania na typowych viewportach iPhone’a;
 - **Ekwipunek** używa kompaktowego podsumowania, dziesięciu wizualnych miejsc i pełnych dotykowych wierszy z maksymalnie jedną szybką akcją;
 - **Kości** działają jak konsola z dużym ostatnim wynikiem, rail-em szybkich kości, lekkim powtórzeniem i historią;
@@ -39,7 +40,7 @@ Interfejs został strukturalnie przebudowany pod krótkie użycie na telefonie p
 
 Dane są zapisywane wyłącznie w `localStorage` tej przeglądarki i urządzenia. Wyczyszczenie danych przeglądarki usuwa kartę, dlatego regularnie używaj **Pobierz pełną kopię**.
 
-Wersja aplikacji 0.20.0 nadal używa `schemaVersion: 3`. Atmosferyczna warstwa ekranu Postać nie zmienia formatu importu, backupu ani punktów odzyskiwania i nie wymaga migracji danych. Zapisy ze `schemaVersion: 2` są nadal migrowane automatycznie, a starsze eksporty pozostają obsługiwane.
+Wersja aplikacji 0.20.1 nadal używa `schemaVersion: 3`. Atmosferyczna warstwa ekranu Postać nie zmienia formatu importu, backupu ani punktów odzyskiwania i nie wymaga migracji danych. Zapisy ze `schemaVersion: 2` są nadal migrowane automatycznie, a starsze eksporty pozostają obsługiwane.
 
 ## Struktura aplikacji
 

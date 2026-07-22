@@ -53,6 +53,8 @@ test('character state prepares direct saves before rolling and preserves the ann
   await expect(page.locator('.combat-launcher')).not.toContainText('ataki trafiają automatycznie');
   await expect(page.locator('.state-label-icon svg')).toHaveCount(3);
   await expect(page.locator('.section-title svg')).toHaveCount(2);
+  await expect(page.locator('.demo-badge')).toHaveCount(0);
+  await expect(page.locator('.secondary-stat').first()).not.toContainText('sprzęt');
 
   await page.getByRole('button', { name: /Przygotuj rzut obronny Siła, aktualna wartość/ }).click();
   await expect(page.locator('#sheetTitle')).toHaveText('Przygotuj rzut SIŁ');
@@ -62,6 +64,42 @@ test('character state prepares direct saves before rolling and preserves the ann
   await expect(page.locator('#sheet')).toContainText('Strażnicy mnie zauważą');
   await expect(page.locator('#sheet')).toContainText('Warden opisuje');
   await expect.poll(async () => page.evaluate(() => globalThis.CairnSheetDev.getState().diceHistory[0]?.details)).toContain('Stawka: Strażnicy mnie zauważą');
+});
+
+test('compact character layout groups stats with spacing and does not clip interface copy', async ({ page }) => {
+  await page.setViewportSize({ width: 320, height: 568 });
+  await loadDemo(page);
+
+  const presentation = await page.evaluate(() => {
+    const style = selector => getComputedStyle(document.querySelector(selector));
+    const copySelectors = [
+      '.character-name',
+      '.character-background',
+      '.combat-weapon-copy strong',
+      '.combat-weapon-copy span',
+      '.combat-utility-action span',
+      '.compact-action span'
+    ];
+    const clipped = copySelectors.flatMap(selector => Array.from(document.querySelectorAll(selector)))
+      .filter(element => element.scrollWidth > element.clientWidth + 1 || element.scrollHeight > element.clientHeight + 1)
+      .map(element => element.textContent.trim());
+    return {
+      characterBorder: style('.character-state').borderTopWidth,
+      protectionDivider: style('.protection-control').borderRightWidth,
+      secondaryDivider: style('.secondary-stat + .secondary-stat').borderTopWidth,
+      attributeBorder: style('.attribute-control').borderTopWidth,
+      clipped
+    };
+  });
+
+  expect(presentation).toEqual({
+    characterBorder: '0px',
+    protectionDivider: '0px',
+    secondaryDivider: '0px',
+    attributeBorder: '0px',
+    clipped: []
+  });
+  await expect(page.locator('.combat-utility-action').first()).toContainText('Runda 1');
 });
 
 test('failed save routes the Warden consequence without inventing an outcome', async ({ page }) => {
