@@ -17,6 +17,10 @@
   --brass-ink: #21190f;
   --ember: #bd705e;
   --ember-soft: #3c2424;
+  --plum-veil: #49334f;
+  --rose-ember: #a84a6a;
+  --forest-ink: #263b42;
+  --forest-art: #708a8b;
   --focus: #e2c886;
   --shadow: 0 16px 44px rgba(0, 0, 0, .28);
   --content-width: 520px;
@@ -53,6 +57,10 @@
   --brass-ink: #fff9ec;
   --ember: #9a493c;
   --ember-soft: #f1d7d0;
+  --plum-veil: #9a788f;
+  --rose-ember: #a64662;
+  --forest-ink: #4d6665;
+  --forest-art: #405c58;
   --focus: #644a1e;
   --shadow: 0 14px 38px rgba(52, 39, 31, .13);
 }
@@ -144,6 +152,13 @@ svg { display: block; }
 }
 .view { display: grid; gap: 18px; min-width: 0; animation: view-in 170ms ease-out; }
 :root[data-active-view="character"] .main { padding-top: 10px; padding-bottom: calc(var(--tab-height) + env(safe-area-inset-bottom) + 8px); }
+:root[data-active-view="character"] body,
+:root[data-active-view="character"] .app-shell {
+  background:
+    radial-gradient(circle at 82% 18%, color-mix(in srgb, var(--rose-ember) 9%, transparent), transparent 34%),
+    linear-gradient(180deg, color-mix(in srgb, var(--forest-ink) 7%, var(--bg)) 0, var(--bg) 42%);
+  background-color: var(--bg);
+}
 #view-character { gap: 10px; }
 .character-session {
   min-width: 0;
@@ -272,33 +287,66 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .onboarding-actions { width: 100%; margin-top: 10px; display: grid; gap: 9px; }
 
 .character-state {
+  position: relative;
+  isolation: isolate;
   overflow: hidden;
-  border: 1px solid var(--line);
-  border-radius: 15px 15px 7px 7px;
-  background: var(--surface);
+  border: 1px solid color-mix(in srgb, var(--plum-veil) 68%, var(--line));
+  border-radius: 17px 17px 6px 6px;
+  background:
+    radial-gradient(ellipse at 85% 26%, color-mix(in srgb, var(--rose-ember) 22%, transparent), transparent 48%),
+    linear-gradient(145deg, color-mix(in srgb, var(--forest-ink) 20%, var(--surface)) 0%, var(--surface) 48%, color-mix(in srgb, var(--plum-veil) 17%, var(--surface)) 100%);
+  box-shadow: inset 0 1px color-mix(in srgb, var(--text) 4%, transparent);
 }
-.identity-row { min-width: 0; min-height: 58px; padding: 8px 12px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--line); }
-.avatar { width: 38px; height: 38px; flex: 0 0 auto; border: 1px solid var(--moss); border-radius: 50%; display: grid; place-items: center; color: var(--moss); font: 650 .92rem/1 var(--font-display); }
+.character-state::after {
+  content: "";
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    radial-gradient(circle at 14% 22%, color-mix(in srgb, var(--text) 6%, transparent) 0 1px, transparent 1.5px),
+    radial-gradient(circle at 67% 58%, color-mix(in srgb, var(--text) 4%, transparent) 0 1px, transparent 1.4px);
+  background-size: 23px 19px, 31px 27px;
+  opacity: .42;
+}
+.character-state > :not(.character-forest-motif) { position: relative; z-index: 2; }
+.character-forest-motif { position: absolute; z-index: 1; inset: 0; width: 100%; height: 100%; color: var(--forest-art); pointer-events: none; opacity: .23; }
+.character-forest-motif .forest-haze { fill: color-mix(in srgb, var(--rose-ember) 52%, transparent); opacity: .34; }
+.character-forest-motif .forest-moon { fill: color-mix(in srgb, var(--brass-bright) 45%, transparent); opacity: .34; }
+.character-forest-motif .forest-trunk,
+.character-forest-motif .forest-branch { fill: none; stroke: currentColor; stroke-linecap: round; stroke-linejoin: round; }
+.character-forest-motif .forest-trunk { stroke-width: 13; }
+.character-forest-motif .forest-trunk-far { stroke-width: 7; opacity: .65; }
+.character-forest-motif .forest-branch { stroke-width: 8; opacity: .8; }
+.character-forest-motif .forest-mark { fill: none; stroke: var(--brass-bright); stroke-width: 1.4; }
+:root[data-theme="light"] .character-forest-motif { opacity: .18; }
+.identity-row { min-width: 0; min-height: 58px; padding: 8px 12px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid color-mix(in srgb, var(--plum-veil) 48%, var(--line)); background: linear-gradient(90deg, color-mix(in srgb, var(--surface) 54%, transparent), transparent 80%); }
+.avatar { position: relative; width: 38px; height: 38px; flex: 0 0 auto; border: 1px solid var(--moss); border-radius: 48% 52% 45% 55%; display: grid; place-items: center; background: color-mix(in srgb, var(--surface) 82%, transparent); color: var(--moss); font: 650 .92rem/1 var(--font-display); }
+.avatar::before { content: ""; position: absolute; inset: 3px -3px -2px 2px; border: 1px solid color-mix(in srgb, var(--brass) 54%, transparent); border-radius: 54% 46% 57% 43%; transform: rotate(-8deg); pointer-events: none; }
 .identity-copy { min-width: 0; flex: 1; }
 .character-name { overflow: hidden; font: 650 1.32rem/1.04 var(--font-display); text-overflow: ellipsis; white-space: nowrap; }
 .character-background { overflow: hidden; margin-top: 1px; color: var(--text-soft); font-size: .78rem; text-overflow: ellipsis; white-space: nowrap; }
 .demo-badge, .tag, .condition-chip { min-height: 24px; padding: 3px 8px; border: 1px solid var(--line-strong); border-radius: 999px; display: inline-flex; align-items: center; color: var(--text-soft); font-size: .72rem; line-height: 1.2; }
 .demo-badge { color: var(--brass-bright); }
-.state-values { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(112px, .9fr); }
-.protection-control { min-width: 0; min-height: 110px; padding: 10px 12px; border: 0; border-right: 1px solid var(--line); display: grid; align-content: center; justify-items: start; background: transparent; color: var(--text); text-align: left; cursor: pointer; }
+.state-values { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(112px, .9fr); background: color-mix(in srgb, var(--surface) 60%, transparent); }
+.protection-control { min-width: 0; min-height: 110px; padding: 10px 12px; border: 0; border-right: 1px solid color-mix(in srgb, var(--plum-veil) 50%, var(--line)); display: grid; align-content: center; justify-items: start; background: linear-gradient(90deg, color-mix(in srgb, var(--forest-ink) 10%, transparent), transparent); color: var(--text); text-align: left; cursor: pointer; }
 .state-label { max-width: 100%; color: var(--moss); font-size: clamp(.52rem, 3vw, .72rem); font-weight: 760; letter-spacing: .05em; overflow-wrap: anywhere; text-transform: uppercase; }
+.state-label-icon { display: inline-flex; align-items: center; gap: 5px; }
+.state-label-icon svg { width: 14px; height: 14px; flex: 0 0 auto; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 .protection-value { font: 650 clamp(3.35rem, 16vw, 4.6rem)/.84 var(--font-display); letter-spacing: -.05em; }
 .protection-value small { color: var(--text-soft); font-size: .34em; letter-spacing: -.02em; }
 .state-caption { color: var(--text-faint); font-size: .72rem; }
+.state-caption-icon { display: inline-flex; align-items: center; gap: 4px; }
+.state-caption-icon svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 .state-secondary { min-width: 0; display: grid; align-content: stretch; }
 .secondary-stat { min-width: 0; max-width: 100%; padding: 8px 11px; display: grid; align-content: center; gap: 0; }
 .secondary-stat > * { min-width: 0; max-width: 100%; }
-.secondary-stat + .secondary-stat { border-top: 1px solid var(--line); }
+.secondary-stat + .secondary-stat { border-top: 1px solid color-mix(in srgb, var(--plum-veil) 50%, var(--line)); }
 .secondary-stat strong { font: 650 1.48rem/.96 var(--font-display); }
-.protection-meter { position: relative; height: 3px; background: var(--surface-soft); }
-.protection-meter::after { content: ""; position: absolute; inset: 0 auto 0 0; width: calc(var(--protection-ratio) * 100%); background: var(--moss); transition: width 180ms ease; }
+.protection-meter { position: relative; height: 3px; background: color-mix(in srgb, var(--forest-ink) 34%, var(--surface-soft)); }
+.protection-meter::after { content: ""; position: absolute; inset: 0 auto 0 0; width: calc(var(--protection-ratio) * 100%); background: linear-gradient(90deg, var(--moss-deep), var(--moss), var(--brass)); transition: width 180ms ease; }
 .attribute-row { min-width: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
-.attribute-control { width: 100%; min-width: 0; min-height: 48px; padding: 5px; overflow: hidden; border: 0; border-right: 1px solid var(--line); display: flex; flex-wrap: wrap; align-items: baseline; justify-content: center; gap: 4px; background: transparent; color: var(--text-soft); cursor: pointer; }
+.attribute-control { width: 100%; min-width: 0; min-height: 48px; padding: 5px; overflow: hidden; border: 0; border-right: 1px solid color-mix(in srgb, var(--plum-veil) 48%, var(--line)); display: flex; flex-wrap: wrap; align-items: baseline; justify-content: center; gap: 4px; background: color-mix(in srgb, var(--surface) 72%, transparent); color: var(--text-soft); cursor: pointer; }
 .attribute-control:last-child { border-right: 0; }
 .attribute-control span { font-size: .73rem; font-weight: 760; letter-spacing: .06em; }
 .attribute-control strong { color: var(--text); font: 650 1.22rem/1 var(--font-display); }
@@ -309,22 +357,32 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .session-alert > p:not(.section-kicker) { color: var(--text-soft); font-size: .9rem; }
 .session-alert-actions { margin-top: 3px; display: flex; flex-wrap: wrap; gap: 7px; }
 
+.section-title { min-width: 0; display: inline-flex; align-items: center; gap: 7px; }
+.section-title > svg { width: 21px; height: 21px; flex: 0 0 auto; fill: none; stroke: var(--ember); stroke-width: 1.55; stroke-linecap: round; stroke-linejoin: round; }
 .game-actions { display: grid; gap: 6px; }
-.damage-primary-action { width: 100%; min-height: 54px; justify-content: flex-start; padding: 7px 14px; text-align: left; }
+.damage-primary-action { width: 100%; min-height: 54px; justify-content: flex-start; padding: 7px 14px; border-color: color-mix(in srgb, var(--brass) 82%, var(--rose-ember)); background: linear-gradient(110deg, var(--brass), color-mix(in srgb, var(--brass) 78%, var(--rose-ember))); text-align: left; box-shadow: inset 0 1px color-mix(in srgb, white 15%, transparent); }
 .damage-primary-action > span { display: grid; gap: 2px; }
 .damage-primary-action strong { font-size: 1rem; }
 .damage-primary-action small { font-size: .74rem; font-weight: 570; opacity: .78; }
 .secondary-action-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
-.compact-action { min-height: 48px; padding: 4px; flex-direction: column; gap: 2px; background: var(--surface); }
+.compact-action { min-height: 48px; padding: 4px; flex-direction: column; gap: 2px; background: linear-gradient(180deg, color-mix(in srgb, var(--plum-veil) 8%, var(--surface)), var(--surface)); }
+.compact-action svg { color: var(--moss); }
 .compact-action span { overflow: hidden; max-width: 100%; font-size: .72rem; text-overflow: ellipsis; white-space: nowrap; }
-.combat-launcher { min-width: 0; padding: 8px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); display: grid; gap: 6px; }
+.combat-launcher { position: relative; min-width: 0; padding: 8px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); display: grid; gap: 6px; }
+.combat-launcher::before { content: ""; position: absolute; inset: 0 calc(var(--side) * -1); pointer-events: none; background: linear-gradient(90deg, transparent, color-mix(in srgb, var(--plum-veil) 7%, transparent) 36%, color-mix(in srgb, var(--rose-ember) 6%, transparent), transparent); }
+.combat-launcher > * { position: relative; }
+.combat-status { min-height: 24px; padding: 3px 8px; border: 1px solid color-mix(in srgb, var(--ember) 75%, var(--line)); border-radius: 999px; display: inline-flex; align-items: center; color: var(--ember); font-size: .7rem; font-weight: 720; }
 .combat-weapon-row { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; }
 .combat-weapon-copy, .compact-condition-copy { min-width: 0; display: grid; gap: 2px; }
 .combat-weapon-copy strong { overflow: hidden; font: 650 1.12rem/1.15 var(--font-display); text-overflow: ellipsis; white-space: nowrap; }
 .combat-weapon-copy span { overflow: hidden; color: var(--text-soft); font-size: .78rem; text-overflow: ellipsis; white-space: nowrap; }
-.combat-weapon-action { min-width: 104px; }
+.combat-weapon-action { min-width: 104px; border-color: color-mix(in srgb, var(--plum-veil) 44%, var(--line)); }
+.combat-weapon-action svg { color: var(--brass-bright); }
 .combat-quick-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; }
 .combat-quick-actions .btn { min-height: 44px; padding-inline: 8px; font-size: .76rem; }
+.combat-utility-action { justify-content: flex-start; }
+.combat-utility-action svg { color: var(--moss); }
+.combat-utility-action small { margin-left: auto; color: var(--brass-bright); font-size: .62rem; font-weight: 780; letter-spacing: .06em; }
 .condition-summary { min-width: 0; padding: 12px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .condition-list { display: flex; flex-wrap: wrap; gap: 5px; }
 .condition-chip.active { border-color: var(--ember); color: var(--text); }
@@ -570,19 +628,19 @@ input[type="checkbox"] { width: 45px; min-width: 45px; height: 45px; min-height:
 
 @media (max-height: 620px) {
   :root[data-active-view="character"] .main { padding-top: 5px; padding-bottom: calc(var(--tab-height) + env(safe-area-inset-bottom)); }
-  .character-session { gap: 6px; }
-  .identity-row { min-height: 46px; padding: 4px 10px; gap: 8px; }
-  .avatar { width: 36px; height: 36px; font-size: .86rem; }
+  .character-session { gap: 4px; }
+  .identity-row { min-height: 44px; padding: 3px 10px; gap: 8px; }
+  .avatar { width: 34px; height: 34px; font-size: .84rem; }
   .character-name { font-size: 1.18rem; }
   .character-background { font-size: .7rem; }
-  .protection-control { min-height: 92px; padding: 5px 9px; }
-  .protection-value { font-size: clamp(3rem, 15vw, 3.6rem); }
+  .protection-control { min-height: 86px; padding: 4px 9px; }
+  .protection-value { font-size: clamp(2.85rem, 14.5vw, 3.45rem); }
   .state-label { font-size: .58rem; line-height: 1.1; }
   .state-caption { font-size: .6rem; line-height: 1.15; }
   .secondary-stat { padding: 2px 8px; }
   .secondary-stat strong { font-size: 1.24rem; line-height: .9; }
   .attribute-control { min-height: 44px; padding-block: 3px; }
-  .combat-launcher { padding-block: 4px; gap: 3px; }
+  .combat-launcher { padding-block: 2px; gap: 2px; }
   .combat-launcher .section-heading, .game-actions .section-heading { gap: 5px; }
   .combat-launcher .section-heading h2, .game-actions .section-heading h2 { font-size: 1.08rem; }
   .combat-launcher .section-caption, .game-actions .section-caption { font-size: .67rem; }
@@ -591,8 +649,8 @@ input[type="checkbox"] { width: 45px; min-width: 45px; height: 45px; min-height:
   .combat-quick-actions { gap: 3px; }
   .combat-quick-actions .btn { min-height: 44px; }
   .game-actions { gap: 3px; }
-  .damage-primary-action { min-height: 46px; padding-block: 5px; }
-  .damage-primary-action strong { font-size: .92rem; }
+  .damage-primary-action { min-height: 44px; padding-block: 4px; }
+  .damage-primary-action strong { font-size: .9rem; }
   .damage-primary-action small { font-size: .68rem; }
   .compact-action { min-height: 44px; padding-block: 3px; }
   .compact-action svg { width: 18px; height: 18px; }
@@ -628,6 +686,7 @@ input[type="checkbox"] { width: 45px; min-width: 45px; height: 45px; min-height:
   .btn-primary, .nav-btn[aria-current="page"], .slot-cell.filled, .slot-cell.fatigue { forced-color-adjust: none; background: Highlight; color: HighlightText; border-color: Highlight; }
   .bottom-nav { background: Canvas; border-color: ButtonText; }
   .protection-meter::after { background: Highlight; }
+  .character-forest-motif, .character-state::after, .combat-launcher::before { display: none; }
   .result-die-canvas { opacity: .58; }
   .result-die-value, .result-die-notation { color: ButtonText; text-shadow: none; }
   .result-die-shadow { display: none; }

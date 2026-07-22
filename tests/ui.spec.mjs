@@ -48,6 +48,11 @@ test('character state prepares direct saves before rolling and preserves the ann
   await expect(page.locator('.secondary-stat')).toHaveCount(2);
   await expect(page.locator('.secondary-action-grid .compact-action')).toHaveCount(3);
   await expect(page.locator('.damage-primary-action')).toHaveCount(1);
+  await expect(page.locator('.character-forest-motif[aria-hidden="true"]')).toHaveCount(1);
+  await expect(page.locator('.character-state')).not.toContainText('najczęstsze przy stole');
+  await expect(page.locator('.combat-launcher')).not.toContainText('ataki trafiają automatycznie');
+  await expect(page.locator('.state-label-icon svg')).toHaveCount(3);
+  await expect(page.locator('.section-title svg')).toHaveCount(2);
 
   await page.getByRole('button', { name: /Przygotuj rzut obronny Siła, aktualna wartość/ }).click();
   await expect(page.locator('#sheetTitle')).toHaveText('Przygotuj rzut SIŁ');
@@ -118,7 +123,7 @@ test('panic changes combat affordances to impaired attacks without hiding the Wa
   await page.getByRole('button', { name: 'Oznacz panikę i 0 Ochrony' }).click();
 
   const launcher = page.locator('.combat-launcher');
-  await expect(launcher).toContainText('ataki osłabione');
+  await expect(launcher).toContainText('Osłabione');
   await expect(launcher.getByRole('button', { name: /Rzuć obrażenia przygotowaną bronią/ })).toContainText('Rzuć k4');
   await launcher.getByRole('button', { name: 'Opcje walki' }).click();
   await expect(page.locator('#sheet')).toContainText('Ataki są osłabione do k4');
