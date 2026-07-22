@@ -22,6 +22,10 @@ test('capture structural UI review screenshots', async ({ page, browserName }) =
   await loadDemo(page);
 
   await shot(page, '01-character-dark-390x844');
+  await page.locator('.combat-launcher').getByRole('button', { name: 'Opcje walki' }).click();
+  await expect(page.locator('#sheetTitle')).toHaveText('Walka');
+  await shot(page, '01b-combat-flow-dark-390x844');
+  await page.getByRole('button', { name: 'Zamknij panel' }).click();
   await page.getByRole('button', { name: 'Ekwipunek', exact: true }).click();
   await shot(page, '02-inventory-dark-390x844');
   await page.getByRole('button', { name: 'Kości', exact: true }).click();

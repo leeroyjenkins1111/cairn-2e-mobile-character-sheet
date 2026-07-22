@@ -308,11 +308,15 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .secondary-action-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 7px; }
 .compact-action { min-height: 56px; padding: 7px 4px; flex-direction: column; gap: 3px; background: var(--surface); }
 .compact-action span { overflow: hidden; max-width: 100%; font-size: .72rem; text-overflow: ellipsis; white-space: nowrap; }
-.weapon-row, .condition-summary { min-width: 0; padding: 12px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-.weapon-row-copy, .compact-condition-copy { min-width: 0; display: grid; gap: 2px; }
-.weapon-row-copy strong { overflow: hidden; font: 650 1.08rem/1.15 var(--font-display); text-overflow: ellipsis; white-space: nowrap; }
-.weapon-row-copy > span:last-child { color: var(--text-soft); font-size: .78rem; }
-.weapon-row-action { flex: 0 0 auto; }
+.combat-launcher { min-width: 0; padding: 12px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); display: grid; gap: 9px; }
+.combat-weapon-row { min-width: 0; display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 10px; }
+.combat-weapon-copy, .compact-condition-copy { min-width: 0; display: grid; gap: 2px; }
+.combat-weapon-copy strong { overflow: hidden; font: 650 1.12rem/1.15 var(--font-display); text-overflow: ellipsis; white-space: nowrap; }
+.combat-weapon-copy span { overflow: hidden; color: var(--text-soft); font-size: .78rem; text-overflow: ellipsis; white-space: nowrap; }
+.combat-weapon-action { min-width: 104px; }
+.combat-quick-actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; }
+.combat-quick-actions .btn { min-height: 44px; padding-inline: 8px; font-size: .76rem; }
+.condition-summary { min-width: 0; padding: 12px 0; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); display: flex; align-items: center; justify-content: space-between; gap: 10px; }
 .condition-list { display: flex; flex-wrap: wrap; gap: 5px; }
 .condition-chip.active { border-color: var(--ember); color: var(--text); }
 .condition-chip.good { border-color: var(--moss); }
@@ -461,6 +465,19 @@ input[type="checkbox"] { width: 45px; min-width: 45px; height: 45px; min-height:
 .save-consequence-list { display: grid; }
 .save-consequence-list .action-row { min-height: 70px; }
 .save-consequence-list .action-row small { overflow: visible; text-overflow: clip; white-space: normal; }
+.combat-flow { display: grid; gap: 10px; }
+.combat-rule-danger { border-left: 3px solid var(--ember); }
+.combat-section-heading { min-width: 0; padding-top: 4px; display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.combat-section-heading h3 { font: 650 1.05rem/1.15 var(--font-display); }
+.combat-weapon-list, .combat-other-actions, .combat-ready-list { display: grid; }
+.combat-flow .action-row small { overflow: visible; text-overflow: clip; white-space: normal; }
+.combat-mode-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 7px; }
+.combat-mode-grid .btn { padding-inline: 8px; font-size: .78rem; }
+.combat-empty { padding: 12px; border: 1px dashed var(--line-strong); border-radius: 8px; display: grid; gap: 3px; }
+.combat-ready-disclosure { border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+.combat-ready-disclosure > summary { min-height: 48px; display: flex; align-items: center; justify-content: space-between; gap: 8px; cursor: pointer; list-style: none; }
+.combat-ready-disclosure > summary::-webkit-details-marker { display: none; }
+.combat-ready-list { border-top: 1px solid var(--line); }
 .inventory-detail-copy h3 { font: 650 1.35rem/1.1 var(--font-display); }
 .inventory-detail-tags, .inventory-row-tags { display: flex; flex-wrap: wrap; gap: 5px; }
 .inventory-detail-actions { display: grid; gap: 7px; }
@@ -502,8 +519,9 @@ input[type="checkbox"] { width: 45px; min-width: 45px; height: 45px; min-height:
   .secondary-action-grid { gap: 5px; }
   .compact-action { padding-inline: 2px; }
   .compact-action span { font-size: .63rem; }
-  .weapon-row, .condition-summary { align-items: stretch; flex-direction: column; }
-  .weapon-row-action { width: 100%; }
+  .combat-weapon-row { grid-template-columns: 1fr; }
+  .combat-weapon-action { width: 100%; }
+  .condition-summary { align-items: stretch; flex-direction: column; }
   .form-grid.two, .scenario-grid { grid-template-columns: 1fr; }
   .save-picker-grid { grid-template-columns: 1fr; }
   .recovery-checkpoint-actions { grid-template-columns: 1fr; }

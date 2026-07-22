@@ -1212,8 +1212,9 @@ function performFirstRoundDexSave(forcedRoll = null) {
   if (state.conditions.panicked) {
     openResultSheet('Pierwsza runda walki', '—', 'Brak akcji', [
       'Spanikowana postać nie działa w pierwszej rundzie walki.',
+      'Od drugiej rundy działasz normalnie, ale ataki pozostają osłabione, dopóki trwa panika.',
       'Specjalne okoliczności mogą zmienić ten wymóg wyłącznie decyzją Wardena.'
-    ], 'danger');
+    ], 'danger', { animate: false, footer: button('Wróć do gry', closeSheet, 'btn btn-primary btn-block') });
     announce('Spanikowana postać nie działa w pierwszej rundzie walki.');
     return { blockedByPanic: true, canAct: false };
   }
@@ -1225,11 +1226,18 @@ function performFirstRoundDexSave(forcedRoll = null) {
   const natural = result.naturalSuccess ? ' — naturalne 1' : result.naturalFailure ? ' — naturalne 20' : '';
   const summary = `Pierwsza runda — ZRE: ${roll} vs ${result.target} — ${result.canAct ? 'działasz' : 'tracisz turę'}${natural}`;
   addDiceHistory({ type: 'save', attr: 'dex', label: 'Pierwsza runda — ZRE', summary, notation: '1k20', result: roll, success: result.canAct, details: `Cel: ${result.target}` });
+  const footer = result.canAct
+    ? createEl('div', { className: 'button-row' }, [
+        button('Wróć do gry', closeSheet, 'btn btn-ghost'),
+        button('Wybierz działanie', () => transitionFromSheet(openCombatSheet), 'btn btn-primary')
+      ])
+    : button('Wróć do gry', closeSheet, 'btn btn-primary btn-block');
   openResultSheet('Pierwsza runda walki', roll, result.canAct ? 'Możesz działać' : 'Tracisz turę', [
     `Aktualna ZRE: ${result.target}.`,
     result.naturalSuccess ? 'Naturalne 1 zawsze oznacza sukces.' : result.naturalFailure ? 'Naturalne 20 zawsze oznacza porażkę.' : result.canAct ? 'Wynik jest równy lub niższy od ZRE.' : 'Wynik jest wyższy od ZRE.',
-    'Od drugiej rundy postać działa normalnie. Specjalne okoliczności mogą zanegować wymóg rzutu decyzją Wardena.'
-  ], result.canAct ? 'success' : 'danger', { sides: 20 });
+    result.canAct ? 'Zadeklaruj ruch i jedno działanie.' : 'Nie działasz w pierwszej rundzie. Od drugiej rundy działasz normalnie.',
+    'Specjalne okoliczności mogą zanegować wymóg rzutu decyzją Wardena.'
+  ], result.canAct ? 'success' : 'danger', { sides: 20, footer });
   announce(summary);
   return result;
 }
@@ -1296,7 +1304,25 @@ function calculateInventoryUsage(items = state.inventory.items, fatigue = state.
 }
 
 function activeEquipmentItems(sourceState = state) {
-  return safeArray(sourceState?.inventory?.items).filter(item => ['held', 'worn'].includes(item.carryState) && item.carryState !== 'spent');
+  return safeArray(sourceState?.inventory?.items).filter(item => ['held', 'worn'].includes(item.carryState));
+}
+
+function weaponItems(sourceState = state) {
+  return safeArray(sourceState?.inventory?.items).filter(item => item.damageFormula && item.carryState !== 'spent');
+}
+
+function heldWeaponItems(sourceState = state) {
+  return weaponItems(sourceState).filter(item => item.carryState === 'held');
+}
+
+function weaponCountLabel(count) {
+  if (count === 1) return 'broń';
+  if (count >= 2 && count <= 4) return 'bronie';
+  return 'broni';
+}
+
+function availableWeaponItems(sourceState = state) {
+  return weaponItems(sourceState).filter(item => ['held', 'worn'].includes(item.carryState));
 }
 
 function planItemUse(sourceState, itemId) {
@@ -1752,7 +1778,7 @@ function openResultSheet(title, value, status, details, tone = 'success', option
   const result = createEl('div', { className: 'dice-result', attrs: { 'aria-live': 'polite', 'aria-atomic': 'true' } });
   body.append(result);
   for (const detail of details) body.append(createEl('p', { className: 'muted', text: detail }));
-  openSheet({ title, body, footer: button('Zamknij', closeSheet, 'btn btn-primary btn-block') });
+  openSheet({ title, body, footer: options.footer || button('Zamknij', closeSheet, 'btn btn-primary btn-block') });
   const numericValue = Number(value);
   if (options.animate !== false && Number.isFinite(numericValue)) {
     animateDiceResult(result, numericValue, status, options.sides || 6, tone);
@@ -2172,21 +2198,181 @@ function openSavePreparationSheet(attrKey) {
   openSheet({ title: `Przygotuj rzut ${ATTRS[attrKey].label}`, body, footer: roll });
 }
 
-function renderActiveWeaponShortcut() {
-  const weapon = activeEquipmentItems().find(item => item.damageFormula && item.carryState !== 'spent');
-  if (!weapon) return null;
-  const notation = formatDamageFormula(weapon.damageFormula);
-  const traits = [weapon.damageFormula.blast ? 'podmuch' : '', ...safeArray(weapon.traits).slice(0, 2)].filter(Boolean);
-  return createEl('section', { className: 'weapon-row', attrs: { 'aria-label': 'Aktywna broń' } }, [
-    createEl('div', { className: 'weapon-row-copy' }, [
-      createEl('span', { className: 'section-kicker', text: 'Aktywna broń' }),
-      createEl('strong', { text: weapon.name }),
-      createEl('span', { text: [notation, ...traits].join(' · ') })
+function weaponCombatMeta(item, mode = 'normal') {
+  if (mode === 'impaired') return 'atak osłabiony · k4';
+  if (mode === 'enhanced') return 'atak wzmocniony · k12';
+  const traits = [item.damageFormula?.blast ? 'podmuch' : '', ...safeArray(item.traits).slice(0, 2)].filter(Boolean);
+  return [formatDamageFormula(item.damageFormula), ...traits].join(' · ');
+}
+
+function runCombatWeapon(item, mode = 'normal') {
+  closeSheet();
+  requestAnimationFrame(() => runItemAttack(item, mode));
+}
+
+function openCombatWeaponPicker(mode) {
+  const weapons = heldWeaponItems();
+  if (!weapons.length) {
+    showToast('Najpierw przygotuj broń w Ekwipunku.', 'error');
+    return;
+  }
+  if (weapons.length === 1) {
+    runItemAttack(weapons[0], mode);
+    return;
+  }
+  const body = createEl('div', { className: 'combat-weapon-list' });
+  for (const weapon of weapons) {
+    body.append(consequenceAction(
+      weapon.name,
+      weaponCombatMeta(weapon, mode),
+      mode === 'impaired' ? 'impaired' : mode === 'enhanced' ? 'enhanced' : 'roll',
+      () => runCombatWeapon(weapon, mode)
+    ));
+  }
+  openSheet({
+    title: mode === 'impaired' ? 'Atak osłabiony' : mode === 'enhanced' ? 'Atak wzmocniony' : 'Wybierz broń',
+    body,
+    footer: button('Wróć do walki', () => transitionFromSheet(openCombatSheet), 'btn btn-ghost btn-block')
+  });
+}
+
+function prepareWeaponForCombat(itemId) {
+  const item = state.inventory.items.find(entry => entry.id === itemId);
+  if (!item?.damageFormula || item.carryState === 'spent') return;
+  closeSheet();
+  commitChange(`Przygotowano do walki: ${item.name}`, next => {
+    const target = next.inventory.items.find(entry => entry.id === itemId);
+    if (target) target.carryState = 'held';
+  });
+  requestAnimationFrame(openCombatSheet);
+}
+
+function openRetreatSheet() {
+  const destination = textInput('', 200);
+  const body = createEl('div', { className: 'form-grid' }, [
+    createEl('div', { className: 'report-block' }, [
+      createEl('span', { className: 'section-kicker', text: 'Odwrót' }),
+      createEl('strong', { text: `Rzut ZRE · 1k20 ≤ ${state.stats.dex.current}` }),
+      createEl('p', { className: 'muted small', text: 'Odwrót wymaga bezpiecznego celu. Warden określa pozycję i konsekwencję nieudanego rzutu.' })
     ]),
-    button('Rzuć obrażenia', () => runItemAttack(weapon), 'btn btn-quiet weapon-row-action', {
-      'aria-label': `Rzuć obrażenia aktywną bronią: ${weapon.name}`
-    })
+    field('Dokąd się wycofujesz? (opcjonalnie)', destination, 'Nazwij bezpieczne miejsce w fikcji przed rzutem.')
   ]);
+  const roll = button('Rzuć ZRE na odwrót', () => {
+    const place = trimText(destination.value).slice(0, 200);
+    transitionFromSheet(() => performSave('dex', null, {
+      stake: place ? `Nie docieram bezpiecznie do: ${place}` : 'Odwrót nie prowadzi bezpiecznie do wskazanego celu'
+    }));
+  }, 'btn btn-primary btn-block');
+  openSheet({ title: 'Przygotuj odwrót', body, footer: roll });
+}
+
+function openCombatSheet() {
+  const ready = heldWeaponItems();
+  const unready = weaponItems().filter(item => item.carryState !== 'held');
+  const panicked = state.conditions.panicked;
+  const body = createEl('div', { className: 'combat-flow' });
+  body.append(createEl('div', { className: `report-block combat-rule${panicked ? ' combat-rule-danger' : ''}` }, [
+    createEl('span', { className: 'section-kicker', text: panicked ? 'Panika' : 'Zasada ataku' }),
+    createEl('strong', { text: panicked ? 'Ataki są osłabione do k4' : 'Ataki trafiają automatycznie' }),
+    createEl('p', { className: 'muted small', text: panicked ? 'Wybierz broń i rzuć k4. Warden może rozstrzygnąć szczególną sytuację inaczej.' : 'Zadeklaruj ruch i jedno działanie. Warden odejmuje pancerz celu od wyniku obrażeń.' })
+  ]));
+  body.append(consequenceAction(
+    'Pierwsza runda — ZRE',
+    panicked ? 'Panika blokuje działanie w pierwszej rundzie.' : `Rzuć 1k20 przeciw ZRE ${state.stats.dex.current}.`,
+    'round',
+    () => { closeSheet(); requestAnimationFrame(() => performFirstRoundDexSave()); }
+  ));
+
+  body.append(createEl('div', { className: 'combat-section-heading' }, [
+    createEl('h3', { text: 'Broń w rękach' }),
+    createEl('span', { className: 'section-caption', text: ready.length ? `${ready.length} ${weaponCountLabel(ready.length)}` : 'brak' })
+  ]));
+  if (ready.length) {
+    const mode = panicked ? 'impaired' : 'normal';
+    const list = createEl('div', { className: 'combat-weapon-list' });
+    for (const weapon of ready) {
+      list.append(consequenceAction(weapon.name, weaponCombatMeta(weapon, mode), weapon.damageFormula.blast ? 'blast' : 'roll', () => runCombatWeapon(weapon, mode)));
+    }
+    body.append(list);
+    if (!panicked) {
+      body.append(createEl('div', { className: 'combat-mode-grid' }, [
+        button('Osłabiony · k4', () => transitionFromSheet(() => openCombatWeaponPicker('impaired')), 'btn btn-quiet'),
+        button('Wzmocniony · k12', () => transitionFromSheet(() => openCombatWeaponPicker('enhanced')), 'btn btn-quiet')
+      ]));
+    }
+    if (ready.length >= 2) {
+      body.append(consequenceAction('Dwie bronie', 'Rzuć przygotowanymi broniami i zachowaj wyższy wynik.', 'dual', () => transitionFromSheet(openDualWeaponsSheet)));
+    }
+  } else {
+    body.append(createEl('div', { className: 'combat-empty' }, [
+      createEl('strong', { text: 'Nie trzymasz broni' }),
+      createEl('p', { className: 'muted small', text: 'Możesz walczyć bez broni albo przygotować jeden z dostępnych przedmiotów.' })
+    ]));
+  }
+
+  if (unready.length) {
+    const disclosure = createEl('details', { className: 'combat-ready-disclosure' });
+    disclosure.append(createEl('summary', {}, [
+      createEl('span', { text: 'Przygotuj inną broń' }),
+      createEl('span', { className: 'section-caption', text: `${unready.length}` })
+    ]));
+    const list = createEl('div', { className: 'combat-ready-list' });
+    for (const weapon of unready) {
+      list.append(consequenceAction(weapon.name, `${CARRY_STATES[weapon.carryState] || weapon.carryState} · ${formatDamageFormula(weapon.damageFormula)}`, 'arrow', () => prepareWeaponForCombat(weapon.id)));
+    }
+    disclosure.append(list);
+    body.append(disclosure);
+  }
+
+  body.append(createEl('div', { className: 'combat-section-heading' }, [createEl('h3', { text: 'Inne działania' })]));
+  body.append(createEl('div', { className: 'combat-other-actions' }, [
+    consequenceAction('Bez broni', 'Atak trafia automatycznie i zadaje k4 obrażeń.', 'unarmed', () => { closeSheet(); requestAnimationFrame(() => performUnarmedAttack()); }),
+    consequenceAction('Odwrót', 'Wskaż bezpieczny cel i wykonaj rzut ZRE.', 'arrow', () => transitionFromSheet(openRetreatSheet)),
+    consequenceAction('Otrzymaj obrażenia', 'Pancerz → OCHR → SIŁ.', 'damage', () => transitionFromSheet(openDamageSheet))
+  ]));
+  openSheet({ title: 'Walka', body, footer: button('Wróć do gry', closeSheet, 'btn btn-primary btn-block') });
+}
+
+function renderCombatLauncher() {
+  const ready = heldWeaponItems();
+  const panicked = state.conditions.panicked;
+  const section = createEl('section', { className: 'combat-launcher', attrs: { 'aria-labelledby': 'combat-launcher-title' } });
+  section.append(createEl('div', { className: 'section-heading' }, [
+    createEl('h2', { id: 'combat-launcher-title', text: 'Walka' }),
+    createEl('span', { className: 'section-caption', text: panicked ? 'ataki osłabione' : 'ataki trafiają automatycznie' })
+  ]));
+
+  let title = 'Brak broni w rękach';
+  let meta = weaponItems().length ? 'Przygotuj broń lub walcz bez broni' : 'Walka bez broni zadaje k4';
+  let actionLabel = 'Atak bez broni · k4';
+  let action = () => performUnarmedAttack();
+  let actionAria = 'Rzuć k4 obrażeń za atak bez broni';
+  if (ready.length === 1) {
+    const weapon = ready[0];
+    title = weapon.name;
+    meta = weaponCombatMeta(weapon, panicked ? 'impaired' : 'normal');
+    actionLabel = panicked ? 'Rzuć k4' : `Rzuć ${formatDamageFormula(weapon.damageFormula)}`;
+    action = () => runItemAttack(weapon);
+    actionAria = `Rzuć obrażenia przygotowaną bronią: ${weapon.name}`;
+  } else if (ready.length > 1) {
+    title = `${ready.length} ${weaponCountLabel(ready.length)} w rękach`;
+    meta = ready.map(item => item.name).join(' · ');
+    actionLabel = 'Wybierz atak';
+    action = openCombatSheet;
+    actionAria = 'Wybierz przygotowaną broń do ataku';
+  }
+  section.append(createEl('div', { className: 'combat-weapon-row' }, [
+    createEl('div', { className: 'combat-weapon-copy' }, [
+      createEl('strong', { text: title }),
+      createEl('span', { text: meta })
+    ]),
+    button(actionLabel, action, 'btn btn-quiet combat-weapon-action', { 'aria-label': actionAria })
+  ]));
+  section.append(createEl('div', { className: 'combat-quick-actions' }, [
+    button('Pierwsza runda · ZRE', () => performFirstRoundDexSave(), 'btn btn-ghost'),
+    button('Opcje walki', openCombatSheet, 'btn btn-ghost')
+  ]));
+  return section;
 }
 
 function renderCharacterView() {
@@ -2278,6 +2464,8 @@ function renderCharacterView() {
 
   const sessionPrompt = renderSessionPrompt();
   if (sessionPrompt) root.append(sessionPrompt);
+  root.append(renderCombatLauncher());
+
   const gameActions = createEl('section', { className: 'game-actions', attrs: { 'aria-labelledby': 'game-actions-title' } });
   gameActions.append(createEl('div', { className: 'section-heading' }, [
     createEl('h2', { id: 'game-actions-title', text: 'Akcje w grze' }),
@@ -2294,9 +2482,6 @@ function renderCharacterView() {
     compactActionButton('Stany', 'more', openConditionsSheet)
   ]));
   root.append(gameActions);
-
-  const activeWeapon = renderActiveWeaponShortcut();
-  if (activeWeapon) root.append(activeWeapon);
 
 
   if (renderConditionChips(true).childElementCount) {
@@ -2548,13 +2733,15 @@ function openEditStatsSheet() {
 }
 
 function openItemDamageResultSheet(item, result, options = {}) {
-  const impaired = options.impaired === true;
+  const mode = options.mode || (options.impaired === true ? 'impaired' : 'normal');
+  const modeLabel = mode === 'impaired' ? 'Atak osłabiony' : mode === 'enhanced' ? 'Atak wzmocniony' : 'Atak trafia automatycznie';
+  const notation = mode === 'impaired' ? 'k4' : mode === 'enhanced' ? 'k12' : result.notation;
   const resultPanel = createEl('div', { className: 'dice-result', attrs: { 'aria-live': 'polite', 'aria-atomic': 'true' } });
   const body = createEl('div', { className: 'sheet-list item-damage-result' }, [
     resultPanel,
     createEl('div', { className: 'report-block' }, [
-      createEl('span', { className: 'section-kicker', text: impaired ? 'Atak osłabiony' : 'Atak trafia automatycznie' }),
-      createEl('strong', { text: `${item.name} · ${impaired ? 'k4' : result.notation}` }),
+      createEl('span', { className: 'section-kicker', text: modeLabel }),
+      createEl('strong', { text: `${item.name} · ${notation}` }),
       createEl('p', { className: 'muted small', text: 'Przekaż wynik Wardenowi. Pancerz celu i skutki obrażeń są rozpatrywane osobno.' })
     ])
   ]);
@@ -2563,20 +2750,26 @@ function openItemDamageResultSheet(item, result, options = {}) {
     button('Gotowe', closeSheet, 'btn btn-primary')
   ]);
   openSheet({ title: 'Obrażenia broni', body, footer });
-  animateDiceResult(resultPanel, result.total, 'obrażeń', impaired ? 4 : (result.rolls?.[0]?.sides || 6), 'success');
+  animateDiceResult(resultPanel, result.total, 'obrażeń', mode === 'impaired' ? 4 : mode === 'enhanced' ? 12 : (result.rolls?.[0]?.sides || 6), 'success');
 }
 
-function performDamageFormulaRoll(item) {
+function performDamageFormulaRoll(item, mode = 'normal') {
   try {
-    const result = rollDamageFormula(item.damageFormula);
+    const formula = mode === 'impaired'
+      ? parseDamageFormulaNotation('d4')
+      : mode === 'enhanced'
+        ? parseDamageFormulaNotation('d12')
+        : item.damageFormula;
+    const result = rollDamageFormula(formula);
     const rollText = result.rolls.map(entry => `d${entry.sides}: ${entry.value}`).join(', ');
     const keepText = result.formula.keep === 'highest' && result.rolls.length > 1 ? ` → najwyższy ${result.total}` : '';
     const blastText = result.formula.blast ? ' · blast' : '';
-    const summary = `${item.name}: ${result.total} (${result.notation}${blastText})`;
-    addDiceHistory({ type: 'damage', label: item.name, summary, notation: result.notation, result: result.total, details: `${rollText}${keepText}${blastText}` });
-    renderDiceResult(result.total, `${item.name} · ${rollText}${keepText}${blastText}`, { sides: result.rolls[0]?.sides || 6 });
+    const modeText = mode === 'impaired' ? ' · osłabiony' : mode === 'enhanced' ? ' · wzmocniony' : '';
+    const summary = `${item.name}${modeText}: ${result.total} (${result.notation}${blastText})`;
+    addDiceHistory({ type: 'damage', label: `${item.name}${modeText}`, summary, notation: result.notation, result: result.total, details: `${rollText}${keepText}${blastText}` });
+    renderDiceResult(result.total, `${item.name}${modeText} · ${rollText}${keepText}${blastText}`, { sides: result.rolls[0]?.sides || 6 });
     announce(`${summary}. ${rollText}${keepText}.`);
-    openItemDamageResultSheet(item, result);
+    openItemDamageResultSheet(item, result, { mode });
     return result;
   } catch (error) {
     showToast(error.message, 'error');
@@ -2586,10 +2779,11 @@ function performDamageFormulaRoll(item) {
 
 
 
-function runItemAttack(item) {
+function runItemAttack(item, mode = 'normal') {
   if (!item?.damageFormula) return null;
-  if (!state.conditions.panicked) {
-    return item.damageFormula.blast ? openBlastAttackSheet(item) : performDamageFormulaRoll(item);
+  const requestedMode = ['normal', 'impaired', 'enhanced'].includes(mode) ? mode : 'normal';
+  if (!state.conditions.panicked || requestedMode === 'impaired') {
+    return item.damageFormula.blast ? openBlastAttackSheet(item, { mode: requestedMode }) : performDamageFormulaRoll(item, requestedMode);
   }
   const body = createEl('div', { className: 'sheet-list' }, [
     createEl('p', { text: 'Spanikowana postać wykonuje ataki jako osłabione. Zamiast kości broni użyj k4.' }),
@@ -2597,23 +2791,22 @@ function runItemAttack(item) {
   ]);
   const impaired = button('Rzuć osłabiony k4', () => {
     closeSheet();
-    if (item.damageFormula.blast) openBlastAttackSheet(item, { impaired: true });
-    else {
-      const result = performRoll({ count: 1, sides: 4 }, `${item.name} — atak osłabiony przez panikę`);
-      if (result) openItemDamageResultSheet(item, result, { impaired: true });
-    }
+    if (item.damageFormula.blast) openBlastAttackSheet(item, { mode: 'impaired' });
+    else performDamageFormulaRoll(item, 'impaired');
   }, 'btn btn-primary');
-  const override = button('Warden pozwala użyć broni', () => {
+  const override = button('Warden pozwala na wybrany wariant', () => {
     closeSheet();
-    if (item.damageFormula.blast) openBlastAttackSheet(item);
-    else performDamageFormulaRoll(item);
+    if (item.damageFormula.blast) openBlastAttackSheet(item, { mode: requestedMode });
+    else performDamageFormulaRoll(item, requestedMode);
   }, 'btn btn-ghost');
   openSheet({ title: 'Panika: atak osłabiony', body, footer: createEl('div', { className: 'button-row' }, [override, impaired]) });
   return null;
 }
 function openBlastAttackSheet(sourceItem = null, config = {}) {
-  const impaired = config.impaired === true;
-  const blastItems = safeArray(state.inventory.items).filter(item => item.damageFormula?.blast && item.carryState !== 'spent');
+  const mode = config.mode || (config.impaired === true ? 'impaired' : 'normal');
+  const impaired = mode === 'impaired';
+  const enhanced = mode === 'enhanced';
+  const blastItems = heldWeaponItems().filter(item => item.damageFormula?.blast);
   const options = [
     ['manual-d4', 'Ręcznie: k4'], ['manual-d6', 'Ręcznie: k6'], ['manual-d8', 'Ręcznie: k8'], ['manual-d10', 'Ręcznie: k10'], ['manual-d12', 'Ręcznie: k12'],
     ...blastItems.map(item => [item.id, `${item.name} · ${formatDamageFormula(item.damageFormula)}`])
@@ -2623,19 +2816,31 @@ function openBlastAttackSheet(sourceItem = null, config = {}) {
   const targets = numberInput(2, 1, 20);
   const body = createEl('div', { className: 'form-grid' }, [
     createEl('p', { text: 'Podmuch wpływa na wszystkie cele w obszarze. Dla każdego celu wykonuje się oddzielny rzut obrażeń.' }),
-    impaired ? createEl('div', { className: 'alert alert-info' }, [createEl('strong', { text: 'Atak osłabiony przez panikę' }), createEl('p', { className: 'small', text: 'Dla każdego celu zostanie rzucone k4 zamiast kości broni.' })]) : field('Źródło obrażeń', source),
+    impaired
+      ? createEl('div', { className: 'alert alert-info' }, [createEl('strong', { text: 'Atak osłabiony · k4' }), createEl('p', { className: 'small', text: 'Dla każdego celu zostanie rzucone k4 zamiast kości broni.' })])
+      : enhanced
+        ? createEl('div', { className: 'alert alert-info' }, [createEl('strong', { text: 'Atak wzmocniony · k12' }), createEl('p', { className: 'small', text: 'Dla każdego celu zostanie rzucone k12 zamiast kości broni.' })])
+        : field('Źródło obrażeń', source),
     field('Liczba celów', targets, 'Warden określa, kto znajduje się w obszarze. Aplikacja nie śledzi przeciwników ani ich pancerza.'),
     createEl('p', { className: 'help', text: 'Gdy liczba celów jest niepewna, oficjalna zasada pozwala rzucić odpowiednią kością obrażeń, aby ją ustalić.' })
   ]);
   const roll = button('Rzuć osobno dla każdego celu', () => {
-    const item = impaired ? sourceItem : blastItems.find(entry => entry.id === source.value);
+    const item = mode !== 'normal' ? sourceItem : blastItems.find(entry => entry.id === source.value);
     const manualSide = source.value.startsWith('manual-d') ? toInt(source.value.slice(8), 6) : null;
-    const formula = impaired ? parseDamageFormulaNotation('d4', true) : (item?.damageFormula || parseDamageFormulaNotation(`d${manualSide}`, true));
+    const formula = impaired
+      ? parseDamageFormulaNotation('d4', true)
+      : enhanced
+        ? parseDamageFormulaNotation('d12', true)
+        : (item?.damageFormula || parseDamageFormulaNotation(`d${manualSide}`, true));
     let results;
     try { results = rollBlastTargets(formula, targets.value); }
     catch (error) { showToast(error.message, 'error'); return; }
     const details = results.map(entry => `Cel ${entry.target}: ${entry.total}${entry.rolls.length > 1 ? ` (${entry.rolls.map(die => die.value).join(', ')} → najwyższy)` : ''}`);
-    const label = impaired ? `${item?.name || 'Podmuch'} — osłabiony` : (item?.name || `Podmuch ${formatDamageFormula(formula)}`);
+    const label = impaired
+      ? `${item?.name || 'Podmuch'} — osłabiony`
+      : enhanced
+        ? `${item?.name || 'Podmuch'} — wzmocniony`
+        : (item?.name || `Podmuch ${formatDamageFormula(formula)}`);
     const summary = `${label}: ${results.length} ${results.length === 1 ? 'cel' : 'cele'} — ${results.map(entry => entry.total).join(', ')}`;
     addDiceHistory({ type: 'blast', label, summary, notation: formatDamageFormula(formula), result: results.map(entry => entry.total), details: details.join(' · ') });
     closeSheet();
@@ -2773,8 +2978,9 @@ function renderInventoryView() {
 function getItemPrimaryActionKinds(item) {
   const kinds = [];
   if (item.carryState === 'spent') return ['more'];
-  if (item.damageFormula?.blast) kinds.push('blast');
-  else if (item.damageFormula) kinds.push('roll');
+  if (item.carryState === 'held' && item.damageFormula?.blast) kinds.push('blast');
+  else if (item.carryState === 'held' && item.damageFormula) kinds.push('roll');
+  else if (item.damageFormula) kinds.push('prepare');
   if (item.uses.current !== null) kinds.push('use');
   kinds.push('more');
   return kinds;
@@ -2808,7 +3014,7 @@ function renderItemCard(item) {
     item.uses.current === 0 ? createEl('span', { className: 'item-warning', text: 'Brak użyć · otwórz szczegóły' }) : null
   ]);
   let trailing = null;
-  if (!spent && item.damageFormula) {
+  if (!spent && item.carryState === 'held' && item.damageFormula) {
     trailing = button(formatDamageFormula(item.damageFormula), () => runItemAttack(item), 'btn btn-quiet inventory-trailing-action', {
       'aria-label': `Rzuć obrażenia: ${item.name}`
     });
@@ -2880,9 +3086,12 @@ function openItemActionsSheet(itemId) {
   const primary = createEl('div', { className: 'inventory-detail-actions' });
   if (item.carryState !== 'spent' && item.uses.current !== null) {
     primary.append(button('Użyj przedmiotu', () => { closeSheet(); openUseItemSheet(itemId); }, 'btn btn-primary', { disabled: item.uses.current <= 0 }));
-    if (item.damageFormula) primary.append(button(item.damageFormula.blast ? 'Rzuć podmuch' : 'Rzuć obrażenia', () => { closeSheet(); runItemAttack(item); }, 'btn btn-quiet'));
-  } else if (item.carryState !== 'spent' && item.damageFormula) {
+    if (item.damageFormula && item.carryState === 'held') primary.append(button(item.damageFormula.blast ? 'Rzuć podmuch' : 'Rzuć obrażenia', () => { closeSheet(); runItemAttack(item); }, 'btn btn-quiet'));
+    else if (item.damageFormula) primary.append(button('Przygotuj do walki', () => prepareWeaponForCombat(itemId), 'btn btn-quiet'));
+  } else if (item.carryState === 'held' && item.damageFormula) {
     primary.append(button(item.damageFormula.blast ? 'Rzuć podmuch' : 'Rzuć obrażenia', () => { closeSheet(); runItemAttack(item); }, 'btn btn-primary'));
+  } else if (item.carryState !== 'spent' && item.damageFormula) {
+    primary.append(button('Przygotuj do walki', () => prepareWeaponForCombat(itemId), 'btn btn-primary'));
   }
   primary.append(
     button(`Sposób noszenia: ${CARRY_STATES[item.carryState] || item.carryState}`, () => { closeSheet(); openQuickCarrySheet(itemId); }, 'btn btn-quiet'),
@@ -3323,19 +3532,39 @@ function performFateRoll() {
 }
 
 function openDualWeaponsSheet() {
-  const first = selectInput([['4','k4'],['6','k6'],['8','k8'],['10','k10'],['12','k12']], '6');
-  const second = selectInput([['4','k4'],['6','k6'],['8','k8'],['10','k10'],['12','k12']], '6');
+  const weapons = heldWeaponItems();
+  if (weapons.length < 2) {
+    const body = createEl('div', { className: 'sheet-list' }, [
+      createEl('p', { text: 'Aby użyć tej procedury, postać musi trzymać co najmniej dwie bronie.' }),
+      createEl('p', { className: 'muted small', text: 'Przygotuj broń w Ekwipunku albo w panelu Walka. Aplikacja nie wybiera schowanych przedmiotów automatycznie.' })
+    ]);
+    openSheet({ title: 'Dwie bronie', body, footer: button('Wróć do gry', closeSheet, 'btn btn-primary btn-block') });
+    return;
+  }
+  const options = weapons.map(weapon => [weapon.id, `${weapon.name} · ${formatDamageFormula(weapon.damageFormula)}`]);
+  const first = selectInput(options, weapons[0].id);
+  const second = selectInput(options, weapons[1].id);
   const body = createEl('div', { className: 'form-grid' }, [
-    createEl('p', { text: 'Rzuć kośćmi obu broni i zachowaj pojedynczy najwyższy wynik.' }),
+    createEl('p', { text: state.conditions.panicked ? 'Panika osłabia oba ataki do k4. Rzuć obiema kośćmi i zachowaj wyższy wynik.' : 'Rzuć kośćmi obu przygotowanych broni i zachowaj pojedynczy najwyższy wynik.' }),
     createEl('div', { className: 'form-grid two' }, [field('Pierwsza broń', first), field('Druga broń', second)])
   ]);
   const roll = button('Rzuć obiema', () => {
-    const r1 = rollDie(toInt(first.value, 6));
-    const r2 = rollDie(toInt(second.value, 6));
-    const high = Math.max(r1, r2);
-    const summary = `Dwie bronie: ${high} (k${first.value}: ${r1}, k${second.value}: ${r2})`;
-    addDiceHistory({ type: 'dice', label: 'Dwie bronie', summary, notation: `k${first.value}+k${second.value}`, result: high, details: `${r1}, ${r2} → najwyższy ${high}` });
-    closeSheet(); setView('dice'); renderDiceResult(high, `Dwie bronie · ${r1}, ${r2} → najwyższy`); announce(summary);
+    if (first.value === second.value) { showToast('Wybierz dwie różne bronie.', 'error'); return; }
+    const firstWeapon = weapons.find(weapon => weapon.id === first.value);
+    const secondWeapon = weapons.find(weapon => weapon.id === second.value);
+    if (!firstWeapon || !secondWeapon) { showToast('Wybrane bronie nie są już dostępne.', 'error'); return; }
+    const firstFormula = state.conditions.panicked ? parseDamageFormulaNotation('d4') : firstWeapon.damageFormula;
+    const secondFormula = state.conditions.panicked ? parseDamageFormulaNotation('d4') : secondWeapon.damageFormula;
+    const firstResult = rollDamageFormula(firstFormula);
+    const secondResult = rollDamageFormula(secondFormula);
+    const high = Math.max(firstResult.total, secondResult.total);
+    const notation = `${formatDamageFormula(firstFormula)}+${formatDamageFormula(secondFormula)}`;
+    const details = `${firstWeapon.name}: ${firstResult.total} · ${secondWeapon.name}: ${secondResult.total} → najwyższy ${high}`;
+    const summary = `Dwie bronie: ${high} — ${firstWeapon.name} i ${secondWeapon.name}`;
+    addDiceHistory({ type: 'damage', label: 'Dwie bronie', summary, notation, result: high, details });
+    closeSheet();
+    requestAnimationFrame(() => openResultSheet('Dwie bronie', high, 'Najwyższy wynik', [details, 'Atak trafia automatycznie. Warden odejmuje pancerz celu i rozpatruje skutki.'], 'success', { sides: firstResult.total >= secondResult.total ? firstResult.rolls[0]?.sides : secondResult.rolls[0]?.sides }));
+    announce(`${summary}. ${details}.`);
   }, 'btn btn-primary btn-block');
   openSheet({ title: 'Dwie bronie', body, footer: roll });
 }
@@ -3927,7 +4156,7 @@ function runDeveloperTests() {
   test('42. Użycie zasobu zmniejsza licznik i nie schodzi poniżej zera', () => { const fixture = createDefaultState(); fixture.inventory.items = [makeItem({ id:'resource', uses:{current:1,max:3} })]; const plan = planItemUse(fixture, 'resource'); assert(plan.valid && plan.after === 0); applyItemUseMutation(fixture, 'resource'); assert(fixture.inventory.items[0].uses.current === 0 && !planItemUse(fixture, 'resource').valid); });
   test('43. Aktywny ekwipunek obejmuje tylko noszone i trzymane przedmioty', () => { const fixture = createDefaultState(); fixture.inventory.items = [makeItem({ id:'held', carryState:'held' }), makeItem({ id:'worn', carryState:'worn' }), makeItem({ id:'stored', carryState:'stored' }), makeItem({ id:'spent', carryState:'spent' })]; assert(activeEquipmentItems(fixture).map(item => item.id).join(',') === 'held,worn'); });
   test('44. Helper Blizn wskazuje właściwy wpis i bezpiecznie odrzuca brak wpisu', () => { assert(getScarGuide(3).title === 'Powalony'); assert(getScarGuide(13) === null); assert(resolveScarHelperRoll('broken-bone', 6) === 'Czaszka'); });
-  test('45. Karta przedmiotu nie duplikuje akcji użycia', () => { const item = makeItem({ damageFormula:parseDamageFormulaNotation('d6'), uses:{current:2,max:3} }); assert(getItemPrimaryActionKinds(item).join(',') === 'roll,use,more'); assert(getItemPrimaryActionKinds(makeItem()).join(',') === 'more'); });
+  test('45. Karta przedmiotu nie duplikuje akcji użycia', () => { const item = makeItem({ damageFormula:parseDamageFormulaNotation('d6'), uses:{current:2,max:3}, carryState:'held' }); assert(getItemPrimaryActionKinds(item).join(',') === 'roll,use,more'); assert(getItemPrimaryActionKinds(makeItem()).join(',') === 'more'); });
   test('46. Pulpit nie duplikuje nawigacji do Kości', () => { const labels = ['Obrażenia','Pierwsza runda','Odpoczynek','Zmęczenie']; assert(labels.length === 4 && !labels.includes('Kości') && !document.querySelector('#quickDiceBtn')); });
   test('47. Dynamiczne ikony używają przestrzeni nazw SVG', () => { assert(uiIcon('plus').namespaceURI === 'http://www.w3.org/2000/svg'); });
   test('48. Każdy typ kości ma własną ikonę', () => { const signatures = DICE_SIDES.map(side => dieIcon(side).innerHTML); assert(new Set(signatures).size === DICE_SIDES.length); });
@@ -3990,6 +4219,12 @@ function runDeveloperTests() {
   test('100. Metadane widoku aktualizują tytuł dokumentu', () => { const previous = activeView; setView('dice'); assert(document.title.includes('Kości') && VIEW_META.dice.label === 'Kości'); setView(previous); });
   test('101. Dialog ma fokusowalny tytuł i obsługę Visual Viewport', () => { assert($('#sheetTitle')?.getAttribute('tabindex') === '-1' && typeof syncVisualViewport === 'function' && trapSheetFocus.toString().includes('document.activeElement === title')); });
   test('102. CSS i JavaScript są ładowane z lokalnych plików statycznych', () => { assert(Boolean(document.querySelector('link[rel="stylesheet"][href="./styles/app.css"]')) && Boolean(document.querySelector('script[src="./scripts/app.js"]')) && !document.querySelector('style') && !document.querySelector('script:not([src])')); });
+  test('103. Przygotowane bronie obejmują wyłącznie przedmioty trzymane', () => { const fixture = createDefaultState(); fixture.inventory.items = [makeItem({ id:'held-weapon', damageFormula:parseDamageFormulaNotation('d6'), carryState:'held' }), makeItem({ id:'worn-weapon', damageFormula:parseDamageFormulaNotation('d8'), carryState:'worn' }), makeItem({ id:'stored-weapon', damageFormula:parseDamageFormulaNotation('d10'), carryState:'stored' })]; assert(heldWeaponItems(fixture).map(item => item.id).join(',') === 'held-weapon'); });
+  test('104. Dostępne bronie nie obejmują schowanych ani zużytych', () => { const fixture = createDefaultState(); fixture.inventory.items = [makeItem({ id:'held', damageFormula:parseDamageFormulaNotation('d6'), carryState:'held' }), makeItem({ id:'worn', damageFormula:parseDamageFormulaNotation('d8'), carryState:'worn' }), makeItem({ id:'stored', damageFormula:parseDamageFormulaNotation('d10'), carryState:'stored' }), makeItem({ id:'spent', damageFormula:parseDamageFormulaNotation('d12'), carryState:'spent' })]; assert(availableWeaponItems(fixture).map(item => item.id).join(',') === 'held,worn'); });
+  test('105. Schowana broń proponuje przygotowanie zamiast szybkiego ataku', () => { const item = makeItem({ damageFormula:parseDamageFormulaNotation('d6'), uses:{current:2,max:3}, carryState:'stored' }); assert(getItemPrimaryActionKinds(item).join(',') === 'prepare,use,more'); item.carryState = 'held'; assert(getItemPrimaryActionKinds(item).join(',') === 'roll,use,more'); });
+  test('106. Wariant ataku zachowuje nazwę broni i właściwą kość', () => { const item = makeItem({ name:'Miecz', damageFormula:parseDamageFormulaNotation('d8'), carryState:'held' }); assert(weaponCombatMeta(item) === 'd8' && weaponCombatMeta(item, 'impaired').includes('k4') && weaponCombatMeta(item, 'enhanced').includes('k12')); });
+  test('107. Launcher walki udostępnia pierwszą rundę i odwrót', () => { const source = openCombatSheet.toString(); assert(source.includes('performFirstRoundDexSave') && source.includes('openRetreatSheet') && source.includes('openDamageSheet')); });
+  test('108. Helper dwóch broni wybiera rzeczywiście trzymane przedmioty', () => { const source = openDualWeaponsSheet.toString(); assert(source.includes('heldWeaponItems') && !source.includes("[['4','k4']")); });
   return results;
 }
 
@@ -4314,6 +4549,9 @@ function initialize() {
     planFatigueWithDroppedItem,
     calculateInventoryUsage,
     resolveFirstRoundDex,
+    performFirstRoundDexSave,
+    heldWeaponItems,
+    availableWeaponItems,
     rollBlastTargets,
     planItemUse,
     getScarGuide,
