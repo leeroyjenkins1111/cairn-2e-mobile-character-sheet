@@ -277,12 +277,13 @@ button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible
 .demo-badge { color: var(--brass-bright); }
 .state-values { display: grid; grid-template-columns: minmax(0, 1.7fr) minmax(112px, .9fr); }
 .protection-control { min-width: 0; min-height: 138px; padding: 16px; border: 0; border-right: 1px solid var(--line); display: grid; align-content: center; justify-items: start; background: transparent; color: var(--text); text-align: left; cursor: pointer; }
-.state-label { color: var(--moss); font-size: .72rem; font-weight: 760; letter-spacing: .08em; text-transform: uppercase; }
+.state-label { max-width: 100%; color: var(--moss); font-size: clamp(.52rem, 3vw, .72rem); font-weight: 760; letter-spacing: .05em; overflow-wrap: anywhere; text-transform: uppercase; }
 .protection-value { font: 650 clamp(3.8rem, 19vw, 5.7rem)/.88 var(--font-display); letter-spacing: -.05em; }
 .protection-value small { color: var(--text-soft); font-size: .34em; letter-spacing: -.02em; }
 .state-caption { color: var(--text-faint); font-size: .72rem; }
-.state-secondary { display: grid; align-content: stretch; }
-.secondary-stat { padding: 13px; display: grid; align-content: center; gap: 1px; }
+.state-secondary { min-width: 0; display: grid; align-content: stretch; }
+.secondary-stat { min-width: 0; max-width: 100%; padding: 13px; display: grid; align-content: center; gap: 1px; }
+.secondary-stat > * { min-width: 0; max-width: 100%; }
 .secondary-stat + .secondary-stat { border-top: 1px solid var(--line); }
 .secondary-stat strong { font: 650 1.7rem/1 var(--font-display); }
 .protection-meter { position: relative; height: 4px; background: var(--surface-soft); }
