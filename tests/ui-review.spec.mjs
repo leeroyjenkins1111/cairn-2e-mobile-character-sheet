@@ -32,6 +32,10 @@ test('capture structural UI review screenshots', async ({ page, browserName }) =
   await page.getByRole('button', { name: 'Rzuć kością k8' }).click();
   await expect(page.locator('.animated-dice-result')).toHaveClass(/settled/);
   await shot(page, '03-dice-dark-390x844');
+  await page.getByRole('button', { name: 'Ustawienia i dane' }).click();
+  await page.getByRole('checkbox', { name: 'Haptyka' }).scrollIntoViewIfNeeded();
+  await shot(page, '03b-feedback-settings-dark-390x844');
+  await page.getByRole('button', { name: 'Gotowe' }).click();
   await page.getByRole('button', { name: 'Dziennik', exact: true }).click();
   await shot(page, '04-journal-dark-390x844');
 

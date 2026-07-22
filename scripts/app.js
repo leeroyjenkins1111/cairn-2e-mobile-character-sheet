@@ -4,7 +4,7 @@
 // 1. Constants
 // ============================================================
 const APP_ID = 'cairn-mobile-sheet';
-const APP_VERSION = '0.18.0';
+const APP_VERSION = '0.19.0';
 const SCHEMA_VERSION = 3;
 const STORAGE_KEY = `${APP_ID}:state`;
 const RECOVERY_KEY = `${APP_ID}:recovery`;
@@ -276,7 +276,8 @@ function createDefaultState() {
     },
     settings: {
       theme: 'dark',
-      reducedMotionOverride: null
+      reducedMotionOverride: null,
+      hapticsEnabled: true
     }
   };
 }
@@ -553,7 +554,7 @@ function migrateState(candidate) {
   }
   migrated.appVersion = APP_VERSION;
   migrated.schemaVersion = SCHEMA_VERSION;
-  migrated.settings = { theme: 'dark', reducedMotionOverride: null, ...(migrated.settings || {}) };
+  migrated.settings = { theme: 'dark', reducedMotionOverride: null, hapticsEnabled: true, ...(migrated.settings || {}) };
   migrated.changeHistory = safeArray(migrated.changeHistory).slice(-HISTORY_LIMIT);
   migrated.diceHistory = safeArray(migrated.diceHistory).slice(-DICE_HISTORY_LIMIT);
   migrated.sessionLog = normalizeSessionLog(migrated.sessionLog);
@@ -1831,6 +1832,7 @@ function setView(view, { announceChange = false } = {}) {
 
 function renderAll() {
   document.documentElement.dataset.theme = state.settings.theme === 'light' ? 'light' : 'dark';
+  document.documentElement.dataset.reduceMotion = state.settings.reducedMotionOverride === true ? 'true' : 'false';
   $('#headerTitle').textContent = (VIEW_META[activeView] || VIEW_META.character).label;
   $('#quickUndoBtn').disabled = !safeArray(state.changeHistory).some(entry => entry.undoable);
   renderCharacterView();
@@ -1990,6 +1992,14 @@ function scenarioButton(definition) {
   ]);
 }
 
+const HAPTIC_PATTERNS = Object.freeze({
+  selection: Object.freeze([8]),
+  roll: Object.freeze([8, 22, 14]),
+  success: Object.freeze([10, 20, 18]),
+  danger: Object.freeze([18, 28, 26]),
+  impact: Object.freeze([20])
+});
+
 let diceAnimationToken = 0;
 
 function shouldReduceMotion() {
@@ -1997,26 +2007,98 @@ function shouldReduceMotion() {
   return Boolean(globalThis.matchMedia?.('(prefers-reduced-motion: reduce)').matches);
 }
 
+function hapticPatternFor(kind = 'selection') {
+  return [...(HAPTIC_PATTERNS[kind] || HAPTIC_PATTERNS.selection)];
+}
+
+function supportsHapticFeedback() {
+  return typeof globalThis.navigator?.vibrate === 'function';
+}
+
+function triggerHaptic(kind = 'selection') {
+  if (state?.settings?.hapticsEnabled === false || !supportsHapticFeedback()) return false;
+  try {
+    return Boolean(globalThis.navigator.vibrate(hapticPatternFor(kind)));
+  } catch {
+    return false;
+  }
+}
+
+function resultHapticForTone(tone) {
+  if (tone === 'danger') return 'danger';
+  if (tone === 'success') return 'success';
+  return 'roll';
+}
+
+function diceEntrySides(entry) {
+  const repeat = normalizeDiceRepeatSpec(entry?.repeat);
+  if (repeat?.kind === 'roll') return repeat.config.sides;
+  if (repeat?.kind === 'save') return 20;
+  const notation = trimText(entry?.notation);
+  const match = notation.match(/[kd](100|20|12|10|8|6|4)(?!\d)/i);
+  return match ? Number(match[1]) : 20;
+}
+
+function createResultDie(value, sides, rolling = false) {
+  const numericSides = DICE_SIDES.includes(Number(sides)) ? Number(sides) : 20;
+  const face = createEl('div', { className: 'result-die-face' }, [
+    dieIcon(numericSides),
+    createEl('span', { className: 'result-die-notation', text: `k${numericSides}` }),
+    createEl('strong', { className: 'result-die-value', text: rolling ? '—' : String(value) })
+  ]);
+  const depth = createEl('div', { className: 'result-die-depth', attrs: { 'aria-hidden': 'true' } }, [dieIcon(numericSides)]);
+  const object = createEl('div', {
+    className: `result-die-object${rolling ? ' is-tumbling' : ''}`,
+    attrs: { 'data-sides': String(numericSides), 'data-value': String(value) }
+  }, [depth, face]);
+  return createEl('div', { className: 'result-die-scene' }, [
+    object,
+    createEl('span', { className: 'result-die-shadow', attrs: { 'aria-hidden': 'true' } })
+  ]);
+}
+
+function createDiceResultVisual(value, label, sides = 6, tone = 'neutral', rolling = false) {
+  const copy = createEl('span', {
+    text: rolling ? 'Kość w ruchu…' : label,
+    className: `result-die-copy${tone === 'danger' ? ' test-fail' : tone === 'success' ? ' test-pass' : ''}`
+  });
+  return createEl('div', {
+    className: `animated-dice-result ${rolling ? 'rolling' : 'settled'}`,
+    attrs: { 'data-tone': tone }
+  }, [createResultDie(value, sides, rolling), copy]);
+}
+
+function animateElementFeedback(target, className = 'feedback-pop') {
+  if (shouldReduceMotion()) return;
+  const element = typeof target === 'string' ? document.querySelector(target) : target;
+  if (!element) return;
+  element.classList.remove(className);
+  void element.offsetWidth;
+  element.classList.add(className);
+  element.addEventListener('animationend', () => element.classList.remove(className), { once: true });
+}
+
 function animateDiceResult(container, value, label, sides = 6, tone = 'neutral') {
   if (!container) return;
   const token = ++diceAnimationToken;
   const numericSides = DICE_SIDES.includes(Number(sides)) ? Number(sides) : 6;
-  const icon = dieIcon(numericSides);
-  const number = createEl('strong', { text: shouldReduceMotion() ? value : '—' });
-  const copy = createEl('span', {
-    text: shouldReduceMotion() ? label : 'Kość w ruchu…',
-    className: tone === 'danger' ? 'test-fail' : tone === 'success' ? 'test-pass' : ''
-  });
-  const shell = createEl('div', { className: `animated-dice-result${shouldReduceMotion() ? ' settled' : ' rolling'}` }, [icon, number, copy]);
-  if (!shouldReduceMotion()) shell.setAttribute('aria-hidden', 'true');
+  const reduced = shouldReduceMotion();
+  const shell = createDiceResultVisual(value, label, numericSides, tone, !reduced);
+  const number = shell.querySelector('.result-die-value');
+  const copy = shell.querySelector('.result-die-copy');
+  const object = shell.querySelector('.result-die-object');
+  if (!reduced) shell.setAttribute('aria-hidden', 'true');
   container.replaceChildren(shell);
-  if (shouldReduceMotion()) return;
+  if (reduced) {
+    triggerHaptic(resultHapticForTone(tone));
+    return;
+  }
   const started = performance.now();
-  const duration = 200;
+  const duration = 220;
   const tick = now => {
     if (token !== diceAnimationToken || !shell.isConnected) return;
     const progress = Math.min(1, (now - started) / duration);
-    const frame = Math.floor(progress * 9);
+    const frame = Math.floor(progress * 11);
     number.textContent = progress < 1 ? String(((frame * 7 + numericSides) % numericSides) + 1) : String(value);
     if (progress < 1) {
       requestAnimationFrame(tick);
@@ -2026,6 +2108,8 @@ function animateDiceResult(container, value, label, sides = 6, tone = 'neutral')
     shell.removeAttribute('aria-hidden');
     shell.classList.remove('rolling');
     shell.classList.add('settled');
+    object?.classList.remove('is-tumbling');
+    triggerHaptic(resultHapticForTone(tone));
   };
   requestAnimationFrame(tick);
 }
@@ -2528,8 +2612,13 @@ function openProtectionSheet() {
   const save = button('Zapisz Ochronę', () => {
     const max = Math.max(0, toInt(maximum.value, 0));
     const value = clamp(toInt(current.value, 0), 0, max);
+    const before = state.stats.hp.current;
     closeSheet();
-    commitChange('Zmieniono Ochronę', next => { next.stats.hp = { current: value, max }; });
+    const changed = commitChange('Zmieniono Ochronę', next => { next.stats.hp = { current: value, max }; });
+    if (changed) {
+      triggerHaptic(value < before ? 'impact' : 'selection');
+      requestAnimationFrame(() => animateElementFeedback('.protection-control', value < before ? 'feedback-impact' : 'feedback-pop'));
+    }
   }, 'btn btn-primary btn-block');
   openSheet({ title: 'Ochrona', body, footer: save });
 }
@@ -2563,10 +2652,14 @@ function openDamageSheet() {
     const result = calculateDamage(state, raw.value, armor.value);
     const label = trimText(source.value);
     closeSheet();
-    commitChange(`Obrażenia ${result.damageAfterArmor}${label ? ` — ${label}` : ''}`, next => {
+    const changed = commitChange(`Obrażenia ${result.damageAfterArmor}${label ? ` — ${label}` : ''}`, next => {
       next.stats.hp.current = result.hpAfter;
       next.stats.str.current = result.strAfter;
     });
+    if (changed) {
+      triggerHaptic(result.damageAfterArmor > 0 ? 'danger' : 'selection');
+      requestAnimationFrame(() => animateElementFeedback('.protection-control', result.damageAfterArmor > 0 ? 'feedback-impact' : 'feedback-pop'));
+    }
     if (result.strengthZero) {
       openResultSheet('Skutek obrażeń', 0, 'SIŁ spadła do zera', ['Zgodnie z zasadami postać umiera. Aplikacja nie podejmuje dalszych decyzji fabularnych.'], 'danger');
     } else if (result.strengthSaveRequired) {
@@ -3211,7 +3304,14 @@ function openUseItemSheet(itemId) {
   ]);
   const apply = button('Użyj i zmniejsz o 1', () => {
     closeSheet();
-    commitChange(`Użyto: ${plan.item.name}`, next => applyItemUseMutation(next, itemId));
+    const changed = commitChange(`Użyto: ${plan.item.name}`, next => applyItemUseMutation(next, itemId));
+    if (changed) {
+      triggerHaptic(plan.after === 0 ? 'impact' : 'selection');
+      requestAnimationFrame(() => {
+        const row = [...document.querySelectorAll('[data-item-id]')].find(element => element.dataset.itemId === itemId);
+        animateElementFeedback(row, 'feedback-consume');
+      });
+    }
   }, 'btn btn-primary btn-block');
   openSheet({ title: 'Użyj przedmiotu', body, footer: apply });
 }
@@ -3397,6 +3497,11 @@ function renderDiceView() {
     createEl('h1', { id: 'dice-console-title', text: 'Ostatni wynik' }),
     button('Historia', openDiceHistorySheet, 'btn btn-ghost', { disabled: !entries.length })
   ]));
+  const latestVisual = createDiceResultVisual(
+    latest ? diceEntryResultText(latest) : '—',
+    latest ? diceEntryTypeLabel(latest) : 'Jeszcze nie rzucano',
+    latest ? diceEntrySides(latest) : 20
+  );
   consolePanel.append(createEl('button', {
     type: 'button',
     className: 'dice-result dice-result-button',
@@ -3408,11 +3513,10 @@ function renderDiceView() {
       'aria-label': latest ? `Ostatni rzut: ${latest.summary}. Otwórz historię rzutów.` : 'Brak historii rzutów'
     },
     onclick: openDiceHistorySheet
-  }, [createEl('div', { className: 'dice-result-content' }, [
-    createEl('strong', { text: latest ? diceEntryResultText(latest) : '—' }),
-    createEl('span', { text: latest ? diceEntryTypeLabel(latest) : 'Jeszcze nie rzucano' }),
-    createEl('small', { text: latest ? latest.label || latest.notation || 'ostatni wynik' : 'Wybierz kość poniżej' })
-  ])]));
+  }, [
+    latestVisual,
+    createEl('small', { className: 'result-die-context', text: latest ? latest.label || latest.notation || 'ostatni wynik' : 'Wybierz kość poniżej' })
+  ]));
   consolePanel.append(createEl('div', { className: 'dice-result-actions' }, [
     button(
       latest && canRepeatDiceEntry(latest) ? 'Powtórz' : 'Brak rzutu do powtórzenia',
@@ -4225,6 +4329,10 @@ function runDeveloperTests() {
   test('106. Wariant ataku zachowuje nazwę broni i właściwą kość', () => { const item = makeItem({ name:'Miecz', damageFormula:parseDamageFormulaNotation('d8'), carryState:'held' }); assert(weaponCombatMeta(item) === 'd8' && weaponCombatMeta(item, 'impaired').includes('k4') && weaponCombatMeta(item, 'enhanced').includes('k12')); });
   test('107. Launcher walki udostępnia pierwszą rundę i odwrót', () => { const source = openCombatSheet.toString(); assert(source.includes('performFirstRoundDexSave') && source.includes('openRetreatSheet') && source.includes('openDamageSheet')); });
   test('108. Helper dwóch broni wybiera rzeczywiście trzymane przedmioty', () => { const source = openDualWeaponsSheet.toString(); assert(source.includes('heldWeaponItems') && !source.includes("[['4','k4']")); });
+  test('109. Starszy zapis otrzymuje domyślnie włączoną haptykę', () => { const fixture = createDemoState(); delete fixture.settings.hapticsEnabled; assert(sanitizeLoadedState(fixture).settings.hapticsEnabled === true); });
+  test('110. Wzorce haptyki są krótkie i rozróżniają wynik', () => { const roll = hapticPatternFor('roll'); const danger = hapticPatternFor('danger'); assert(roll.reduce((sum, value) => sum + value, 0) < 100 && danger.reduce((sum, value) => sum + value, 0) < 100 && roll.join(',') !== danger.join(',')); });
+  test('111. Wynik rozpoznaje typ kości z powtórzenia, obrony i notacji', () => { assert(diceEntrySides({ repeat:{kind:'roll',config:{sides:8}} }) === 8 && diceEntrySides({ repeat:{kind:'save',attrKey:'dex'} }) === 20 && diceEntrySides({ notation:'2d12' }) === 12); });
+  test('112. Przestrzenna kość przechowuje wynik i liczbę ścian', () => { const die = createResultDie(7, 8); const object = die.querySelector('.result-die-object'); assert(object?.dataset.sides === '8' && object.dataset.value === '7' && die.querySelector('.result-die-value')?.textContent === '7'); });
   return results;
 }
 
@@ -4410,10 +4518,34 @@ function openAppSettingsSheet() {
     scheduleSave();
     renderAll();
   });
+  const motionToggle = createEl('input', { type: 'checkbox', checked: state.settings.reducedMotionOverride !== true, attrs: { 'aria-label': 'Animacje interfejsu' } });
+  motionToggle.addEventListener('change', () => {
+    state.settings.reducedMotionOverride = motionToggle.checked ? null : true;
+    diceAnimationToken += 1;
+    scheduleSave();
+    renderAll();
+  });
+  const hapticsToggle = createEl('input', { type: 'checkbox', checked: state.settings.hapticsEnabled !== false, attrs: { 'aria-label': 'Haptyka' } });
+  hapticsToggle.addEventListener('change', () => {
+    state.settings.hapticsEnabled = hapticsToggle.checked;
+    scheduleSave();
+    if (hapticsToggle.checked) triggerHaptic('selection');
+  });
+  const hapticsHelp = supportsHapticFeedback()
+    ? 'Krótkie impulsy podkreślają wynik rzutu i ważne zmiany.'
+    : 'Ta przeglądarka nie udostępnia haptyki; ustawienie pozostaje bezpiecznym no-opem.';
   const appRows = createEl('div', { className: 'settings-list' }, [
     createEl('label', { className: 'settings-row settings-row-toggle' }, [
       createEl('div', {}, [createEl('strong', { text: 'Jasny motyw' }), createEl('p', { className: 'help', text: 'Ciemny pozostaje domyślny.' })]),
       themeToggle
+    ]),
+    createEl('label', { className: 'settings-row settings-row-toggle' }, [
+      createEl('div', {}, [createEl('strong', { text: 'Animacje interfejsu' }), createEl('p', { className: 'help', text: 'Systemowe Reduce Motion ma zawsze pierwszeństwo.' })]),
+      motionToggle
+    ]),
+    createEl('label', { className: 'settings-row settings-row-toggle' }, [
+      createEl('div', {}, [createEl('strong', { text: 'Haptyka' }), createEl('p', { className: 'help', text: hapticsHelp })]),
+      hapticsToggle
     ]),
     createEl('div', { className: 'settings-row' }, [
       createEl('div', {}, [createEl('strong', { text: 'Instalacja i offline' }), createEl('p', { className: 'help', text: deferredInstallPrompt ? 'Przeglądarka pozwala zainstalować kartę jako aplikację.' : 'Po pierwszym otwarciu karta jest buforowana do pracy bez sieci.' })]),
@@ -4579,6 +4711,11 @@ function initialize() {
     normalizeDiceRepeatSpec,
     canRepeatDiceEntry,
     diceEntryTypeLabel,
+    diceEntrySides,
+    createResultDie,
+    hapticPatternFor,
+    supportsHapticFeedback,
+    triggerHaptic,
     recentDiceEntries,
     repeatDiceEntry,
     groupInventoryEntries,

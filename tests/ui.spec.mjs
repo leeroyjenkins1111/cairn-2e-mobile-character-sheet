@@ -241,6 +241,56 @@ test('every quick die rolls immediately and repeat plus history stay close to th
   await expect(page.locator('#sheetTitle')).toHaveText('Historia rzutów');
 });
 
+test('latest roll settles on a spatial die and a newer roll interrupts the previous animation', async ({ page }) => {
+  await loadDemo(page);
+  await page.getByRole('button', { name: 'Kości', exact: true }).click();
+  await page.getByRole('button', { name: 'Rzuć kością k8', exact: true }).click();
+  await page.getByRole('button', { name: 'Rzuć kością k20', exact: true }).click();
+
+  const result = page.locator('#diceResult .animated-dice-result');
+  await expect(result).toHaveClass(/settled/);
+  const object = result.locator('.result-die-object');
+  await expect(object).toHaveAttribute('data-sides', '20');
+  await expect(object).toHaveAttribute('data-value', /^(?:[1-9]|1\d|20)$/);
+  await expect(result.locator('.result-die-value')).toHaveText(/^(?:[1-9]|1\d|20)$/);
+  const depth = await result.locator('.result-die-face').evaluate(element => ({ transform: getComputedStyle(element).transform, perspective: getComputedStyle(element.closest('.result-die-scene')).perspective }));
+  expect(depth.transform).toContain('matrix3d');
+  expect(depth.perspective).not.toBe('none');
+});
+
+test('in-app motion setting settles dice immediately and persists the preference', async ({ page }) => {
+  await loadDemo(page);
+  await page.getByRole('button', { name: 'Ustawienia i dane' }).click();
+  await page.getByRole('checkbox', { name: 'Animacje interfejsu' }).uncheck();
+  await expect(page.locator('html')).toHaveAttribute('data-reduce-motion', 'true');
+  await page.getByRole('button', { name: 'Gotowe' }).click();
+  await page.getByRole('button', { name: 'Kości', exact: true }).click();
+  await page.getByRole('button', { name: 'Rzuć kością k12', exact: true }).click();
+  await expect(page.locator('#diceResult .animated-dice-result')).toHaveClass(/settled/);
+  await expect(page.locator('#diceResult')).not.toContainText('Kość w ruchu');
+  await expect.poll(async () => page.evaluate(() => globalThis.CairnSheetDev.getState().settings.reducedMotionOverride)).toBe(true);
+});
+
+test('haptic feedback is short, optional and disabled from settings', async ({ page }) => {
+  await page.addInitScript(() => {
+    const calls = [];
+    Object.defineProperty(globalThis, '__cairnHapticCalls', { value: calls });
+    Object.defineProperty(navigator, 'vibrate', { configurable: true, value: pattern => { calls.push(pattern); return true; } });
+  });
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await loadDemo(page);
+  await page.getByRole('button', { name: 'Kości', exact: true }).click();
+  await page.getByRole('button', { name: 'Rzuć kością k6', exact: true }).click();
+  await expect.poll(async () => page.evaluate(() => globalThis.__cairnHapticCalls.length)).toBe(1);
+
+  await page.getByRole('button', { name: 'Ustawienia i dane' }).click();
+  await page.getByRole('checkbox', { name: 'Haptyka' }).uncheck();
+  await page.getByRole('button', { name: 'Gotowe' }).click();
+  await page.getByRole('button', { name: 'Rzuć kością k8', exact: true }).click();
+  await expect.poll(async () => page.evaluate(() => globalThis.__cairnHapticCalls.length)).toBe(1);
+  await expect.poll(async () => page.evaluate(() => globalThis.CairnSheetDev.getState().settings.hapticsEnabled)).toBe(false);
+});
+
 test('custom roll and item details use dismissible sheets with restored focus', async ({ page }) => {
   await loadDemo(page);
   await page.getByRole('button', { name: 'Kości', exact: true }).click();
