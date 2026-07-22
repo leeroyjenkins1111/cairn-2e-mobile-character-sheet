@@ -4,7 +4,7 @@
 // 1. Constants
 // ============================================================
 const APP_ID = 'cairn-mobile-sheet';
-const APP_VERSION = '0.20.1';
+const APP_VERSION = '0.21.0';
 const SCHEMA_VERSION = 3;
 const STORAGE_KEY = `${APP_ID}:state`;
 const RECOVERY_KEY = `${APP_ID}:recovery`;
@@ -1878,6 +1878,9 @@ function uiIcon(name) {
     plus: [['path', { d: 'M12 5v14M5 12h14' }]],
     fatigue: [['path', { d: 'M7 4h10M9 4v5l3 3 3-3V4M7 20h10M9 20v-5l3-3 3 3v5' }]],
     attribute: [['path', { d: 'M5 7h14M5 12h14M5 17h14' }], ['circle', { cx: '9', cy: '7', r: '1.5' }], ['circle', { cx: '15', cy: '12', r: '1.5' }], ['circle', { cx: '11', cy: '17', r: '1.5' }]],
+    strength: [['path', { d: 'M4 17l4-8 4 8 4-12 4 12' }], ['path', { d: 'M3 20h18' }]],
+    dexterity: [['path', { d: 'M5 17L17 5M11 5h6v6' }], ['path', { d: 'M5 8v9h9' }]],
+    will: [['path', { d: 'M12 3c3 3.2 5 5.8 5 9a5 5 0 0 1-10 0c0-3.2 2-5.8 5-9z' }], ['path', { d: 'M10 14c.5 1 1.2 1.5 2 1.5' }]],
     armor: [['path', { d: 'M12 3l7 3v5c0 4.6-2.8 8-7 10-4.2-2-7-5.4-7-10V6z' }]],
     roll: [['path', { d: 'M5 5l14 14M8 4h8l4 4v8l-4 4H8l-4-4V8z' }], ['path', { d: 'M9 9h.01M15 15h.01' }]],
     use: [['path', { d: 'M12 3v9' }], ['path', { d: 'M8 8l4 4 4-4' }], ['path', { d: 'M5 15v5h14v-5' }]],
@@ -2679,29 +2682,29 @@ function renderCombatLauncher() {
     panicked ? createEl('span', { className: 'combat-status', text: 'Osłabione' }) : null
   ]));
 
-  let title = 'Brak broni w rękach';
-  let meta = 'k4 bez broni';
-  let actionLabel = 'Atak bez broni · k4';
+  let title = 'Bez broni';
+  let meta = '';
+  let actionLabel = 'k4';
   let action = () => performUnarmedAttack();
   let actionAria = 'Rzuć k4 obrażeń za atak bez broni';
   if (ready.length === 1) {
     const weapon = ready[0];
     title = weapon.name;
-    meta = weaponCombatMeta(weapon, panicked ? 'impaired' : 'normal');
-    actionLabel = panicked ? 'Rzuć k4' : `Rzuć ${formatDamageFormula(weapon.damageFormula)}`;
+    meta = [weapon.damageFormula?.blast ? 'podmuch' : '', ...safeArray(weapon.traits).slice(0, 2)].filter(Boolean).join(' · ');
+    actionLabel = panicked ? 'k4' : formatDamageFormula(weapon.damageFormula);
     action = () => runItemAttack(weapon);
     actionAria = `Rzuć obrażenia przygotowaną bronią: ${weapon.name}`;
   } else if (ready.length > 1) {
     title = `${ready.length} ${weaponCountLabel(ready.length)} w rękach`;
     meta = 'Wybierz broń';
-    actionLabel = 'Wybierz atak';
+    actionLabel = 'Wybierz';
     action = openCombatSheet;
     actionAria = 'Wybierz przygotowaną broń do ataku';
   }
   section.append(createEl('div', { className: 'combat-weapon-row' }, [
     createEl('div', { className: 'combat-weapon-copy' }, [
       createEl('strong', { text: title }),
-      createEl('span', { text: meta })
+      meta ? createEl('span', { text: meta }) : null
     ]),
     createEl('button', {
       type: 'button',
@@ -2722,7 +2725,7 @@ function renderCombatLauncher() {
       className: 'btn btn-ghost combat-utility-action',
       attrs: { 'aria-label': 'Opcje walki' },
       onclick: openCombatSheet
-    }, [uiIcon('more'), createEl('span', { text: 'Opcje' })])
+    }, [uiIcon('more'), createEl('span', { className: 'sr-only', text: 'Opcje' })])
   ]));
   return section;
 }
@@ -2775,8 +2778,7 @@ function renderCharacterView() {
       onclick: openProtectionSheet
     }, [
       stateLabel('OCHR', 'protection'),
-      createEl('span', { className: 'protection-value' }, [String(state.stats.hp.current), createEl('small', { text: ` / ${state.stats.hp.max}` })]),
-      createEl('span', { className: 'state-caption', text: 'unikanie obrażeń' })
+      createEl('span', { className: 'protection-value' }, [String(state.stats.hp.current), createEl('small', { text: ` / ${state.stats.hp.max}` })])
     ]),
     createEl('div', { className: 'state-secondary' }, [
       createEl('div', {
@@ -2789,7 +2791,7 @@ function renderCharacterView() {
       createEl('div', { className: 'secondary-stat' }, [
         stateLabel('Miejsca', 'slots'),
         createEl('strong', { text: `${usage.total}/10` }),
-        createEl('span', { className: 'state-caption state-caption-icon', attrs: { 'aria-label': `${usage.fatigueSlots} zmęczenia` } }, [uiIcon('fatigue'), createEl('span', { text: usage.fatigueSlots })])
+        usage.fatigueSlots > 0 ? createEl('span', { className: 'state-caption', text: `${usage.fatigueSlots} zmęczenia` }) : null
       ])
     ])
   ]);
@@ -2807,12 +2809,15 @@ function renderCharacterView() {
   }, [
     ...['str', 'dex', 'wil'].map(key => createEl('button', {
       type: 'button',
-      className: 'attribute-control',
+      className: `attribute-control attribute-${key}`,
       attrs: { 'aria-label': `Przygotuj rzut obronny ${ATTRS[key].full}, aktualna wartość ${state.stats[key].current}` },
       onclick: () => openSavePreparationSheet(key)
     }, [
-      createEl('span', { text: ATTRS[key].label }),
-      createEl('strong', { text: state.stats[key].current })
+      createEl('span', { className: 'attribute-glyph' }, [uiIcon({ str: 'strength', dex: 'dexterity', wil: 'will' }[key])]),
+      createEl('span', { className: 'attribute-copy' }, [
+        createEl('span', { text: ATTRS[key].label }),
+        createEl('strong', { text: state.stats[key].current })
+      ])
     ]))
   ]));
   sessionLayout.append(hero);
@@ -2821,15 +2826,12 @@ function renderCharacterView() {
   if (sessionPrompt) sessionLayout.append(sessionPrompt);
   sessionLayout.append(renderCombatLauncher());
 
-  const gameActions = createEl('section', { className: 'game-actions', attrs: { 'aria-labelledby': 'game-actions-title' } });
-  gameActions.append(createEl('div', { className: 'section-heading' }, [
-    characterSectionTitle('game-actions-title', 'Akcje', 'action')
-  ]));
+  const gameActions = createEl('section', { className: 'game-actions', attrs: { 'aria-label': 'Akcje w grze' } });
   gameActions.append(createEl('button', {
     type: 'button',
-    className: 'btn btn-primary damage-primary-action',
+    className: 'btn damage-primary-action',
     onclick: openDamageSheet
-  }, [uiIcon('damage'), createEl('span', {}, [createEl('strong', { text: 'Rozlicz obrażenia' }), createEl('small', { text: 'Pancerz → OCHR → SIŁ' })])]));
+  }, [uiIcon('damage'), createEl('span', {}, [createEl('strong', { text: 'Obrażenia' }), createEl('small', { text: 'Pancerz → OCHR → SIŁ' })]), uiIcon('arrow')]));
   gameActions.append(createEl('div', { className: 'secondary-action-grid' }, [
     compactActionButton('Rzut obronny', 'dice', openSavePickerSheet),
     compactActionButton('Odpoczynek', 'rest', openRestSheet),
@@ -3315,7 +3317,7 @@ function renderInventoryView() {
     ])
   ]));
   overview.append(createEl('div', { className: 'inventory-summary-stats' }, [
-    createEl('div', { className: 'inventory-summary-stat', dataset: { inventoryStat: 'fatigue' } }, [createEl('strong', { text: usage.fatigueSlots }), createEl('span', { text: 'zmęczenie' })]),
+    createEl('div', { className: 'inventory-summary-stat', dataset: { inventoryStat: 'fatigue' } }, [createEl('strong', { text: usage.fatigueSlots }), createEl('span', { text: 'zmęczenia' })]),
     createEl('div', { className: 'inventory-summary-stat', dataset: { inventoryStat: 'armor' } }, [createEl('strong', { text: armor.effective }), createEl('span', { text: 'pancerz' })]),
     createEl('div', { className: 'inventory-summary-stat', dataset: { inventoryStat: 'gold' } }, [createEl('strong', { text: state.stats.gold }), createEl('span', { text: 'złoto' })])
   ]));
@@ -3329,8 +3331,7 @@ function renderInventoryView() {
 
   const listCard = createEl('section', { className: 'inventory-list', attrs: { 'aria-labelledby': 'inventory-list-title' } });
   listCard.append(createEl('div', { className: 'section-heading' }, [
-    createEl('h2', { id: 'inventory-list-title', text: 'Przedmioty' }),
-    createEl('span', { className: 'section-caption', text: `${state.inventory.items.length + state.inventory.fatigue.length} wpisów` })
+    createEl('h2', { id: 'inventory-list-title', text: 'Przedmioty' })
   ]));
   const groups = createEl('div', { className: 'inventory-groups' });
   const grouped = groupInventoryEntries();
@@ -3791,7 +3792,7 @@ function renderDiceView() {
   ]));
   consolePanel.append(createEl('div', { className: 'dice-result-actions' }, [
     button(
-      latest && canRepeatDiceEntry(latest) ? 'Powtórz' : 'Brak rzutu do powtórzenia',
+      'Powtórz',
       () => repeatDiceEntry(latest),
       'btn btn-quiet',
       {
@@ -3804,8 +3805,7 @@ function renderDiceView() {
 
   const quickDice = createEl('section', { className: 'quick-dice', attrs: { 'aria-labelledby': 'quick-dice-title' } });
   quickDice.append(createEl('div', { className: 'section-heading' }, [
-    createEl('h2', { id: 'quick-dice-title', text: 'Szybkie kości' }),
-    createEl('span', { className: 'section-caption', text: 'dotknij, aby rzucić' })
+    createEl('h2', { id: 'quick-dice-title', text: 'Szybkie kości' })
   ]));
   const grid = createEl('div', { className: 'dice-rail' });
   for (const sides of DICE_SIDES) {
@@ -3829,14 +3829,14 @@ function renderDiceView() {
     type: 'button',
     className: 'action-row',
     onclick: openCustomRollSheet
-  }, [uiIcon('dice'), createEl('span', {}, [createEl('strong', { text: 'Rzut własny' }), createEl('small', { text: 'wiele kości, modyfikator, najwyższy wynik' })]), createEl('span', { className: 'action-row-value', text: '›', attrs: { 'aria-hidden': 'true' } })]));
+  }, [uiIcon('dice'), createEl('span', {}, [createEl('strong', { text: 'Rzut własny' }), createEl('small', { text: 'notacja i modyfikator' })]), createEl('span', { className: 'action-row-value', text: '›', attrs: { 'aria-hidden': 'true' } })]));
 
   const scenarios = createEl('section', { className: 'combat-scenarios' });
   const scenarioDisclosure = createEl('details', { className: 'combat-scenarios-disclosure' });
   scenarioDisclosure.append(createEl('summary', {}, [
     createEl('span', {}, [
       createEl('strong', { text: 'Procedury walki' }),
-      createEl('small', { text: 'Bez broni, osłabienie, podmuch i wiele ataków' })
+      createEl('small', { text: 'Sytuacje szczególne' })
     ]),
     createEl('span', { text: 'Rozwiń', className: 'muted small' })
   ]));
@@ -4163,7 +4163,7 @@ function renderMoreView() {
 
   const quickNote = createEl('section', { className: 'journal-section quick-note', attrs: { 'aria-labelledby': 'quick-note-title' } }, [
     createEl('div', { className: 'section-heading' }, [
-      createEl('div', {}, [createEl('p', { className: 'section-kicker', text: 'Przy stole' }), createEl('h2', { id: 'quick-note-title', text: 'Szybka notatka' })]),
+      createEl('h2', { id: 'quick-note-title', text: 'Szybka notatka' }),
       button('Zapisz', openQuickNoteSheet, 'btn btn-primary')
     ]),
     createEl('p', { className: `notes-preview${trimText(state.notes) ? '' : ' muted'}`, text: trimText(state.notes) || 'Zapisz trop, imię albo decyzję, zanim zniknie z rozmowy.' })
@@ -4173,8 +4173,7 @@ function renderMoreView() {
   const recentChanges = safeArray(state.changeHistory).slice(-3).reverse();
   const recent = createEl('section', { className: 'journal-section recent-journal', attrs: { 'aria-labelledby': 'recent-journal-title' } }, [
     createEl('div', { className: 'section-heading' }, [
-      createEl('h2', { id: 'recent-journal-title', text: 'Ostatnie wpisy' }),
-      createEl('span', { className: 'section-caption', text: `${recentChanges.length} ostatnie` })
+      createEl('h2', { id: 'recent-journal-title', text: 'Ostatnie wpisy' })
     ])
   ]);
   if (!recentChanges.length) recent.append(createEl('p', { className: 'muted', text: 'Pierwsze zmiany postaci i notatki pojawią się tutaj.' }));
@@ -4191,7 +4190,7 @@ function renderMoreView() {
   root.append(identity);
 
   const characterData = createEl('section', { className: 'journal-section character-data-card' });
-  characterData.append(sectionHead('Karta postaci', createEl('span', { className: 'muted micro', text: 'rzadsze korekty' })));
+  characterData.append(sectionHead('Karta postaci'));
   characterData.append(createEl('div', { className: 'character-data-actions' }, [
     button('Edytuj statystyki', openEditStatsSheet, 'btn'),
     button('Obrażenia atrybutu', openDirectDamageSheet, 'btn')

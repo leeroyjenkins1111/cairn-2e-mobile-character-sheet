@@ -27,7 +27,7 @@ test('application loads extracted same-origin CSS and JavaScript', async ({ page
     inlineScripts: document.querySelectorAll('script:not([src])').length,
     stylesheetLoaded: Array.from(document.styleSheets).some(sheet => sheet.href?.endsWith('/styles/app.css'))
   }));
-  expect(result).toEqual({ version: '0.20.1', inlineStyles: 0, inlineScripts: 0, stylesheetLoaded: true });
+  expect(result).toEqual({ version: '0.21.0', inlineStyles: 0, inlineScripts: 0, stylesheetLoaded: true });
 });
 
 test('full and legacy exports round-trip without losing character data', async ({ page }) => {
@@ -426,7 +426,7 @@ test('game view keeps current state and core table actions without duplicate sum
   await loadDemo(page);
   await expect(page.getByRole('heading', { name: 'Przy stole' })).toHaveCount(0);
   await expect(page.getByText('Ostatni rzut', { exact: true })).toHaveCount(0);
-  await expect(page.getByRole('button', { name: 'Rozlicz obrażenia', exact: false })).toBeVisible();
+  await expect(page.locator('.damage-primary-action')).toBeVisible();
   await expect(page.getByRole('button', { name: 'Rzut obronny', exact: true })).toBeVisible();
   await expect(page.getByRole('button', { name: 'Odpoczynek', exact: true })).toBeVisible();
   await expect(page.locator('.combat-launcher')).toContainText('Krótki łuk');

@@ -57,7 +57,7 @@ test('capture structural UI review screenshots', async ({ page, browserName }) =
   await page.getByRole('checkbox', { name: 'Jasny motyw' }).uncheck();
   await page.getByRole('button', { name: 'Gotowe' }).click();
   await page.getByRole('button', { name: 'Postać', exact: true }).click();
-  await page.getByRole('button', { name: /Rozlicz obrażenia/ }).click();
+  await page.locator('.damage-primary-action').click();
   await expect(page.locator('#sheetTitle')).toHaveText('Otrzymaj obrażenia');
   await shot(page, '07-damage-sheet-dark-390x844');
   await page.getByRole('button', { name: 'Zamknij panel' }).click();

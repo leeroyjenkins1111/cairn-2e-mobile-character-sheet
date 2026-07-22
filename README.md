@@ -6,11 +6,12 @@ Szybki, dotykowy companion jednej lokalnej postaci do Cairn 2e. Aplikacja dział
 
 https://leeroyjenkins1111.github.io/cairn-2e-mobile-character-sheet/
 
-## Wersja 0.20.1
+## Wersja 0.21.0
 
 Interfejs został strukturalnie przebudowany pod krótkie użycie na telefonie przy stole:
 
 - **Postać** pokazuje jeden panel bieżącego stanu z dominującą OCHR, pancerzem, miejscami i dotykowymi rzutami SIŁ/ZRE/WOL;
+- ekran **Postać** usuwa powtarzalne opisy z launchera walki, wyróżnia SIŁ/ZRE/WOL własnymi znakami i zastępuje złote CTA subtelnym, matowym wierszem obrażeń;
 - ekran **Postać** używa autorskiej, sylwetkowej grafiki lasu, wyprawowej pieczęci i ikon inspirowanych fizycznym dziennikiem; dekoracja pozostaje subtelna i nie zastępuje informacji ani dostępnych nazw;
 - opisowe dopiski bez znaczenia w rozgrywce zostały usunięte, a skrócone etykiety zachowują mechanicznie istotne informacje;
 - otwarty panel stanu grupuje statystyki odstępami zamiast ramek, a obramowane powierzchnie pozostają zarezerwowane dla działań;
@@ -20,7 +21,8 @@ Interfejs został strukturalnie przebudowany pod krótkie użycie na telefonie p
 - wyniki rzutów otrzymały animację obracanej bryły 3D z wartością ujawnianą po zatrzymaniu oraz zsynchronizowane tyknięcia haptyczne na wspieranych urządzeniach;
 - **Dziennik** zaczyna się od sesji i szybkiej notatki, a dossier oraz rzadsze korekty znajdują się niżej;
 - top bar pokazuje bieżący widok, a dolny pasek działa jak stały mobilny tab bar z obsługą safe area;
-- jeden docelowy arkusz `styles/app.css` zawiera cały system wizualny, jasny motyw, forced colors i reduced motion.
+- jeden docelowy arkusz `styles/app.css` zawiera cały system wizualny, jasny motyw, forced colors i reduced motion;
+- powierzchnie wszystkich widoków i sheetów używają płaskich tonów oraz lekkiej faktury papierowego włókna zamiast połyskliwych gradientów i ciężkich ramek.
 
 ## Najważniejsze funkcje
 
@@ -40,7 +42,7 @@ Interfejs został strukturalnie przebudowany pod krótkie użycie na telefonie p
 
 Dane są zapisywane wyłącznie w `localStorage` tej przeglądarki i urządzenia. Wyczyszczenie danych przeglądarki usuwa kartę, dlatego regularnie używaj **Pobierz pełną kopię**.
 
-Wersja aplikacji 0.20.1 nadal używa `schemaVersion: 3`. Atmosferyczna warstwa ekranu Postać nie zmienia formatu importu, backupu ani punktów odzyskiwania i nie wymaga migracji danych. Zapisy ze `schemaVersion: 2` są nadal migrowane automatycznie, a starsze eksporty pozostają obsługiwane.
+Wersja aplikacji 0.21.0 nadal używa `schemaVersion: 3`. Matowa warstwa interfejsu nie zmienia formatu importu, backupu ani punktów odzyskiwania i nie wymaga migracji danych. Zapisy ze `schemaVersion: 2` są nadal migrowane automatycznie, a starsze eksporty pozostają obsługiwane.
 
 ## Struktura aplikacji
 
