@@ -40,29 +40,33 @@ const TYPOGRAPHY_RULES = [
   `html[style*="font-size"] .secondary-action-grid { display: grid; grid-template-columns: minmax(0, 1fr); }`,
   `html[style*="font-size"] .combat-weapon-row { grid-template-columns: minmax(0, 1fr); }`,
   `html[style*="font-size"] .combat-weapon-action { width: 100%; }`,
-  `html[style*="font-size"] .nav-btn > span:last-child { max-width: 100%; font-size: .5rem; line-height: 1; white-space: normal; overflow-wrap: anywhere; }`,
+  `html[style*="font-size"] .nav-btn > span:last-child { min-width: 0; max-width: 100%; overflow: hidden; font-size: 10px; line-height: 1; text-overflow: ellipsis; white-space: nowrap; }`,
   `@media (max-height: 700px) {
-    #view-character .identity-row { min-height: 54px; padding-bottom: 8px; }
-    #view-character .state-values { padding-bottom: 6px; }
-    #view-character .attribute-row { padding-top: 3px; }
-    #view-character .combat-launcher { margin-top: 8px; padding-block: 8px; gap: 4px; }
-    #view-character .game-actions { padding-top: 6px; }
-    #view-character .damage-primary-action { min-height: 48px; padding-block: 4px 6px; }
-    #view-character .game-actions .compact-action { min-height: 46px; }
+    #view-character .identity-row { min-height: 50px; padding-block: 5px; }
+    #view-character .state-values { padding-bottom: 3px; }
+    #view-character .attribute-row { padding-top: 1px; }
+    #view-character .combat-launcher { margin-top: 4px; padding-block: 4px; gap: 3px; }
+    #view-character .game-actions { padding-top: 3px; gap: 3px; }
+    #view-character .combat-order-action { min-height: 44px; padding-block: 2px; }
+    #view-character .damage-primary-action { min-height: 46px; padding-block: 3px; }
+    #view-character .game-actions .compact-action { min-height: 44px; }
   }`,
   `@media (max-width: 350px) {
     :root {
-      --type-view-title: 1.08rem;
-      --type-section-title: 1.1rem;
-      --type-record-title: .96rem;
-      --type-primary-action: .88rem;
-      --type-action: .82rem;
-      --type-compact-action: .72rem;
-      --type-body: .86rem;
-      --type-supporting: .72rem;
-      --type-meta: .64rem;
+      --type-view-title: 1rem;
+      --type-section-title: 1rem;
+      --type-record-title: .9rem;
+      --type-primary-action: .82rem;
+      --type-action: .76rem;
+      --type-compact-action: .66rem;
+      --type-body: .82rem;
+      --type-supporting: .66rem;
+      --type-meta: .58rem;
+      --type-kicker: .64rem;
+      --type-value: 1.2rem;
     }
-    .combat-order-action small { font-size: .6rem; }
+    .combat-order-action small { font-size: .56rem; line-height: 1.05; }
+    .damage-primary-action small { line-height: 1.05; }
   }`,
   `@media (min-width: 480px) {
     :root {
