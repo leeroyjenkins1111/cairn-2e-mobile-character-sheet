@@ -10,17 +10,25 @@ const DIRECT_EDITING_RULES = [
   `.character-quick-stat { width: 100%; min-width: 0; border: 0; text-align: left; color: inherit; background: transparent; cursor: pointer; }`,
   `.character-quick-stat:hover, .character-quick-stat:active { background: color-mix(in srgb, var(--surface-soft) 52%, transparent); }`,
   `.character-quick-stat:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }`,
-  `.combat-weapon-copy { cursor: pointer; border-radius: 8px; }`,
+  `.combat-weapon-copy { min-width: 0; cursor: pointer; border-radius: 8px; }`,
   `.combat-weapon-copy:hover, .combat-weapon-copy:active { background: color-mix(in srgb, var(--surface-soft) 45%, transparent); }`,
-  `.combat-weapon-copy::after { content: "Wybierz broń"; display: block; margin-top: 2px; color: var(--moss); font-size: .62rem; font-weight: 760; letter-spacing: .04em; text-transform: uppercase; }`,
-  `.combat-order-action { min-height: 58px; justify-content: flex-start; padding: 8px 11px; text-align: left; }`,
-  `.combat-order-action > span { display: grid; gap: 1px; }`,
-  `.combat-order-action strong { font-size: .82rem; }`,
-  `.combat-order-action small { font-size: .65rem; font-weight: 560; opacity: .78; }`,
-  `.game-actions .compact-action { min-height: 58px; }`,
-  `.game-actions .compact-action svg { width: 25px; height: 25px; }`,
-  `.damage-primary-action strong { font-size: 1.02rem; }`,
-  `.attribute-wil .mind-icon { width: 18px; height: 18px; flex: 0 0 auto; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }`
+  `.combat-weapon-copy strong, .combat-weapon-copy span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }`,
+  `.combat-order-action { min-height: 48px; min-width: 0; justify-content: flex-start; padding: 4px 8px; text-align: left; }`,
+  `.combat-order-action > span { min-width: 0; display: grid; gap: 0; }`,
+  `.combat-order-action strong { font-size: .78rem; line-height: 1.05; }`,
+  `.combat-order-action small { min-width: 0; font-size: .59rem; line-height: 1.05; font-weight: 560; opacity: .78; overflow-wrap: anywhere; }`,
+  `.game-actions .compact-action { min-height: 50px; }`,
+  `.game-actions .compact-action svg { width: 22px; height: 22px; }`,
+  `.damage-primary-action > span { min-width: 0; }`,
+  `.damage-primary-action strong { font-size: .98rem; }`,
+  `.damage-primary-action small { min-width: 0; overflow-wrap: anywhere; }`,
+  `.attribute-wil .mind-icon { width: 18px; height: 18px; flex: 0 0 auto; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }`,
+  `html[style*="font-size"] .combat-weapon-row { grid-template-columns: minmax(0, 1fr); }`,
+  `html[style*="font-size"] .combat-weapon-action { width: 100%; min-width: 0; }`,
+  `html[style*="font-size"] .combat-quick-actions { grid-template-columns: minmax(0, 1fr); }`,
+  `html[style*="font-size"] .secondary-action-grid { grid-template-columns: minmax(0, 1fr); }`,
+  `html[style*="font-size"] .combat-launcher, html[style*="font-size"] .game-actions, html[style*="font-size"] .section-heading { min-width: 0; max-width: 100%; }`,
+  `html[style*="font-size"] .combat-order-action, html[style*="font-size"] .damage-primary-action { width: 100%; min-width: 0; max-width: 100%; }`
 ];
 
 function installDirectEditingStyles() {
@@ -105,10 +113,8 @@ function enhanceCharacterStatEditing() {
   }
 
   const wil = attributeRow.querySelector('.attribute-wil');
-  if (wil && !wil.querySelector('.mind-icon')) {
-    wil.querySelector('svg')?.remove();
-    wil.prepend(mindIcon());
-  }
+  const wilGlyph = wil?.querySelector('.attribute-glyph');
+  if (wilGlyph && !wilGlyph.querySelector('.mind-icon')) wilGlyph.replaceChildren(mindIcon());
 
   if (!attributeRow.querySelector('[data-save-shortcut="str"]')) {
     attributeRow.append(createEl('button', {
@@ -139,6 +145,7 @@ function enhanceCombatAndGameActions() {
     weaponCopy.setAttribute('role', 'button');
     weaponCopy.setAttribute('tabindex', '0');
     weaponCopy.setAttribute('aria-label', `${weaponCopy.querySelector('strong')?.textContent || 'Broń'}. Wybierz broń do walki.`);
+    weaponCopy.setAttribute('title', 'Wybierz broń');
     const chooseWeapon = () => openCombatSheet();
     weaponCopy.addEventListener('click', chooseWeapon);
     weaponCopy.addEventListener('keydown', event => {
@@ -153,11 +160,12 @@ function enhanceCombatAndGameActions() {
   if (roundAction && roundAction.dataset.roundCtaReady !== 'true') {
     roundAction.dataset.roundCtaReady = 'true';
     roundAction.classList.add('combat-order-action');
-    roundAction.setAttribute('aria-label', 'Ustal kolejność w pierwszej rundzie rzutem obronnym ZRE');
+    roundAction.setAttribute('aria-label', 'Pierwsza runda · ZRE — Ustal kolejność');
     const icon = roundAction.querySelector('svg');
     roundAction.replaceChildren(
       icon || uiIcon('round'),
       createEl('span', {}, [
+        createEl('span', { className: 'sr-only', text: 'Runda 1' }),
         createEl('strong', { text: 'Ustal kolejność' }),
         createEl('small', { text: 'Pierwsza runda · rzut ZRE' })
       ])
@@ -171,7 +179,7 @@ function enhanceCombatAndGameActions() {
     const strong = damageAction.querySelector('strong');
     const small = damageAction.querySelector('small');
     if (strong) strong.textContent = 'Otrzymaj obrażenia';
-    if (small) small.textContent = 'Rozlicz pancerz, OCHR i ewentualną utratę SIŁ';
+    if (small) small.textContent = 'Pancerz → OCHR → SIŁ';
   }
 }
 
