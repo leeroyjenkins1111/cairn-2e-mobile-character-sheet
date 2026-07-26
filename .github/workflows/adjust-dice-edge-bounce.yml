@@ -1,0 +1,62 @@
+name: Apply dice edge bounce timing
+
+on:
+  pull_request:
+    branches: [main]
+    types: [synchronize]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.event.pull_request.head.ref == 'fix/mossy-dice-appearance'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Synchronize wall impact and bounce
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('scripts/dice-motion.js')
+          text = path.read_text()
+          replacements = {
+              "y = -Math.abs(Math.sin(phase * Math.PI * 3.15)) * (21 - phase * 7);":
+                  "y = -Math.abs(Math.sin(phase * Math.PI * 3)) * (21 - phase * 7);",
+              "} else if (progress < 0.72) {\n      const phase = (progress - 0.54) / 0.18;\n      const eased = diceMotionEaseOutCubic(phase);\n      x = diceMotionLerp(travel, travel * 0.27, eased);\n      y = -Math.sin(phase * Math.PI) * 31;":
+                  "} else if (progress < 0.69) {\n      const phase = (progress - 0.54) / 0.15;\n      const bouncePhase = Math.pow(phase, 0.68);\n      const eased = diceMotionEaseOutCubic(phase);\n      x = diceMotionLerp(travel, travel * 0.27, eased);\n      y = -Math.sin(bouncePhase * Math.PI) * 31;",
+              "const phase = (progress - 0.72) / 0.28;":
+                  "const phase = (progress - 0.69) / 0.31;",
+          }
+          for old, new in replacements.items():
+              if old not in text:
+                  raise SystemExit(f'Missing expected snippet: {old}')
+              text = text.replace(old, new, 1)
+          path.write_text(text)
+
+          index = Path('index.html')
+          index.write_text(index.read_text().replace('dice-motion.js?v=0.23.6', 'dice-motion.js?v=0.23.7'))
+
+          worker = Path('service-worker.js')
+          worker_text = worker.read_text()
+          worker_text = worker_text.replace('cairn-mobile-sheet-v0.23.6', 'cairn-mobile-sheet-v0.23.7')
+          worker_text = worker_text.replace('dice-motion.js?v=0.23.6', 'dice-motion.js?v=0.23.7')
+          worker.write_text(worker_text)
+          PY
+          rm .github/workflows/adjust-dice-edge-bounce.yml
+          sha256sum index.html manifest.webmanifest service-worker.js icon.svg styles/app.css styles/ux-direct-editing.css scripts/app.js scripts/dice-motion.js scripts/ux-direct-editing.js scripts/typography-system.js assets/forest-background.jpg > checksums.sha256
+          node --check scripts/dice-motion.js
+          node --check service-worker.js
+      - name: Commit timing adjustment
+        shell: bash
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add scripts/dice-motion.js index.html service-worker.js checksums.sha256 .github/workflows/adjust-dice-edge-bounce.yml
+          git commit -m "fix: synchronize die wall impact and bounce"
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
