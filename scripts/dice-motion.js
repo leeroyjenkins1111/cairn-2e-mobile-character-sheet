@@ -4,90 +4,34 @@ const DICE_MOTION_DURATION = 1550;
 const DICE_COLLISION_DURATION = 1750;
 const DICE_COLLISION_AT = 0.56;
 
-const DICE_MOTION_STYLES = `
-  .animated-dice-result,
-  .dual-dice-result {
-    width: 100%;
-  }
-  .animated-dice-result {
-    overflow: visible;
-  }
-  .result-die-scene.die-motion-stage {
-    width: min(100%, 360px);
-    height: 158px;
-    overflow: visible;
-  }
-  .die-motion-stage .result-die-object,
-  .die-motion-stage .result-die-shadow,
-  .dual-dice-stage .result-die-scene {
-    will-change: transform, opacity;
-  }
-  .die-motion-stage .result-die-shadow {
-    right: auto;
-    left: 50%;
-    width: 92px;
-    margin-left: -46px;
-  }
-  .dual-dice-result {
-    display: grid;
-    justify-items: center;
-    gap: 2px;
-    text-align: center;
-  }
-  .dual-dice-stage {
-    position: relative;
-    width: min(100%, 360px);
-    height: 158px;
-    overflow: visible;
-  }
-  .dual-dice-stage .result-die-scene {
-    position: absolute;
-    top: 0;
-    left: 0;
-  }
-  .dual-dice-result.rolling .result-die-value {
-    opacity: 0;
-    transform: scale(.78);
-  }
-  .dual-dice-result.revealing .result-die-value {
-    opacity: 1;
-    transform: scale(.88);
-    transition: opacity 120ms ease-out, transform 160ms ease-out;
-  }
-  .dual-dice-result.settled .result-die-value {
-    opacity: 1;
-    transform: none;
-    animation: die-value-reveal 240ms cubic-bezier(.2, .78, .28, 1);
-  }
-  .dual-dice-result.settled .result-die-copy {
-    animation: result-copy-in 240ms ease-out;
-  }
-  .dual-dice-result .damage-die-winner .result-die-notation {
-    color: var(--brass-bright);
-  }
-  .dual-dice-result .damage-die-loser {
-    pointer-events: none;
-  }
-  :root[data-reduce-motion="true"] .die-motion-stage .result-die-object,
-  :root[data-reduce-motion="true"] .die-motion-stage .result-die-shadow,
-  :root[data-reduce-motion="true"] .dual-dice-stage .result-die-scene {
-    transform: none !important;
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .die-motion-stage .result-die-object,
-    .die-motion-stage .result-die-shadow,
-    .dual-dice-stage .result-die-scene {
-      transform: none !important;
-    }
-  }
-`;
+const DICE_MOTION_RULES = [
+  `.animated-dice-result, .dual-dice-result { width: 100%; max-width: 100%; min-width: 0; }`,
+  `.animated-dice-result { overflow: visible; }`,
+  `.result-die-scene.die-motion-stage { width: min(100%, 360px); height: 158px; overflow: visible; }`,
+  `.die-motion-stage .result-die-object, .die-motion-stage .result-die-shadow, .dual-dice-stage .result-die-scene { will-change: transform, opacity; }`,
+  `.die-motion-stage .result-die-shadow { right: auto; left: 50%; width: 92px; margin-left: -46px; }`,
+  `.dual-dice-result { display: grid; justify-items: center; gap: 2px; text-align: center; }`,
+  `.dual-dice-stage { position: relative; width: min(100%, 360px); height: 158px; overflow: visible; }`,
+  `.dual-dice-stage .result-die-scene { position: absolute; top: 0; left: 0; }`,
+  `.dual-dice-result.rolling .result-die-value { opacity: 0; transform: scale(.78); }`,
+  `.dual-dice-result.revealing .result-die-value { opacity: 1; transform: scale(.88); transition: opacity 120ms ease-out, transform 160ms ease-out; }`,
+  `.dual-dice-result.settled .result-die-value { opacity: 1; transform: none; animation: die-value-reveal 240ms cubic-bezier(.2, .78, .28, 1); }`,
+  `.dual-dice-result.settled .result-die-copy { animation: result-copy-in 240ms ease-out; }`,
+  `.dual-dice-result .damage-die-winner .result-die-notation { color: var(--brass-bright); }`,
+  `.dual-dice-result .damage-die-loser { pointer-events: none; }`,
+  `:root[data-reduce-motion="true"] .die-motion-stage .result-die-object, :root[data-reduce-motion="true"] .die-motion-stage .result-die-shadow, :root[data-reduce-motion="true"] .dual-dice-stage .result-die-scene { transform: none !important; }`,
+  `@media (prefers-reduced-motion: reduce) { .die-motion-stage .result-die-object, .die-motion-stage .result-die-shadow, .dual-dice-stage .result-die-scene { transform: none !important; } }`
+];
 
 function installDiceMotionStyles() {
-  if (document.querySelector('#diceMotionStyles')) return;
-  const style = document.createElement('style');
-  style.id = 'diceMotionStyles';
-  style.textContent = DICE_MOTION_STYLES;
-  document.head.append(style);
+  if (document.documentElement.dataset.diceMotion === 'true') return;
+  const sheet = [...document.styleSheets].find(entry => entry.href?.endsWith('/styles/app.css'));
+  if (!sheet) return;
+  document.documentElement.dataset.diceMotion = 'true';
+  for (const rule of DICE_MOTION_RULES) {
+    try { sheet.insertRule(rule, sheet.cssRules.length); }
+    catch (_) {}
+  }
 }
 
 function diceMotionClamp(value, min = 0, max = 1) {
