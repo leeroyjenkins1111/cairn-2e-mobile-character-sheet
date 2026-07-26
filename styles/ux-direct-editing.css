@@ -1,0 +1,32 @@
+.inventory-summary-stat-button {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.inventory-summary-stat-button:active,
+.inventory-summary-stat-button:hover {
+  background: color-mix(in srgb, var(--surface-soft) 46%, transparent);
+}
+
+.inventory-summary-stat-button small {
+  color: var(--moss);
+  font-size: .58rem;
+  font-weight: 720;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+
+.inventory-add-item-button {
+  min-height: 42px;
+  padding-inline: 12px;
+  font-size: .76rem;
+  white-space: nowrap;
+}
+
+.inventory-add-item-button svg {
+  width: 18px;
+  height: 18px;
+}
