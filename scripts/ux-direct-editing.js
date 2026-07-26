@@ -6,7 +6,7 @@ const DIRECT_EDITING_RULES = [
   `.inventory-summary-stat-button small { color: var(--moss); font-size: .58rem; font-weight: 720; letter-spacing: .04em; text-transform: uppercase; }`,
   `.inventory-add-item-button { min-height: 42px; padding-inline: 12px; font-size: .76rem; white-space: nowrap; }`,
   `.inventory-add-item-button svg { width: 18px; height: 18px; }`,
-  `.direct-save-shortcut { position: fixed; top: 0; left: 0; width: 1px; height: 1px; padding: 0; border: 0; opacity: 0; overflow: hidden; }`
+  `.direct-save-shortcut { position: fixed; right: 1px; bottom: calc(var(--nav-height, 64px) + 1px); z-index: 20; width: 2px; height: 2px; padding: 0; border: 0; opacity: .01; overflow: hidden; pointer-events: auto; }`
 ];
 
 function installDirectEditingStyles() {
