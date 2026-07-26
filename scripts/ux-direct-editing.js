@@ -6,7 +6,21 @@ const DIRECT_EDITING_RULES = [
   `.inventory-summary-stat-button small { color: var(--moss); font-size: .58rem; font-weight: 720; letter-spacing: .04em; text-transform: uppercase; }`,
   `.inventory-add-item-button { min-height: 42px; padding-inline: 12px; font-size: .76rem; white-space: nowrap; }`,
   `.inventory-add-item-button svg { width: 18px; height: 18px; }`,
-  `.direct-save-shortcut { position: fixed; right: 1px; bottom: calc(var(--nav-height, 64px) + 1px); z-index: 20; width: 2px; height: 2px; padding: 0; border: 0; opacity: .01; overflow: hidden; pointer-events: auto; }`
+  `.direct-save-shortcut { position: fixed; right: 1px; bottom: calc(var(--nav-height, 64px) + 1px); z-index: 20; width: 2px; height: 2px; padding: 0; border: 0; opacity: .01; overflow: hidden; pointer-events: auto; }`,
+  `.character-quick-stat { width: 100%; min-width: 0; border: 0; text-align: left; color: inherit; background: transparent; cursor: pointer; }`,
+  `.character-quick-stat:hover, .character-quick-stat:active { background: color-mix(in srgb, var(--surface-soft) 52%, transparent); }`,
+  `.character-quick-stat:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }`,
+  `.combat-weapon-copy { cursor: pointer; border-radius: 8px; }`,
+  `.combat-weapon-copy:hover, .combat-weapon-copy:active { background: color-mix(in srgb, var(--surface-soft) 45%, transparent); }`,
+  `.combat-weapon-copy::after { content: "Wybierz broń"; display: block; margin-top: 2px; color: var(--moss); font-size: .62rem; font-weight: 760; letter-spacing: .04em; text-transform: uppercase; }`,
+  `.combat-order-action { min-height: 58px; justify-content: flex-start; padding: 8px 11px; text-align: left; }`,
+  `.combat-order-action > span { display: grid; gap: 1px; }`,
+  `.combat-order-action strong { font-size: .82rem; }`,
+  `.combat-order-action small { font-size: .65rem; font-weight: 560; opacity: .78; }`,
+  `.game-actions .compact-action { min-height: 58px; }`,
+  `.game-actions .compact-action svg { width: 25px; height: 25px; }`,
+  `.damage-primary-action strong { font-size: 1.02rem; }`,
+  `.attribute-wil .mind-icon { width: 18px; height: 18px; flex: 0 0 auto; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }`
 ];
 
 function installDirectEditingStyles() {
@@ -39,8 +53,42 @@ function openAttributeEditSheet(attrKey) {
   openSheet({ title: `Edytuj ${ATTRS[attrKey].full}`, body, footer: save });
 }
 
+function mindIcon() {
+  const ns = 'http://www.w3.org/2000/svg';
+  const svg = document.createElementNS(ns, 'svg');
+  svg.classList.add('mind-icon');
+  svg.setAttribute('viewBox', '0 0 24 24');
+  svg.setAttribute('aria-hidden', 'true');
+  svg.setAttribute('focusable', 'false');
+  for (const d of [
+    'M9 19h6',
+    'M10 22h4',
+    'M8.5 15.5c-1.8-1.2-3-3.2-3-5.5A6.5 6.5 0 0 1 12 3.5a6.5 6.5 0 0 1 6.5 6.5c0 2.3-1.2 4.3-3 5.5-.7.5-1.1 1.1-1.2 2H9.7c-.1-.9-.5-1.5-1.2-2z',
+    'M9.5 10.5c.8-1.3 1.7-2 2.5-2s1.7.7 2.5 2'
+  ]) {
+    const path = document.createElementNS(ns, 'path');
+    path.setAttribute('d', d);
+    svg.append(path);
+  }
+  return svg;
+}
+
+function replaceWithButton(element, onClick, ariaLabel) {
+  if (!element || element.tagName === 'BUTTON') return element;
+  const control = createEl('button', {
+    type: 'button',
+    className: `${element.className} character-quick-stat`,
+    attrs: { 'aria-label': ariaLabel },
+    onclick: onClick
+  });
+  while (element.firstChild) control.append(element.firstChild);
+  element.replaceWith(control);
+  return control;
+}
+
 function enhanceCharacterStatEditing() {
-  const attributeRow = document.querySelector('#view-character .attribute-row');
+  const root = document.querySelector('#view-character');
+  const attributeRow = root?.querySelector('.attribute-row');
   if (!attributeRow) return;
   attributeRow.setAttribute('aria-label', 'Atrybuty postaci. Kliknij, aby edytować.');
 
@@ -56,6 +104,12 @@ function enhanceCharacterStatEditing() {
     }, true);
   }
 
+  const wil = attributeRow.querySelector('.attribute-wil');
+  if (wil && !wil.querySelector('.mind-icon')) {
+    wil.querySelector('svg')?.remove();
+    wil.prepend(mindIcon());
+  }
+
   if (!attributeRow.querySelector('[data-save-shortcut="str"]')) {
     attributeRow.append(createEl('button', {
       type: 'button',
@@ -64,6 +118,60 @@ function enhanceCharacterStatEditing() {
       attrs: { 'aria-label': `Przygotuj rzut obronny ${ATTRS.str.full}, aktualna wartość ${state.stats.str.current}` },
       onclick: () => openSavePreparationSheet('str')
     }, [createEl('span', { text: 'Rzut obronny SIŁ' })]));
+  }
+
+  const secondary = [...root.querySelectorAll('.state-secondary .secondary-stat')];
+  const armorStat = secondary.find(item => item.textContent.includes('Pancerz'));
+  const slotsStat = secondary.find(item => item.textContent.includes('Miejsca'));
+  const armor = deriveArmor();
+  const usage = calculateInventoryUsage();
+  replaceWithButton(armorStat, openArmorSheet, `Pancerz ${armor.effective}. Zmień wartość pancerza.`);
+  replaceWithButton(slotsStat, () => document.querySelector('#nav-inventory')?.click(), `Miejsca ${usage.total} z 10. Przejdź do ekwipunku.`);
+}
+
+function enhanceCombatAndGameActions() {
+  const root = document.querySelector('#view-character');
+  if (!root) return;
+
+  const weaponCopy = root.querySelector('.combat-weapon-copy');
+  if (weaponCopy && weaponCopy.dataset.weaponChoiceReady !== 'true') {
+    weaponCopy.dataset.weaponChoiceReady = 'true';
+    weaponCopy.setAttribute('role', 'button');
+    weaponCopy.setAttribute('tabindex', '0');
+    weaponCopy.setAttribute('aria-label', `${weaponCopy.querySelector('strong')?.textContent || 'Broń'}. Wybierz broń do walki.`);
+    const chooseWeapon = () => openCombatSheet();
+    weaponCopy.addEventListener('click', chooseWeapon);
+    weaponCopy.addEventListener('keydown', event => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        chooseWeapon();
+      }
+    });
+  }
+
+  const roundAction = root.querySelector('[aria-label="Pierwsza runda · ZRE"]');
+  if (roundAction && roundAction.dataset.roundCtaReady !== 'true') {
+    roundAction.dataset.roundCtaReady = 'true';
+    roundAction.classList.add('combat-order-action');
+    roundAction.setAttribute('aria-label', 'Ustal kolejność w pierwszej rundzie rzutem obronnym ZRE');
+    const icon = roundAction.querySelector('svg');
+    roundAction.replaceChildren(
+      icon || uiIcon('round'),
+      createEl('span', {}, [
+        createEl('strong', { text: 'Ustal kolejność' }),
+        createEl('small', { text: 'Pierwsza runda · rzut ZRE' })
+      ])
+    );
+  }
+
+  const damageAction = root.querySelector('.damage-primary-action');
+  if (damageAction && damageAction.dataset.damageCtaReady !== 'true') {
+    damageAction.dataset.damageCtaReady = 'true';
+    damageAction.setAttribute('aria-label', 'Otrzymaj obrażenia i rozlicz ich skutki');
+    const strong = damageAction.querySelector('strong');
+    const small = damageAction.querySelector('small');
+    if (strong) strong.textContent = 'Otrzymaj obrażenia';
+    if (small) small.textContent = 'Rozlicz pancerz, OCHR i ewentualną utratę SIŁ';
   }
 }
 
@@ -111,10 +219,15 @@ function enhanceInventoryActions() {
   }
 }
 
+function enhanceCharacterView() {
+  enhanceCharacterStatEditing();
+  enhanceCombatAndGameActions();
+}
+
 const renderCharacterViewBase = renderCharacterView;
 renderCharacterView = function renderCharacterViewWithDirectEditing() {
   renderCharacterViewBase();
-  enhanceCharacterStatEditing();
+  enhanceCharacterView();
 };
 
 const renderInventoryViewBase = renderInventoryView;
@@ -124,5 +237,5 @@ renderInventoryView = function renderInventoryViewWithDirectActions() {
 };
 
 installDirectEditingStyles();
-enhanceCharacterStatEditing();
+enhanceCharacterView();
 enhanceInventoryActions();
