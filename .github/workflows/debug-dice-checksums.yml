@@ -1,0 +1,24 @@
+name: Debug dice checksums
+
+on:
+  push:
+    branches: [feat/dice-roll-trajectory-collision]
+
+permissions:
+  contents: read
+
+jobs:
+  checksums:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Print actual and expected checksums
+        shell: bash
+        run: |
+          git clone --quiet --depth 1 --branch "$GITHUB_REF_NAME" "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY.git" repo
+          cd repo
+          echo "ACTUAL"
+          sha256sum index.html service-worker.js scripts/dice-motion.js
+          echo "EXPECTED"
+          grep -E 'index.html|service-worker.js|scripts/dice-motion.js' checksums.sha256
+          echo "VERIFY"
+          sha256sum -c checksums.sha256
