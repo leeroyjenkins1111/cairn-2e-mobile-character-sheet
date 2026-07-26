@@ -3,6 +3,8 @@ name: Debug dice checksums
 on:
   push:
     branches: [feat/dice-roll-trajectory-collision]
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: read
@@ -14,8 +16,12 @@ jobs:
       - name: Print actual and expected checksums
         shell: bash
         run: |
-          git clone --quiet --depth 1 --branch "$GITHUB_REF_NAME" "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY.git" repo
+          mkdir repo
           cd repo
+          git init --quiet
+          git remote add origin "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY.git"
+          git fetch --quiet --depth 1 origin "$GITHUB_SHA"
+          git checkout --quiet FETCH_HEAD
           echo "ACTUAL"
           sha256sum index.html service-worker.js scripts/dice-motion.js
           echo "EXPECTED"
