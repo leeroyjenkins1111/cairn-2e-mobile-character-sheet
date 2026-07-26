@@ -40,7 +40,7 @@ const TYPOGRAPHY_RULES = [
   `html[style*="font-size"] .secondary-action-grid { display: grid; grid-template-columns: minmax(0, 1fr); }`,
   `html[style*="font-size"] .combat-weapon-row { grid-template-columns: minmax(0, 1fr); }`,
   `html[style*="font-size"] .combat-weapon-action { width: 100%; }`,
-  `html[style*="font-size"] .nav-btn > span:last-child { min-width: 0; max-width: 100%; overflow: hidden; font-size: 10px; line-height: 1; text-overflow: ellipsis; white-space: nowrap; }`,
+  `html[style*="font-size"] .nav-btn > span:last-child { display: block; width: 100%; min-width: 0; max-width: 100%; overflow: hidden; font-size: 10px; line-height: 1; text-overflow: ellipsis; white-space: nowrap; }`,
   `@media (max-height: 700px) {
     #view-character .identity-row { min-height: 50px; padding-block: 5px; }
     #view-character .state-values { padding-bottom: 3px; }
