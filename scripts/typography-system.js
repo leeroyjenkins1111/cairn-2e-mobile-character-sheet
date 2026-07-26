@@ -40,6 +40,16 @@ const TYPOGRAPHY_RULES = [
   `html[style*="font-size"] .secondary-action-grid { display: grid; grid-template-columns: minmax(0, 1fr); }`,
   `html[style*="font-size"] .combat-weapon-row { grid-template-columns: minmax(0, 1fr); }`,
   `html[style*="font-size"] .combat-weapon-action { width: 100%; }`,
+  `html[style*="font-size"] .nav-btn > span:last-child { max-width: 100%; font-size: .5rem; line-height: 1; white-space: normal; overflow-wrap: anywhere; }`,
+  `@media (max-height: 700px) {
+    #view-character .identity-row { min-height: 54px; padding-bottom: 8px; }
+    #view-character .state-values { padding-bottom: 6px; }
+    #view-character .attribute-row { padding-top: 3px; }
+    #view-character .combat-launcher { margin-top: 8px; padding-block: 8px; gap: 4px; }
+    #view-character .game-actions { padding-top: 6px; }
+    #view-character .damage-primary-action { min-height: 48px; padding-block: 4px 6px; }
+    #view-character .game-actions .compact-action { min-height: 46px; }
+  }`,
   `@media (max-width: 350px) {
     :root {
       --type-view-title: 1.08rem;
@@ -72,16 +82,4 @@ function installTypographySystem() {
   }
 }
 
-function normalizeResponsiveCtas() {
-  const roundAction = document.querySelector('#view-character .combat-order-action');
-  roundAction?.querySelector('.sr-only')?.remove();
-}
-
-const typographyRenderCharacterViewBase = renderCharacterView;
-renderCharacterView = function renderCharacterViewWithTypography() {
-  typographyRenderCharacterViewBase();
-  normalizeResponsiveCtas();
-};
-
 installTypographySystem();
-normalizeResponsiveCtas();
