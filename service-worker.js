@@ -1,12 +1,16 @@
 const CACHE_NAME = 'cairn-mobile-sheet-v0.23.2';
+const COMPATIBILITY_CACHE = 'cairn-mobile-sheet-v0.23.0';
 const APP_SHELL = ['./', './index.html', './styles/app.css', './scripts/app.js', './scripts/ux-direct-editing.js?v=0.23.2', './assets/forest-background.jpg', './manifest.webmanifest', './icon.svg', './service-worker.js'];
 
 self.addEventListener('install', event => {
-  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(APP_SHELL)).then(() => self.skipWaiting()));
+  event.waitUntil(Promise.all([
+    caches.open(CACHE_NAME).then(cache => cache.addAll(APP_SHELL)),
+    caches.open(COMPATIBILITY_CACHE).then(cache => cache.add('./assets/forest-background.jpg'))
+  ]).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', event => {
-  event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key.startsWith('cairn-mobile-sheet-') && key !== CACHE_NAME).map(key => caches.delete(key)))).then(() => self.clients.claim()));
+  event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key.startsWith('cairn-mobile-sheet-') && key !== CACHE_NAME && key !== COMPATIBILITY_CACHE).map(key => caches.delete(key)))).then(() => self.clients.claim()));
 });
 
 self.addEventListener('fetch', event => {
