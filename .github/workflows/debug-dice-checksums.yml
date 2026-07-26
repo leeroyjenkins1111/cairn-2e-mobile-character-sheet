@@ -23,8 +23,8 @@ jobs:
           git fetch --quiet --depth 1 origin "$GITHUB_SHA"
           git checkout --quiet FETCH_HEAD
           echo "ACTUAL"
-          sha256sum index.html service-worker.js scripts/dice-motion.js
+          sha256sum index.html service-worker.js scripts/app.js scripts/dice-motion.js
           echo "EXPECTED"
-          grep -E 'index.html|service-worker.js|scripts/dice-motion.js' checksums.sha256
+          grep -E 'index.html|service-worker.js|scripts/app.js|scripts/dice-motion.js' checksums.sha256
           echo "VERIFY"
           sha256sum -c checksums.sha256
