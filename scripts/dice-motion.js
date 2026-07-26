@@ -14,9 +14,8 @@ const DICE_MOTION_RULES = [
   `.dual-dice-stage { position: relative; width: min(100%, 360px); height: 158px; overflow: visible; }`,
   `.dual-dice-stage .result-die-scene { position: absolute; top: 0; left: 0; }`,
   `.result-die-value { position: absolute !important; width: 1px !important; height: 1px !important; padding: 0 !important; margin: -1px !important; overflow: hidden !important; clip: rect(0, 0, 0, 0) !important; white-space: nowrap !important; border: 0 !important; }`,
-  `.result-die-notation { bottom: 1px; color: var(--text-faint); font-size: .58rem; letter-spacing: .05em; opacity: .72; text-shadow: none; }`,
+  `.result-die-notation { display: none !important; }`,
   `.dual-dice-result.settled .result-die-copy, .animated-dice-result.settled .result-die-copy { animation: result-copy-in 240ms ease-out; }`,
-  `.dual-dice-result .damage-die-winner .result-die-notation { color: var(--text-soft); }`,
   `.dual-dice-result .damage-die-loser { pointer-events: none; }`,
   `:root[data-reduce-motion="true"] .die-motion-stage .result-die-object, :root[data-reduce-motion="true"] .die-motion-stage .result-die-shadow, :root[data-reduce-motion="true"] .dual-dice-stage .result-die-scene { transform: none !important; }`,
   `@media (prefers-reduced-motion: reduce) { .die-motion-stage .result-die-object, .die-motion-stage .result-die-shadow, .dual-dice-stage .result-die-scene { transform: none !important; } }`
@@ -91,25 +90,6 @@ function diceFaceLabel(canvas, sides, value) {
   return Number(value) === 100 ? '0' : String(Number(value) % 10);
 }
 
-function drawDieFaceTexture(context, points, faceIndex, brightness) {
-  const centroid = diceFaceCentroid(points);
-  context.save();
-  context.beginPath();
-  points.forEach(([x, y], index) => index ? context.lineTo(x, y) : context.moveTo(x, y));
-  context.closePath();
-  context.clip();
-  context.fillStyle = `rgba(73, 48, 28, ${0.018 + (1 - brightness) * 0.025})`;
-  for (let index = 0; index < 7; index += 1) {
-    const angle = (faceIndex * 1.73 + index * 2.19) % (Math.PI * 2);
-    const distance = 4 + ((faceIndex * 11 + index * 7) % 13);
-    const radius = 0.45 + ((faceIndex + index * 3) % 4) * 0.22;
-    context.beginPath();
-    context.arc(centroid[0] + Math.cos(angle) * distance, centroid[1] + Math.sin(angle) * distance, radius, 0, Math.PI * 2);
-    context.fill();
-  }
-  context.restore();
-}
-
 function drawDieFaceValue(context, face, label, isLight) {
   const points = face.points;
   const centroid = diceFaceCentroid(points);
@@ -130,14 +110,14 @@ function drawDieFaceValue(context, face, label, isLight) {
   context.font = `700 ${fontSize}px Georgia, "Times New Roman", serif`;
   context.lineJoin = 'round';
   context.lineWidth = Math.max(1.2, fontSize * 0.07);
-  context.strokeStyle = isLight ? 'rgba(255, 247, 225, .34)' : 'rgba(244, 225, 187, .24)';
+  context.strokeStyle = 'rgba(20, 31, 18, .78)';
   context.strokeText(label, 0, fontSize * 0.035);
-  context.fillStyle = isLight ? 'rgba(54, 35, 24, .94)' : 'rgba(42, 29, 21, .95)';
+  context.fillStyle = 'rgba(255, 255, 255, .98)';
   context.fillText(label, 0, fontSize * 0.035);
   context.restore();
 }
 
-paintResultDie = function paintResultDieAsCarvedBone(canvas, sides, rotation, lift = 0) {
+paintResultDie = function paintResultDieAsMossyStone(canvas, sides, rotation, lift = 0) {
   const context = canvas?.getContext?.('2d');
   if (!context) return false;
   const bounds = canvas.getBoundingClientRect();
@@ -179,22 +159,21 @@ paintResultDie = function paintResultDieAsCarvedBone(canvas, sides, rotation, li
     const xs = entry.points.map(point => point[0]);
     const ys = entry.points.map(point => point[1]);
     const gradient = context.createLinearGradient(Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys));
-    const baseLightness = isLight ? 58 + brightness * 20 : 43 + brightness * 21;
-    gradient.addColorStop(0, `hsl(39 29% ${Math.min(83, baseLightness + 6)}%)`);
-    gradient.addColorStop(0.58, `hsl(38 27% ${baseLightness}%)`);
-    gradient.addColorStop(1, `hsl(35 25% ${Math.max(31, baseLightness - 8)}%)`);
+    const baseLightness = isLight ? 38 + brightness * 20 : 28 + brightness * 23;
+    gradient.addColorStop(0, `hsl(88 30% ${Math.min(64, baseLightness + 7)}%)`);
+    gradient.addColorStop(0.58, `hsl(93 27% ${baseLightness}%)`);
+    gradient.addColorStop(1, `hsl(82 31% ${Math.max(21, baseLightness - 8)}%)`);
 
     context.beginPath();
     entry.points.forEach(([x, y], index) => index ? context.lineTo(x, y) : context.moveTo(x, y));
     context.closePath();
     context.fillStyle = gradient;
     context.fill();
-    drawDieFaceTexture(context, entry.points, entry.faceIndex, brightness);
     context.lineWidth = 2.15;
-    context.strokeStyle = isLight ? 'rgba(78, 51, 31, .78)' : 'rgba(58, 39, 27, .88)';
+    context.strokeStyle = isLight ? 'rgba(32, 48, 27, .82)' : 'rgba(18, 31, 20, .92)';
     context.stroke();
     context.lineWidth = 0.7;
-    context.strokeStyle = 'rgba(255, 241, 207, .28)';
+    context.strokeStyle = 'rgba(224, 237, 207, .24)';
     context.stroke();
   }
 
