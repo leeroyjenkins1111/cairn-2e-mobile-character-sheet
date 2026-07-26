@@ -1,5 +1,5 @@
-const CACHE_NAME = 'cairn-mobile-sheet-v0.23.0';
-const APP_SHELL = ['./', './index.html', './styles/app.css', './scripts/app.js', './assets/forest-background.jpg', './manifest.webmanifest', './icon.svg', './service-worker.js'];
+const CACHE_NAME = 'cairn-mobile-sheet-v0.23.1';
+const APP_SHELL = ['./', './index.html', './styles/app.css', './scripts/app.js', './scripts/ux-direct-editing.js?v=0.23.1', './assets/forest-background.jpg', './manifest.webmanifest', './icon.svg', './service-worker.js'];
 
 self.addEventListener('install', event => {
   event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(APP_SHELL)).then(() => self.skipWaiting()));
