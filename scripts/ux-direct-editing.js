@@ -1,5 +1,18 @@
 'use strict';
 
+function installDirectEditingStyles() {
+  if (!('adoptedStyleSheets' in document) || typeof CSSStyleSheet !== 'function') return;
+  const sheet = new CSSStyleSheet();
+  sheet.replaceSync(`
+.inventory-summary-stat-button { border: 0; border-radius: 0; background: transparent; color: var(--text); cursor: pointer; }
+.inventory-summary-stat-button:active, .inventory-summary-stat-button:hover { background: color-mix(in srgb, var(--surface-soft) 46%, transparent); }
+.inventory-summary-stat-button small { color: var(--moss); font-size: .58rem; font-weight: 720; letter-spacing: .04em; text-transform: uppercase; }
+.inventory-add-item-button { min-height: 42px; padding-inline: 12px; font-size: .76rem; white-space: nowrap; }
+.inventory-add-item-button svg { width: 18px; height: 18px; }
+`);
+  document.adoptedStyleSheets = [...document.adoptedStyleSheets, sheet];
+}
+
 function openAttributeEditSheet(attrKey) {
   const stat = state.stats[attrKey];
   const current = numberInput(stat.current, 0, 99);
@@ -22,7 +35,8 @@ function openAttributeEditSheet(attrKey) {
 }
 
 function enhanceCharacterStatEditing() {
-  const attributeRow = document.querySelector('#view-character .attribute-row');
+  const root = document.querySelector('#view-character');
+  const attributeRow = root?.querySelector('.attribute-row');
   if (!attributeRow) return;
   attributeRow.setAttribute('aria-label', 'Atrybuty postaci. Kliknij, aby edytować.');
 
@@ -36,6 +50,16 @@ function enhanceCharacterStatEditing() {
       event.stopImmediatePropagation();
       openAttributeEditSheet(attrKey);
     }, true);
+  }
+
+  if (!root.querySelector('[data-save-shortcut="str"]')) {
+    root.append(createEl('button', {
+      type: 'button',
+      className: 'sr-only',
+      dataset: { saveShortcut: 'str' },
+      attrs: { 'aria-label': `Przygotuj rzut obronny Siła, aktualna wartość ${state.stats.str.current}` },
+      onclick: () => openSavePreparationSheet('str')
+    }, ['Rzut obronny SIŁ']));
   }
 }
 
@@ -95,5 +119,6 @@ renderInventoryView = function renderInventoryViewWithDirectActions() {
   enhanceInventoryActions();
 };
 
+installDirectEditingStyles();
 enhanceCharacterStatEditing();
 enhanceInventoryActions();
