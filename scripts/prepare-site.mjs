@@ -11,6 +11,7 @@ const siteFiles = [
   'icon.svg',
   'styles/app.css',
   'scripts/app.js',
+  'scripts/ux-direct-editing.js',
   'assets/forest-background.jpg'
 ];
 
