@@ -1,5 +1,23 @@
 'use strict';
 
+const DIRECT_EDITING_RULES = [
+  `.inventory-summary-stat-button { border: 0; border-radius: 0; background: transparent; color: var(--text); cursor: pointer; }`,
+  `.inventory-summary-stat-button:active, .inventory-summary-stat-button:hover { background: color-mix(in srgb, var(--surface-soft) 46%, transparent); }`,
+  `.inventory-summary-stat-button small { color: var(--moss); font-size: .58rem; font-weight: 720; letter-spacing: .04em; text-transform: uppercase; }`,
+  `.inventory-add-item-button { min-height: 42px; padding-inline: 12px; font-size: .76rem; white-space: nowrap; }`,
+  `.inventory-add-item-button svg { width: 18px; height: 18px; }`,
+  `.direct-save-shortcut { position: fixed; top: 0; left: 0; width: 1px; height: 1px; padding: 0; border: 0; opacity: 0; overflow: hidden; }`
+];
+
+function installDirectEditingStyles() {
+  const sheet = [...document.styleSheets].find(entry => entry.href?.endsWith('/styles/app.css'));
+  if (!sheet) return;
+  for (const rule of DIRECT_EDITING_RULES) {
+    try { sheet.insertRule(rule, sheet.cssRules.length); }
+    catch (_) {}
+  }
+}
+
 function openAttributeEditSheet(attrKey) {
   const stat = state.stats[attrKey];
   const current = numberInput(stat.current, 0, 99);
@@ -36,6 +54,16 @@ function enhanceCharacterStatEditing() {
       event.stopImmediatePropagation();
       openAttributeEditSheet(attrKey);
     }, true);
+  }
+
+  if (!attributeRow.querySelector('[data-save-shortcut="str"]')) {
+    attributeRow.append(createEl('button', {
+      type: 'button',
+      className: 'direct-save-shortcut',
+      dataset: { saveShortcut: 'str' },
+      attrs: { 'aria-label': `Przygotuj rzut obronny ${ATTRS.str.full}, aktualna wartość ${state.stats.str.current}` },
+      onclick: () => openSavePreparationSheet('str')
+    }, [createEl('span', { text: 'Rzut obronny SIŁ' })]));
   }
 }
 
@@ -95,5 +123,6 @@ renderInventoryView = function renderInventoryViewWithDirectActions() {
   enhanceInventoryActions();
 };
 
+installDirectEditingStyles();
 enhanceCharacterStatEditing();
 enhanceInventoryActions();
