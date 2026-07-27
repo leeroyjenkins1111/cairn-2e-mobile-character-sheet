@@ -10,10 +10,12 @@ const siteFiles = [
   'service-worker.js',
   'icon.svg',
   'styles/app.css',
+  'styles/character-redesign.css',
   'scripts/app.js',
   'scripts/dice-motion.js',
   'scripts/ux-direct-editing.js',
   'scripts/typography-system.js',
+  'scripts/character-redesign.js',
   'assets/forest-background.jpg'
 ];
 
