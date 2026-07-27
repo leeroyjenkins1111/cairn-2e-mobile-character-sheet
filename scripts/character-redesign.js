@@ -3,6 +3,36 @@
 (() => {
   const originalRenderCharacterView = renderCharacterView;
 
+  function installCharacterRedesignStyles() {
+    if (document.documentElement.dataset.characterRedesignStyles === 'true') return Promise.resolve();
+
+    const targetSheet = [...document.styleSheets].find(sheet => sheet.href?.endsWith('/styles/app.css'));
+    if (!targetSheet) return Promise.reject(new Error('Nie znaleziono głównego arkusza stylów.'));
+
+    return new Promise((resolve, reject) => {
+      const source = document.createElement('link');
+      source.rel = 'stylesheet';
+      source.href = './styles/character-redesign.css?v=0.24.0';
+      source.onload = () => {
+        try {
+          const rules = [...source.sheet.cssRules].map(rule => rule.cssText);
+          for (const rule of rules) targetSheet.insertRule(rule, targetSheet.cssRules.length);
+          document.documentElement.dataset.characterRedesignStyles = 'true';
+          source.remove();
+          resolve();
+        } catch (error) {
+          source.remove();
+          reject(error);
+        }
+      };
+      source.onerror = () => {
+        source.remove();
+        reject(new Error('Nie udało się wczytać stylów ekranu postaci.'));
+      };
+      document.head.append(source);
+    });
+  }
+
   function displayDamageNotation(notation) {
     const normalized = String(notation || '').trim().toLowerCase().replace(/\s+/g, '');
     if (!normalized) return '';
@@ -23,7 +53,7 @@
 
     const headingActions = createEl('div', { className: 'section-heading' }, [
       characterSectionTitle('combat-launcher-title', 'Walka', 'weapon'),
-      createEl('div', { className: 'combat-heading-actions' }, [
+      createEl('div', { className: 'header-actions combat-heading-actions' }, [
         panicked ? createEl('span', { className: 'combat-status', text: 'Osłabione' }) : null,
         createEl('button', {
           type: 'button',
@@ -47,7 +77,7 @@
       meta = [weapon.damageFormula?.blast ? 'podmuch' : '', ...safeArray(weapon.traits).slice(0, 2)]
         .filter(Boolean)
         .join(' · ') || 'Broń przygotowana';
-      const notation = displayDamageNotation(formatDamageFormula(weapon.damageFormula));
+      const notation = displayDamageNotation(formatDamageFormula(weapon.damageFormula)) || 'k4';
       actionText = `Rzuć ${panicked ? 'k4' : notation}`;
       action = () => runItemAttack(weapon);
       actionAria = `Rzuć obrażenia przygotowaną bronią: ${weapon.name}`;
@@ -60,7 +90,7 @@
     }
 
     section.append(createEl('div', { className: 'combat-main-row' }, [
-      createEl('div', { className: 'combat-main-copy' }, [
+      createEl('div', { className: 'combat-main-copy combat-weapon-copy' }, [
         uiIcon('weapon'),
         createEl('span', {}, [
           createEl('strong', { text: title }),
@@ -69,7 +99,7 @@
       ]),
       createEl('button', {
         type: 'button',
-        className: 'btn combat-roll-action',
+        className: 'btn combat-weapon-action combat-roll-action',
         attrs: { 'aria-label': actionAria },
         onclick: action
       }, [uiIcon('roll'), createEl('span', { text: actionText })])
@@ -77,8 +107,8 @@
 
     section.append(createEl('button', {
       type: 'button',
-      className: 'combat-order-action',
-      attrs: { 'aria-label': 'Ustal kolejność w pierwszej rundzie — wykonaj test ZRE' },
+      className: 'btn btn-ghost combat-utility-action combat-order-action',
+      attrs: { 'aria-label': 'Pierwsza runda · ZRE — Ustal kolejność' },
       onclick: () => performFirstRoundDexSave()
     }, [
       uiIcon('round'),
@@ -105,5 +135,7 @@
     enhanceCharacterCopy();
   };
 
-  renderAll();
+  installCharacterRedesignStyles()
+    .catch(error => console.error(error))
+    .finally(() => renderAll());
 })();
