@@ -89,7 +89,7 @@
       actionAria = 'Wybierz przygotowaną broń do ataku';
     }
 
-    section.append(createEl('div', { className: 'combat-main-row' }, [
+    section.append(createEl('div', { className: 'combat-main-row combat-weapon-row' }, [
       createEl('div', { className: 'combat-main-copy combat-weapon-copy' }, [
         uiIcon('weapon'),
         createEl('span', {}, [
@@ -105,7 +105,7 @@
       }, [uiIcon('roll'), createEl('span', { text: actionText })])
     ]));
 
-    section.append(createEl('button', {
+    const orderAction = createEl('button', {
       type: 'button',
       className: 'btn btn-ghost combat-utility-action combat-order-action',
       attrs: { 'aria-label': 'Pierwsza runda · ZRE — Ustal kolejność' },
@@ -117,7 +117,8 @@
         createEl('small', { text: 'Pierwsza runda · test ZRE' })
       ]),
       uiIcon('arrow')
-    ]));
+    ]);
+    section.append(createEl('div', { className: 'combat-quick-actions' }, [orderAction]));
 
     return section;
   };
