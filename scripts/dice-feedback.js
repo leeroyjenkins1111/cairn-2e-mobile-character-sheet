@@ -14,10 +14,19 @@ function schedulePhysicalDiceTicks(container, expectedToken, times, selector) {
   });
 }
 
+function physicalDiceResultCopy(label, value) {
+  const text = String(label || '').trim();
+  if (!text) return 'Wynik';
+  const compact = text.replace(/\s+/g, ' ');
+  const notationOnly = /^[kd0-9+\-x×\s·:]+$/i.test(compact);
+  const repeatsValue = compact.includes(String(value));
+  return notationOnly && repeatsValue ? 'Wynik' : text;
+}
+
 const animateDiceResultWithPhysicalFeedback = animateDiceResult;
 animateDiceResult = function animateDiceResultWithTactileRhythm(...args) {
-  const container = args[0];
-  animateDiceResultWithPhysicalFeedback(...args);
+  const [container, value, label, ...rest] = args;
+  animateDiceResultWithPhysicalFeedback(container, value, physicalDiceResultCopy(label, value), ...rest);
   schedulePhysicalDiceTicks(container, diceAnimationToken, PHYSICAL_DICE_HAPTIC_TIMES, '.animated-dice-result.rolling');
 };
 
