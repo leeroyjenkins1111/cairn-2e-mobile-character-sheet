@@ -109,20 +109,20 @@
 }
 
 :root[data-active-view="character"] .identity-row {
-  min-height: 72px;
-  padding: 2px 2px 12px;
-  gap: 14px;
+  min-height: 68px;
+  padding: 2px 2px 10px;
+  gap: 13px;
 }
 
 :root[data-active-view="character"] .avatar {
-  width: 58px;
-  height: 58px;
+  width: 54px;
+  height: 54px;
   border-color: rgba(164, 173, 128, .92);
   border-radius: 50%;
   background:
     radial-gradient(circle at 34% 28%, rgba(164, 173, 128, .14), rgba(8, 5, 15, .58) 64%);
   color: var(--character-olive);
-  font-size: 1.55rem;
+  font-size: 1.45rem;
   box-shadow:
     inset 0 0 0 3px rgba(9, 5, 15, .55),
     0 8px 26px rgba(0, 0, 0, .16);
@@ -136,16 +136,16 @@
 }
 
 :root[data-active-view="character"] .character-name {
-  font-size: clamp(1.78rem, 8vw, 2.28rem);
+  font-size: clamp(1.68rem, 7.6vw, 2.16rem);
   font-weight: 650;
   line-height: .98;
   letter-spacing: -.025em;
 }
 
 :root[data-active-view="character"] .character-background {
-  margin-top: 6px;
+  margin-top: 5px;
   color: var(--character-olive);
-  font-size: .9rem;
+  font-size: .86rem;
   line-height: 1.1;
 }
 
@@ -159,39 +159,39 @@
 }
 
 :root[data-active-view="character"] .state-values {
-  min-height: 154px;
-  padding: 18px 18px 12px;
-  grid-template-columns: minmax(0, 1.55fr) minmax(116px, .95fr);
-  gap: 18px;
+  min-height: 124px;
+  padding: 12px 16px 8px;
+  grid-template-columns: minmax(0, 1.55fr) minmax(112px, .95fr);
+  gap: 16px;
   border: 1px solid var(--character-glass-edge);
   border-bottom: 0;
-  border-radius: 22px 22px 0 0;
+  border-radius: 20px 20px 0 0;
 }
 
 :root[data-active-view="character"] .protection-control {
-  min-height: 118px;
-  padding: 4px 0;
-  border-radius: 14px;
+  min-height: 92px;
+  padding: 0;
+  border-radius: 12px;
 }
 
 :root[data-active-view="character"] .state-label {
   color: var(--character-olive);
-  font-size: .7rem;
+  font-size: .66rem;
   letter-spacing: .11em;
 }
 
 :root[data-active-view="character"] .state-label-icon {
-  gap: 7px;
+  gap: 6px;
 }
 
 :root[data-active-view="character"] .state-label-icon svg {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
 }
 
 :root[data-active-view="character"] .protection-value {
-  margin-top: 8px;
-  font-size: clamp(3.1rem, 14vw, 4.1rem);
+  margin-top: 4px;
+  font-size: clamp(2.7rem, 12.5vw, 3.55rem);
   line-height: .84;
 }
 
@@ -201,19 +201,19 @@
 }
 
 :root[data-active-view="character"] .state-secondary {
-  padding: 3px 0 3px 18px;
+  padding: 0 0 0 16px;
   border-left-color: rgba(241, 225, 231, .18);
-  gap: 18px;
+  gap: 10px;
 }
 
 :root[data-active-view="character"] .secondary-stat + .secondary-stat {
-  padding-top: 16px;
+  padding-top: 10px;
   border-top: 1px solid rgba(241, 225, 231, .16);
 }
 
 :root[data-active-view="character"] .secondary-stat strong {
-  margin-top: 4px;
-  font-size: 1.75rem;
+  margin-top: 2px;
+  font-size: 1.5rem;
 }
 
 :root[data-active-view="character"] .protection-meter {
@@ -230,18 +230,18 @@
 }
 
 :root[data-active-view="character"] .attribute-row {
-  min-height: 68px;
-  padding: 6px 8px 8px;
+  min-height: 58px;
+  padding: 4px 7px 6px;
   border: 1px solid var(--character-glass-edge);
   border-top: 0;
-  border-radius: 0 0 22px 22px;
+  border-radius: 0 0 20px 20px;
 }
 
 :root[data-active-view="character"] .attribute-control {
-  min-height: 54px;
-  grid-template-columns: 26px auto;
-  gap: 8px;
-  border-radius: 12px;
+  min-height: 46px;
+  grid-template-columns: 24px auto;
+  gap: 7px;
+  border-radius: 11px;
 }
 
 :root[data-active-view="character"] .attribute-control + .attribute-control {
@@ -250,16 +250,21 @@
 
 :root[data-active-view="character"] .attribute-copy > span {
   color: var(--character-olive);
-  font-size: .67rem;
-  letter-spacing: .12em;
+  font-size: .63rem;
+  letter-spacing: .11em;
 }
 
 :root[data-active-view="character"] .attribute-copy strong {
-  font-size: 1.7rem;
+  font-size: 1.48rem;
 }
 
 :root[data-active-view="character"] .attribute-glyph {
   color: var(--character-olive);
+}
+
+:root[data-active-view="character"] .attribute-glyph svg {
+  width: 22px;
+  height: 22px;
 }
 
 :root[data-active-view="character"] .attribute-dex .attribute-glyph {
@@ -271,14 +276,14 @@
 }
 
 :root[data-active-view="character"] .game-actions {
-  padding: 14px 0 0;
+  padding: 12px 0 0;
   border-top: 0;
-  gap: 10px;
+  gap: 9px;
 }
 
 :root[data-active-view="character"] .damage-primary-action {
-  min-height: 70px;
-  padding: 10px 16px;
+  min-height: 66px;
+  padding: 9px 16px;
   border: 1px solid rgba(231, 132, 146, .52);
   border-radius: 18px;
   background:
@@ -291,8 +296,8 @@
 }
 
 :root[data-active-view="character"] .damage-primary-action > svg:first-child {
-  width: 29px;
-  height: 29px;
+  width: 28px;
+  height: 28px;
   margin-right: 2px;
   color: var(--character-rose);
 }
@@ -304,13 +309,13 @@
 }
 
 :root[data-active-view="character"] .damage-primary-action strong {
-  font-size: 1.08rem;
+  font-size: 1.04rem;
   font-weight: 720;
 }
 
 :root[data-active-view="character"] .damage-primary-action small {
   color: rgba(243, 236, 223, .72);
-  font-size: .75rem;
+  font-size: .73rem;
 }
 
 :root[data-active-view="character"] .secondary-action-grid {
@@ -318,8 +323,8 @@
 }
 
 :root[data-active-view="character"] .compact-action {
-  min-height: 74px;
-  padding: 9px 5px;
+  min-height: 70px;
+  padding: 8px 5px;
   border: 1px solid var(--character-glass-edge-soft);
   border-radius: 16px;
   gap: 5px;
@@ -334,8 +339,8 @@
 }
 
 :root[data-active-view="character"] .compact-action svg {
-  width: 25px;
-  height: 25px;
+  width: 24px;
+  height: 24px;
   color: var(--character-olive);
 }
 
@@ -349,7 +354,6 @@
 }
 
 :root[data-active-view="character"] .combat-launcher {
-  margin-top: 14px;
   padding: 16px;
   border: 1px solid rgba(231, 132, 146, .34);
   border-radius: 20px;
@@ -415,8 +419,7 @@
   gap: 10px;
 }
 
-:root[data-active-view="character"] .combat-main-copy > svg,
-:root[data-active-view="character"] .combat-order-action > svg:first-child {
+:root[data-active-view="character"] .combat-main-copy > svg {
   width: 26px;
   height: 26px;
   color: rgba(243, 236, 223, .64);
@@ -427,22 +430,19 @@
   stroke-linejoin: round;
 }
 
-:root[data-active-view="character"] .combat-main-copy > span,
-:root[data-active-view="character"] .combat-order-copy {
+:root[data-active-view="character"] .combat-main-copy > span {
   min-width: 0;
   display: grid;
   gap: 3px;
 }
 
-:root[data-active-view="character"] .combat-main-copy strong,
-:root[data-active-view="character"] .combat-order-copy strong {
+:root[data-active-view="character"] .combat-main-copy strong {
   font-size: .98rem;
   line-height: 1.15;
   overflow-wrap: anywhere;
 }
 
-:root[data-active-view="character"] .combat-main-copy small,
-:root[data-active-view="character"] .combat-order-copy small {
+:root[data-active-view="character"] .combat-main-copy small {
   color: var(--character-olive);
   font-size: .72rem;
   line-height: 1.2;
@@ -467,30 +467,66 @@
 
 :root[data-active-view="character"] .combat-order-action {
   width: 100%;
-  min-height: 68px;
-  padding: 10px 0 2px;
-  border-right: 0;
-  border-bottom: 0;
-  border-left: 0;
-  border-radius: 0;
+  min-height: 56px;
+  margin-top: 8px;
+  padding: 8px 10px;
+  border: 1px solid rgba(241, 225, 231, .16);
+  border-radius: 14px;
   display: grid;
-  grid-template-columns: 30px minmax(0, 1fr) 22px;
+  grid-template-columns: 30px minmax(0, 1fr) auto;
   align-items: center;
   justify-content: stretch;
   gap: 10px;
-  background: transparent;
+  background: rgba(13, 8, 21, .18);
   color: var(--text);
   text-align: left;
 }
 
-:root[data-active-view="character"] .combat-order-action > svg:last-child {
-  width: 20px;
-  height: 20px;
-  color: rgba(243, 236, 223, .58);
+:root[data-active-view="character"] .combat-order-action > svg:first-child {
+  width: 24px;
+  height: 24px;
+  color: var(--character-olive);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.55;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+:root[data-active-view="character"] .combat-order-copy {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+:root[data-active-view="character"] .combat-order-copy strong {
+  font-size: .9rem;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+:root[data-active-view="character"] .combat-order-copy small {
+  color: var(--character-olive);
+  font-size: .7rem;
+  line-height: 1.2;
+}
+
+:root[data-active-view="character"] .combat-order-badge {
+  min-width: 50px;
+  padding: 6px 9px;
+  border: 1px solid rgba(223, 189, 104, .34);
+  border-radius: 999px;
+  background: rgba(223, 189, 104, .06);
+  color: var(--character-gold);
+  font-size: .68rem;
+  font-weight: 760;
+  letter-spacing: .06em;
+  text-align: center;
+  white-space: nowrap;
 }
 
 :root[data-active-view="character"] .combat-order-action:active {
-  background: rgba(164, 173, 128, .07);
+  background: rgba(164, 173, 128, .10);
 }
 
 :root[data-active-view="character"] .session-alert {
@@ -541,37 +577,62 @@
 
 @media (max-width: 390px) {
   :root[data-active-view="character"] .identity-row {
-    min-height: 66px;
-    gap: 11px;
+    min-height: 62px;
+    gap: 10px;
   }
 
   :root[data-active-view="character"] .avatar {
-    width: 52px;
-    height: 52px;
-    font-size: 1.35rem;
+    width: 48px;
+    height: 48px;
+    font-size: 1.28rem;
   }
 
   :root[data-active-view="character"] .character-name {
-    font-size: 1.72rem;
+    font-size: 1.62rem;
   }
 
   :root[data-active-view="character"] .state-values {
-    min-height: 142px;
-    padding: 15px 14px 10px;
-    grid-template-columns: minmax(0, 1.45fr) minmax(102px, .9fr);
-    gap: 14px;
+    min-height: 116px;
+    padding: 10px 13px 7px;
+    grid-template-columns: minmax(0, 1.45fr) minmax(100px, .9fr);
+    gap: 12px;
+  }
+
+  :root[data-active-view="character"] .protection-control {
+    min-height: 84px;
   }
 
   :root[data-active-view="character"] .state-secondary {
-    padding-left: 14px;
+    padding-left: 12px;
+    gap: 8px;
+  }
+
+  :root[data-active-view="character"] .secondary-stat + .secondary-stat {
+    padding-top: 8px;
   }
 
   :root[data-active-view="character"] .protection-value {
-    font-size: 3.2rem;
+    font-size: 2.85rem;
+  }
+
+  :root[data-active-view="character"] .secondary-stat strong {
+    font-size: 1.38rem;
+  }
+
+  :root[data-active-view="character"] .attribute-row {
+    min-height: 54px;
+  }
+
+  :root[data-active-view="character"] .attribute-control {
+    min-height: 42px;
+  }
+
+  :root[data-active-view="character"] .attribute-copy strong {
+    font-size: 1.38rem;
   }
 
   :root[data-active-view="character"] .compact-action {
-    min-height: 70px;
+    min-height: 68px;
   }
 
   :root[data-active-view="character"] .combat-launcher {
@@ -585,6 +646,19 @@
   :root[data-active-view="character"] .combat-roll-action {
     padding-inline: 10px;
     font-size: .75rem;
+  }
+
+  :root[data-active-view="character"] .combat-order-action {
+    min-height: 54px;
+    padding: 8px 9px;
+    grid-template-columns: 28px minmax(0, 1fr) auto;
+    gap: 8px;
+  }
+
+  :root[data-active-view="character"] .combat-order-badge {
+    min-width: 46px;
+    padding-inline: 8px;
+    font-size: .64rem;
   }
 }
 
@@ -604,6 +678,16 @@
 
   :root[data-active-view="character"] .combat-roll-action {
     width: 100%;
+  }
+
+  :root[data-active-view="character"] .combat-order-action {
+    grid-template-columns: 26px minmax(0, 1fr);
+  }
+
+  :root[data-active-view="character"] .combat-order-badge {
+    grid-column: 2;
+    justify-self: start;
+    margin-top: 2px;
   }
 }
 
