@@ -1,0 +1,366 @@
+/* Unified visual system for inventory, dice and journal screens. */
+
+:root[data-active-view="inventory"],
+:root[data-active-view="dice"],
+:root[data-active-view="more"] {
+  --art-veil-top: rgba(13, 7, 19, .24);
+  --art-veil-mid: rgba(17, 8, 23, .18);
+  --art-veil-bottom: rgba(8, 5, 15, .40);
+  --chrome-surface: rgba(11, 7, 18, .60);
+  --tab-height: 70px;
+}
+
+:root[data-active-view="inventory"] .app-shell::before,
+:root[data-active-view="dice"] .app-shell::before,
+:root[data-active-view="more"] .app-shell::before {
+  background-image:
+    linear-gradient(180deg, var(--art-veil-top) 0%, var(--art-veil-mid) 52%, var(--art-veil-bottom) 100%),
+    linear-gradient(90deg, rgba(8, 5, 14, .16), transparent 42%, rgba(8, 5, 14, .25)),
+    url("../assets/forest-background.jpg");
+  background-position: center, center, center 46%;
+}
+
+:root[data-active-view="inventory"] .app-header,
+:root[data-active-view="dice"] .app-header,
+:root[data-active-view="more"] .app-header {
+  min-height: calc(52px + env(safe-area-inset-top));
+  padding: calc(8px + env(safe-area-inset-top)) var(--side) 4px;
+  border-bottom: 0;
+  background: linear-gradient(180deg, rgba(9, 5, 15, .48), rgba(9, 5, 15, 0));
+}
+
+:root[data-active-view="inventory"] .brand-kicker,
+:root[data-active-view="dice"] .brand-kicker,
+:root[data-active-view="more"] .brand-kicker {
+  color: var(--character-olive, #a4ad80);
+  font-size: .76rem;
+  letter-spacing: .14em;
+}
+
+:root[data-active-view="inventory"] .brand-title,
+:root[data-active-view="dice"] .brand-title,
+:root[data-active-view="more"] .brand-title {
+  font-family: var(--font-display);
+  font-size: 1.28rem;
+  font-weight: 650;
+}
+
+:root[data-active-view="inventory"] .app-header .btn-icon,
+:root[data-active-view="dice"] .app-header .btn-icon,
+:root[data-active-view="more"] .app-header .btn-icon {
+  width: 42px;
+  min-width: 42px;
+  height: 42px;
+  border: 1px solid rgba(223, 189, 104, .30);
+  background: rgba(12, 7, 18, .18);
+  color: var(--character-gold, #dfbd68);
+  backdrop-filter: blur(7px);
+}
+
+:root[data-active-view="inventory"] .main,
+:root[data-active-view="dice"] .main,
+:root[data-active-view="more"] .main {
+  padding: 8px clamp(14px, 4vw, 20px) calc(var(--tab-height) + env(safe-area-inset-bottom) + 18px);
+}
+
+:root[data-active-view="inventory"] .view,
+:root[data-active-view="dice"] .view,
+:root[data-active-view="more"] .view {
+  gap: 12px;
+}
+
+:root[data-active-view="inventory"] .inventory-overview,
+:root[data-active-view="inventory"] .inventory-row,
+:root[data-active-view="inventory"] .fatigue-row,
+:root[data-active-view="dice"] .dice-panel,
+:root[data-active-view="dice"] .dice-recent,
+:root[data-active-view="dice"] .dice-history-item,
+:root[data-active-view="more"] .journal-card,
+:root[data-active-view="more"] .report-block,
+:root[data-active-view="more"] .action-row,
+:root[data-active-view="more"] .quick-note,
+:root[data-active-view="more"] details,
+:root[data-active-view="more"] .settings-group {
+  border: 1px solid rgba(241, 225, 231, .20);
+  border-radius: 18px;
+  background:
+    linear-gradient(120deg, rgba(30, 12, 34, .28), rgba(12, 8, 21, .17) 62%);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, .10);
+  backdrop-filter: blur(8px) saturate(110%);
+  -webkit-backdrop-filter: blur(8px) saturate(110%);
+}
+
+:root[data-active-view="inventory"] .inventory-overview {
+  padding: 14px;
+  border-bottom: 1px solid rgba(241, 225, 231, .20);
+  gap: 10px;
+}
+
+:root[data-active-view="inventory"] .inventory-summary-title,
+:root[data-active-view="dice"] .section-heading h2,
+:root[data-active-view="dice"] .section-heading h3,
+:root[data-active-view="more"] .section-heading h2,
+:root[data-active-view="more"] .section-heading h3 {
+  font-family: var(--font-display);
+  font-weight: 650;
+}
+
+:root[data-active-view="inventory"] .inventory-summary-title {
+  font-size: 1.7rem;
+}
+
+:root[data-active-view="inventory"] .inventory-summary-stats {
+  overflow: hidden;
+  border: 1px solid rgba(241, 225, 231, .15);
+  border-radius: 14px;
+  background: rgba(13, 8, 21, .14);
+}
+
+:root[data-active-view="inventory"] .inventory-summary-stat {
+  padding: 10px 5px;
+  border-color: rgba(241, 225, 231, .14);
+}
+
+:root[data-active-view="inventory"] .inventory-summary-stat strong {
+  font-size: 1.42rem;
+}
+
+:root[data-active-view="inventory"] .slot-meter {
+  gap: 5px;
+}
+
+:root[data-active-view="inventory"] .slot-cell {
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(241, 225, 231, .12);
+}
+
+:root[data-active-view="inventory"] .slot-cell.filled {
+  background: var(--character-olive, #a4ad80);
+}
+
+:root[data-active-view="inventory"] .slot-cell.fatigue {
+  background: var(--character-rose, #e78492);
+}
+
+:root[data-active-view="inventory"] .inventory-row,
+:root[data-active-view="inventory"] .fatigue-row {
+  overflow: hidden;
+  margin-top: 8px;
+}
+
+:root[data-active-view="inventory"] .inventory-row-main,
+:root[data-active-view="inventory"] .fatigue-row {
+  min-height: 66px;
+  padding: 11px 13px;
+}
+
+:root[data-active-view="inventory"] .inventory-row-title strong {
+  font-size: 1rem;
+}
+
+:root[data-active-view="inventory"] .inventory-row-facts,
+:root[data-active-view="inventory"] .inventory-row-note,
+:root[data-active-view="inventory"] .carry-status {
+  color: rgba(224, 213, 205, .72);
+}
+
+:root[data-active-view="inventory"] .inventory-trailing-action,
+:root[data-active-view="inventory"] .inventory-add-item-button,
+:root[data-active-view="inventory"] .inventory-tool {
+  border-color: rgba(241, 225, 231, .16);
+  background: rgba(13, 8, 21, .18);
+}
+
+:root[data-active-view="dice"] .dice-panel,
+:root[data-active-view="dice"] .dice-recent {
+  padding: 14px;
+}
+
+:root[data-active-view="dice"] .dice-grid,
+:root[data-active-view="dice"] .damage-dice-grid {
+  gap: 8px;
+}
+
+:root[data-active-view="dice"] .dice-button,
+:root[data-active-view="dice"] .damage-die-button {
+  min-height: 58px;
+  border: 1px solid rgba(241, 225, 231, .16);
+  border-radius: 15px;
+  background:
+    linear-gradient(150deg, rgba(23, 13, 31, .26), rgba(13, 8, 21, .10));
+  color: var(--text);
+}
+
+:root[data-active-view="dice"] .dice-button strong,
+:root[data-active-view="dice"] .damage-die-button strong {
+  color: var(--character-gold, #dfbd68);
+  font-family: var(--font-display);
+}
+
+:root[data-active-view="dice"] .dice-result,
+:root[data-active-view="dice"] .dice-history-item {
+  border-color: rgba(241, 225, 231, .16);
+  background: rgba(13, 8, 21, .18);
+}
+
+:root[data-active-view="more"] .journal-card,
+:root[data-active-view="more"] .report-block,
+:root[data-active-view="more"] .action-row,
+:root[data-active-view="more"] .quick-note,
+:root[data-active-view="more"] details,
+:root[data-active-view="more"] .settings-group {
+  padding: 14px;
+}
+
+:root[data-active-view="more"] .action-row {
+  min-height: 58px;
+}
+
+:root[data-active-view="more"] .action-row svg,
+:root[data-active-view="more"] .section-title > svg {
+  color: var(--character-rose, #e78492);
+}
+
+:root[data-active-view="more"] textarea,
+:root[data-active-view="more"] input,
+:root[data-active-view="more"] select {
+  border-color: rgba(241, 225, 231, .18);
+  background: rgba(13, 8, 21, .30);
+}
+
+:root[data-active-view="inventory"] .bottom-nav,
+:root[data-active-view="dice"] .bottom-nav,
+:root[data-active-view="more"] .bottom-nav {
+  min-height: calc(var(--tab-height) + env(safe-area-inset-bottom));
+  padding: 5px 8px env(safe-area-inset-bottom);
+  border-top: 1px solid rgba(241, 225, 231, .18);
+  background: linear-gradient(180deg, rgba(9, 5, 15, .56), rgba(9, 5, 15, .84));
+  box-shadow: 0 -10px 34px rgba(0, 0, 0, .16);
+  backdrop-filter: blur(12px) saturate(110%);
+  -webkit-backdrop-filter: blur(12px) saturate(110%);
+}
+
+:root[data-active-view="inventory"] .nav-btn,
+:root[data-active-view="dice"] .nav-btn,
+:root[data-active-view="more"] .nav-btn {
+  min-height: 60px;
+  border-radius: 14px;
+  gap: 4px;
+  color: rgba(214, 201, 191, .68);
+  font-size: .72rem;
+}
+
+:root[data-active-view="inventory"] .nav-btn::before,
+:root[data-active-view="dice"] .nav-btn::before,
+:root[data-active-view="more"] .nav-btn::before {
+  display: none;
+}
+
+:root[data-active-view="inventory"] .nav-btn[aria-current="page"],
+:root[data-active-view="dice"] .nav-btn[aria-current="page"],
+:root[data-active-view="more"] .nav-btn[aria-current="page"] {
+  background: rgba(223, 189, 104, .06);
+  color: var(--character-gold, #dfbd68);
+}
+
+@media (max-height: 760px) {
+  :root[data-active-view="character"] .identity-row {
+    min-height: 58px;
+    padding-bottom: 7px;
+  }
+
+  :root[data-active-view="character"] .avatar {
+    width: 44px;
+    height: 44px;
+    font-size: 1.2rem;
+  }
+
+  :root[data-active-view="character"] .character-name {
+    font-size: 1.52rem;
+  }
+
+  :root[data-active-view="character"] .character-background {
+    margin-top: 3px;
+    font-size: .8rem;
+  }
+
+  :root[data-active-view="character"] .state-values {
+    min-height: 106px;
+    padding: 8px 12px 6px;
+  }
+
+  :root[data-active-view="character"] .protection-control {
+    min-height: 76px;
+  }
+
+  :root[data-active-view="character"] .protection-value {
+    font-size: 2.65rem;
+  }
+
+  :root[data-active-view="character"] .attribute-row {
+    min-height: 48px;
+    padding-block: 2px 4px;
+  }
+
+  :root[data-active-view="character"] .attribute-control {
+    min-height: 38px;
+  }
+
+  :root[data-active-view="character"] .attribute-copy strong {
+    font-size: 1.28rem;
+  }
+
+  :root[data-active-view="character"] .game-actions {
+    padding-top: 8px;
+    gap: 7px;
+  }
+
+  :root[data-active-view="character"] .damage-primary-action {
+    min-height: 58px;
+    padding-block: 7px;
+  }
+
+  :root[data-active-view="character"] .compact-action {
+    min-height: 60px;
+    padding-block: 6px;
+  }
+
+  :root[data-active-view="character"] .combat-launcher {
+    margin-top: 10px;
+    padding: 12px;
+  }
+
+  :root[data-active-view="character"] .combat-launcher .section-heading {
+    min-height: 32px;
+    padding-bottom: 7px;
+  }
+
+  :root[data-active-view="character"] .combat-main-row {
+    min-height: 62px;
+  }
+
+  :root[data-active-view="character"] .combat-order-action {
+    min-height: 48px;
+    margin-top: 6px;
+    padding-block: 6px;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  :root[data-active-view="inventory"] .inventory-overview,
+  :root[data-active-view="inventory"] .inventory-row,
+  :root[data-active-view="inventory"] .fatigue-row,
+  :root[data-active-view="dice"] .dice-panel,
+  :root[data-active-view="dice"] .dice-recent,
+  :root[data-active-view="more"] .journal-card,
+  :root[data-active-view="more"] .report-block,
+  :root[data-active-view="more"] .action-row,
+  :root[data-active-view="more"] .quick-note,
+  :root[data-active-view="more"] details,
+  :root[data-active-view="more"] .settings-group {
+    background-color: rgba(15, 9, 23, .88);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
