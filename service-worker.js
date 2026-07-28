@@ -1,6 +1,6 @@
-const CACHE_NAME = 'cairn-mobile-sheet-v0.23.7';
+const CACHE_NAME = 'cairn-mobile-sheet-v0.24.0';
 const COMPATIBILITY_CACHE = 'cairn-mobile-sheet-v0.23.0';
-const APP_SHELL = ['./', './index.html', './styles/app.css', './scripts/app.js', './scripts/dice-motion.js?v=0.23.6', './scripts/dice-edge-bounce.js?v=0.23.7', './scripts/ux-direct-editing.js?v=0.23.2', './scripts/typography-system.js?v=0.23.3', './assets/forest-background.jpg', './manifest.webmanifest', './icon.svg', './service-worker.js'];
+const APP_SHELL = ['./', './index.html', './styles/app.css', './styles/character-redesign.css?v=0.24.0', './scripts/app.js', './scripts/dice-motion.js?v=0.23.6', './scripts/dice-edge-bounce.js?v=0.23.7', './scripts/ux-direct-editing.js?v=0.23.2', './scripts/typography-system.js?v=0.23.3', './scripts/character-redesign.js?v=0.24.0', './assets/forest-background.jpg', './manifest.webmanifest', './icon.svg', './service-worker.js'];
 
 self.addEventListener('install', event => {
   event.waitUntil(Promise.all([
