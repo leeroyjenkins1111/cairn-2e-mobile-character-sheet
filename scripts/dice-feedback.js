@@ -1,7 +1,7 @@
 'use strict';
 
-const PHYSICAL_DICE_HAPTIC_TIMES = Object.freeze([180, 390, 630, 890]);
-const PHYSICAL_DUAL_DICE_HAPTIC_TIMES = Object.freeze([170, 360, 570, 820, 1110]);
+const PHYSICAL_DICE_HAPTIC_TIMES = Object.freeze([140, 260, 390, 540, 710, 890, 1120]);
+const PHYSICAL_DUAL_DICE_HAPTIC_TIMES = Object.freeze([150, 290, 450, 630, 840, 1070, 1320]);
 
 function schedulePhysicalDiceTicks(container, expectedToken, times, selector) {
   if (shouldReduceMotion()) return;
