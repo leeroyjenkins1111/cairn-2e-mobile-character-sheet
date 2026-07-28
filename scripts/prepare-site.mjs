@@ -11,11 +11,13 @@ const siteFiles = [
   'icon.svg',
   'styles/app.css',
   'styles/character-redesign.css',
+  'styles/screen-unification.css',
   'scripts/app.js',
   'scripts/dice-motion.js',
   'scripts/ux-direct-editing.js',
   'scripts/typography-system.js',
   'scripts/character-redesign.js',
+  'scripts/screen-unification.js',
   'assets/forest-background.jpg'
 ];
 
