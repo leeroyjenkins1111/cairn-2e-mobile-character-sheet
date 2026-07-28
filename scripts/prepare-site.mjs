@@ -14,6 +14,7 @@ const siteFiles = [
   'styles/screen-unification.css',
   'scripts/app.js',
   'scripts/dice-motion.js',
+  'scripts/dice-feedback.js',
   'scripts/ux-direct-editing.js',
   'scripts/typography-system.js',
   'scripts/character-redesign.js',
