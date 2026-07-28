@@ -12,7 +12,7 @@
     return new Promise((resolve, reject) => {
       const source = document.createElement('link');
       source.rel = 'stylesheet';
-      source.href = './styles/character-redesign.css?v=0.24.0';
+      source.href = './styles/character-redesign.css?v=0.24.1';
       source.onload = () => {
         try {
           const rules = [...source.sheet.cssRules].map(rule => rule.cssText);
@@ -116,9 +116,9 @@
         createEl('strong', { text: 'Ustal kolejność' }),
         createEl('small', { text: 'Pierwsza runda · test ZRE' })
       ]),
-      uiIcon('arrow')
+      createEl('span', { className: 'combat-order-badge', text: 'ZRE' })
     ]);
-    section.append(createEl('div', { className: 'combat-quick-actions' }, [orderAction]));
+    section.append(orderAction);
 
     return section;
   };
