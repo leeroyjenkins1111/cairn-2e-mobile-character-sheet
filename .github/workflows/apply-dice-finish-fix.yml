@@ -3,7 +3,7 @@ name: Apply dice finish correction
 on:
   pull_request:
     branches: [main]
-    types: [opened]
+    types: [synchronize]
 
 permissions:
   contents: write
@@ -39,15 +39,20 @@ jobs:
               '    physicalPaintEntry(entry, entry.finalRotation);\n  });\n}':
                   '    physicalPaintEntry(entry, settledRotations?.[index] || entry.finalRotation);\n  });\n}',
               '        const reveal = progress < 0.74 ? 0 : physicalSmootherStep((progress - 0.74) / 0.14);':
-                  '        const reveal = progress < 0.88 ? 0 : physicalSmootherStep((progress - 0.88) / 0.10);',
-              '      physicalSetDualComparison(entries, winnerIndexes, isTie, separation);':
-                  '      physicalSetDualComparison(entries, winnerIndexes, isTie, separation, spins.map(spin => spin.rotation));'
+                  '        const reveal = progress < 0.88 ? 0 : physicalSmootherStep((progress - 0.88) / 0.10);'
           }
           for old, new in replacements.items():
               count = text.count(old)
               if count != 1:
                   raise SystemExit(f'Expected one occurrence, found {count}: {old[:80]}')
               text = text.replace(old, new, 1)
+
+          old_final = '      physicalSetDualComparison(entries, winnerIndexes, isTie, separation);'
+          new_final = '      physicalSetDualComparison(entries, winnerIndexes, isTie, separation, spins.map(spin => spin.rotation));'
+          final_index = text.rfind(old_final)
+          if final_index < 0:
+              raise SystemExit('Missing animated dual-dice finalization')
+          text = text[:final_index] + new_final + text[final_index + len(old_final):]
           path.write_text(text)
 
           index = Path('index.html')
