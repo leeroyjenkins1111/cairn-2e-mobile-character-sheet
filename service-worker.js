@@ -1,16 +1,12 @@
-const CACHE_NAME = 'cairn-mobile-sheet-v0.29.0';
-const COMPATIBILITY_CACHE = 'cairn-mobile-sheet-v0.23.0';
-const APP_SHELL = ['./', './index.html', './styles/app.css', './styles/character-redesign.css?v=0.24.1', './styles/screen-unification.css?v=0.25.0', './scripts/app.js', './scripts/dice-motion.js?v=0.26.3', './scripts/dice-face-v4.js?v=0.29.0', './scripts/dice-feedback.js?v=0.26.1', './scripts/ux-direct-editing.js?v=0.23.2', './scripts/typography-system.js?v=0.23.3', './scripts/character-redesign.js?v=0.25.1', './scripts/screen-unification.js?v=0.25.0', './scripts/inventory-spacing.js?v=0.25.2', './assets/forest-background.jpg', './manifest.webmanifest', './icon.svg', './service-worker.js'];
+const CACHE_NAME = 'cairn-mobile-sheet-v0.30.0';
+const APP_SHELL = ['./', './index.html', './styles/app.css', './styles/character-redesign.css?v=0.24.1', './styles/screen-unification.css?v=0.25.0', './scripts/app.js?v=0.30.0', './scripts/dice-motion.js?v=0.26.3', './scripts/dice-face-v4.js?v=0.30.0', './scripts/build-info.js?v=0.30.0', './scripts/dice-feedback.js?v=0.26.1', './scripts/ux-direct-editing.js?v=0.23.2', './scripts/typography-system.js?v=0.23.3', './scripts/character-redesign.js?v=0.25.1', './scripts/screen-unification.js?v=0.25.0', './scripts/inventory-spacing.js?v=0.25.2', './assets/forest-background.jpg', './manifest.webmanifest', './icon.svg', './service-worker.js'];
 
 self.addEventListener('install', event => {
-  event.waitUntil(Promise.all([
-    caches.open(CACHE_NAME).then(cache => cache.addAll(APP_SHELL)),
-    caches.open(COMPATIBILITY_CACHE).then(cache => cache.add('./assets/forest-background.jpg'))
-  ]).then(() => self.skipWaiting()));
+  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(APP_SHELL)).then(() => self.skipWaiting()));
 });
 
 self.addEventListener('activate', event => {
-  event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key.startsWith('cairn-mobile-sheet-') && key !== CACHE_NAME && key !== COMPATIBILITY_CACHE).map(key => caches.delete(key)))).then(() => self.clients.claim()));
+  event.waitUntil(caches.keys().then(keys => Promise.all(keys.filter(key => key.startsWith('cairn-mobile-sheet-') && key !== CACHE_NAME).map(key => caches.delete(key)))).then(() => self.clients.claim()));
 });
 
 self.addEventListener('fetch', event => {
