@@ -1,0 +1,38 @@
+name: Finalize dice face v2
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened]
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    if: github.event.pull_request.head.ref == 'fix/dice-result-face-v2'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Validate renderer and update deployment manifest
+        shell: bash
+        run: |
+          node --check scripts/dice-face-v2.js
+          node --check service-worker.js
+          grep -q 'dice-face-v2.js?v=0.27.0' index.html
+          grep -q 'dice-face-v2.js?v=0.27.0' service-worker.js
+          grep -q 'FREEZE_END = 0.90' scripts/dice-face-v2.js
+          grep -q 'drawFrontFacingEngravedValue' scripts/dice-face-v2.js
+          sha256sum index.html manifest.webmanifest service-worker.js icon.svg styles/app.css styles/ux-direct-editing.css scripts/app.js scripts/dice-motion.js scripts/dice-face-v2.js scripts/dice-feedback.js scripts/ux-direct-editing.js scripts/typography-system.js scripts/character-redesign.js scripts/screen-unification.js scripts/inventory-spacing.js styles/character-redesign.css styles/screen-unification.css assets/forest-background.jpg > checksums.sha256
+          rm .github/workflows/finalize-dice-face-v2.yml
+      - name: Commit final integration
+        shell: bash
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add index.html service-worker.js scripts/dice-face-v2.js checksums.sha256 .github/workflows/finalize-dice-face-v2.yml
+          git commit -m "chore: finalize dice face v2 integration"
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
