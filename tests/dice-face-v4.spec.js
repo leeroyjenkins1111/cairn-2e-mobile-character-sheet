@@ -1,5 +1,6 @@
 import { test, expect } from '@playwright/test';
 
+// The value must never be painted on a moving face: reveal happens once, after pose and rotation lock.
 test.describe('stable carved dice renderer v4', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
