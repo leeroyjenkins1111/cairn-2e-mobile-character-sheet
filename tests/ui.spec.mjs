@@ -85,7 +85,13 @@ test('character sections align and interactive copy is not clipped', async ({ pa
   const presentation = await page.evaluate(() => {
     const selectors = ['.identity-row', '.state-values', '.combat-launcher', '.game-actions'];
     const leftEdges = selectors.map(selector => Math.round(document.querySelector(selector).getBoundingClientRect().left * 10) / 10);
-    const clipped = Array.from(document.querySelectorAll('button:visible, .combat-weapon-copy strong, .combat-weapon-copy span'))
+    const candidates = Array.from(document.querySelectorAll('button, .combat-weapon-copy strong, .combat-weapon-copy span'))
+      .filter(element => {
+        const style = getComputedStyle(element);
+        const rect = element.getBoundingClientRect();
+        return style.display !== 'none' && style.visibility !== 'hidden' && rect.width > 0 && rect.height > 0;
+      });
+    const clipped = candidates
       .filter(element => element.scrollWidth > element.clientWidth + 1 || element.scrollHeight > element.clientHeight + 1)
       .map(element => element.getAttribute('aria-label') || element.textContent.trim());
     return { leftEdges, clipped };
