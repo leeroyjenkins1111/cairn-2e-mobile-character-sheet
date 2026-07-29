@@ -15,6 +15,8 @@ const siteFiles = [
   'scripts/app.js',
   'scripts/dice-motion.js',
   'scripts/dice-feedback.js',
+  'scripts/dice-face-v4.js',
+  'scripts/build-info.js',
   'scripts/ux-direct-editing.js',
   'scripts/typography-system.js',
   'scripts/character-redesign.js',
