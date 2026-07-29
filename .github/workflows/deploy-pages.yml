@@ -40,10 +40,12 @@ jobs:
       - name: Verify deployed build
         run: |
           test -s _site/scripts/dice-face-v4.js
+          test -s _site/scripts/dice-premium.js
           test -s _site/scripts/build-info.js
           grep -q 'dice-face-v4.js?v=0.30.0' _site/index.html
+          grep -q 'dice-premium.js?v=0.30.1' _site/index.html
           grep -q 'build-info.js?v=0.30.0' _site/index.html
-          grep -q "cairn-mobile-sheet-v0.30.0" _site/service-worker.js
+          grep -q "cairn-mobile-sheet-v0.30.1" _site/service-worker.js
 
       - name: Configure Pages
         uses: actions/configure-pages@v5
