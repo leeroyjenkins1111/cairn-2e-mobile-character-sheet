@@ -11,7 +11,7 @@ test.describe('visible dice result face v3', () => {
     expect(rendererFlags).toEqual({ v2: undefined, v3: 'true' });
   });
 
-  test('freezes a more front-facing k6 result before reveal', async ({ page }) => {
+  test('freezes a readable k6 result with balanced three-dimensional perspective', async ({ page }) => {
     const result = await page.evaluate(() => {
       const target = finalDieRotation(6);
       const entry = { sides: 6, seed: 42, finalRotation: target };
@@ -23,8 +23,10 @@ test.describe('visible dice result face v3', () => {
     });
 
     expect(Math.abs(result.target.z)).toBeLessThan(0.001);
-    expect(Math.abs(result.target.x)).toBeLessThan(0.25);
-    expect(Math.abs(result.target.y)).toBeLessThan(0.30);
+    expect(Math.abs(result.target.x)).toBeGreaterThan(0.20);
+    expect(Math.abs(result.target.x)).toBeLessThan(0.36);
+    expect(Math.abs(result.target.y)).toBeGreaterThan(0.30);
+    expect(Math.abs(result.target.y)).toBeLessThan(0.46);
     expect(result.first.x).toBeCloseTo(result.target.x, 5);
     expect(result.first.y).toBeCloseTo(result.target.y, 5);
     expect(result.first.z).toBeCloseTo(result.target.z, 5);
