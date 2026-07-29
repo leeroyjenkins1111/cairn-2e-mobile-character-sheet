@@ -6,7 +6,7 @@ Szybki, dotykowy companion jednej lokalnej postaci do Cairn 2e. Aplikacja dział
 
 https://leeroyjenkins1111.github.io/cairn-2e-mobile-character-sheet/
 
-## Wersja 0.23.0
+## Aktualny interfejs
 
 Interfejs został strukturalnie przebudowany pod krótkie użycie na telefonie przy stole:
 
@@ -21,10 +21,7 @@ Interfejs został strukturalnie przebudowany pod krótkie użycie na telefonie p
 - wyniki rzutów otrzymały animację obracanej bryły 3D z wartością ujawnianą po zatrzymaniu oraz zsynchronizowane tyknięcia haptyczne na wspieranych urządzeniach;
 - **Dziennik** zaczyna się od sesji i szybkiej notatki, a dossier oraz rzadsze korekty znajdują się niżej;
 - top bar pokazuje bieżący widok, a dolny pasek działa jak stały mobilny tab bar z obsługą safe area;
-- jeden docelowy arkusz `styles/app.css` zawiera cały system wizualny, jasny motyw, forced colors i reduced motion;
-- powierzchnie wszystkich widoków i sheetów używają płaskich tonów oraz lekkiej faktury papierowego włókna zamiast połyskliwych gradientów i ciężkich ramek.
 - wszystkie widoki korzystają z lokalnej ilustracji lasu jako stałego tła; zależne od motywu warstwy kontrastowe utrzymują czytelność tekstu, a forced colors całkowicie wyłącza grafikę.
-- ekran Postaci korzysta z jednej osi treści, otwartych grup statystyk i lekkich separatorów zamiast zagnieżdżonych ciemnych kart.
 
 ## Najważniejsze funkcje
 
@@ -44,17 +41,19 @@ Interfejs został strukturalnie przebudowany pod krótkie użycie na telefonie p
 
 Dane są zapisywane wyłącznie w `localStorage` tej przeglądarki i urządzenia. Wyczyszczenie danych przeglądarki usuwa kartę, dlatego regularnie używaj **Pobierz pełną kopię**.
 
-Wersja aplikacji 0.23.0 nadal używa `schemaVersion: 3`. Otwarty układ ekranu Postaci nie zmienia formatu importu, backupu ani punktów odzyskiwania i nie wymaga migracji danych. Zapisy ze `schemaVersion: 2` są nadal migrowane automatycznie, a starsze eksporty pozostają obsługiwane.
+Aplikacja używa `schemaVersion: 3`. Aktualny układ interfejsu nie zmienia formatu importu, backupu ani punktów odzyskiwania i nie wymaga migracji danych. Zapisy ze `schemaVersion: 2` są nadal migrowane automatycznie, a starsze eksporty pozostają obsługiwane.
 
 ## Struktura aplikacji
 
 - `index.html` — semantyczny shell, cztery widoki, tab bar i bottom sheet;
-- `styles/app.css` — jedyne źródło layoutu, komponentów i systemu wizualnego;
-- `scripts/app.js` — model danych, logika Cairn, renderowanie i interakcje;
+- `styles/app.css` — bazowy layout i system wizualny;
+- `styles/character-redesign.css` i `styles/screen-unification.css` — aktualne warstwy stylów ekranów;
+- `scripts/app.js` — model danych, logika Cairn, bazowe renderowanie i interakcje;
+- `scripts/*.js` — rozszerzenia interfejsu, animacji kości, informacji o buildzie i zachowania PWA;
 - `service-worker.js` — jawny cache lokalnych plików do pracy offline;
 - `tests/` — regresja funkcjonalna, dostępnościowa i screenshoty do review.
 
-Runtime nie używa frameworka, bundlera, zewnętrznych fontów ani zależności sieciowych.
+Runtime nie używa frameworka, bundlera, zewnętrznych fontów ani zależności sieciowych. Kolejność skryptów w `index.html` ma obecnie znaczenie, ponieważ część rozszerzeń opakowuje bazowe funkcje aplikacji.
 
 ## Uruchomienie lokalne
 
@@ -69,13 +68,14 @@ Następnie otwórz `http://127.0.0.1:4173`.
 ```bash
 npm ci
 npx playwright install chromium webkit
-node --check scripts/app.js
-sha256sum -c checksums.sha256
+npm run check:syntax
 npm test
 ```
 
-CI udostępnia nieblokujący wizualny zestaw review jako artefakt `ui-review-screenshots`.
+`npm run check:syntax` automatycznie sprawdza wszystkie pliki `.js` i `.mjs` w katalogu `scripts/` oraz `service-worker.js`.
+
+CI publikuje diagnostykę Playwright i wizualny zestaw review jako artefakty workflow.
 
 ## Publikacja
 
-Zmiany w gałęzi `main` są wdrażane przez `.github/workflows/deploy-pages.yml`. Workflow weryfikuje `checksums.sha256` przed publikacją plików PWA.
+Zmiany w gałęzi `main` są wdrażane przez `.github/workflows/deploy-pages.yml`. Workflow sprawdza synchronizację wersji, buduje katalog `_site`, weryfikuje wymagane assety i publikuje artefakt GitHub Pages.
