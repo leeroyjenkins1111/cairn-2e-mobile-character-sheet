@@ -71,4 +71,49 @@ test.describe('physical dice renderer', () => {
     expect(result.context).toBe('Rzut k20');
     expect(result.notationVisible).toBe('none');
   });
+}
+
+test('travels to the right wall and rebounds without a stationary spin phase', async ({ page }) => {
+  const samples = await page.evaluate(() => ({
+    launch: physicalSinglePose(0.18, 120, 44),
+    beforeWall: physicalSinglePose(0.54, 120, 44),
+    wall: physicalSinglePose(0.56, 120, 44),
+    rebound: physicalSinglePose(0.66, 120, 44),
+    settled: physicalSinglePose(1, 120, 44)
+  }));
+
+  expect(samples.wall.x).toBeGreaterThan(samples.beforeWall.x);
+  expect(Math.abs(samples.wall.y)).toBeLessThan(0.01);
+  expect(samples.rebound.x).toBeLessThan(samples.wall.x);
+  expect(samples.rebound.y).toBeLessThan(-12);
+  expect(Math.abs(samples.settled.y)).toBeLessThan(0.01);
+});
+
+test('couples angular motion to travelled distance', async ({ page }) => {
+  const result = await page.evaluate(() => {
+    const entry = { sides: 6, seed: 91, finalRotation: { x: 0.6, y: 0.8, z: 0.1 } };
+    const spin = physicalInitialSpin(entry, 1);
+    const magnitude = rotation => Math.abs(rotation.x) + Math.abs(rotation.y) + Math.abs(rotation.z);
+    physicalAdvanceSpin(spin, entry.finalRotation, 1 / 60, 0.20, { x: 0, y: 0 });
+    const initial = { ...spin.rotation };
+    physicalAdvanceSpin(spin, entry.finalRotation, 1 / 60, 0.21, { x: 0, y: 0 });
+    const stationaryDelta = magnitude({
+      x: spin.rotation.x - initial.x,
+      y: spin.rotation.y - initial.y,
+      z: spin.rotation.z - initial.z
+    });
+    const stationary = { ...spin.rotation };
+    physicalAdvanceSpin(spin, entry.finalRotation, 1 / 60, 0.22, { x: 36, y: 0 });
+    const movingDelta = magnitude({
+      x: spin.rotation.x - stationary.x,
+      y: spin.rotation.y - stationary.y,
+      z: spin.rotation.z - stationary.z
+    });
+    return { stationaryDelta, movingDelta };
+  });
+
+  expect(result.stationaryDelta).toBeLessThan(0.001);
+  expect(result.movingDelta).toBeGreaterThan(0.15);
+});
+
 });

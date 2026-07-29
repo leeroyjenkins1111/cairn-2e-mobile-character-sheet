@@ -1,8 +1,8 @@
 'use strict';
 
-const PHYSICAL_DICE_DURATION = 1680;
-const PHYSICAL_DUAL_DICE_DURATION = 1980;
-const PHYSICAL_DICE_IMPACTS = Object.freeze([0.58, 0.76, 0.89]);
+const PHYSICAL_DICE_DURATION = 2200;
+const PHYSICAL_DUAL_DICE_DURATION = 2320;
+const PHYSICAL_DICE_IMPACTS = Object.freeze([0.56, 0.76, 0.90]);
 const PHYSICAL_D10_CACHE = new Map();
 const baseCreateDieMesh = createDieMesh;
 
@@ -15,7 +15,7 @@ const PHYSICAL_DICE_RULES = [
   `.die-motion-stage .result-die-object, .dual-dice-stage .result-die-object { z-index: 2; will-change: transform, opacity; transform-origin: 50% 68%; }`,
   `.die-motion-stage .result-die-shadow, .dual-dice-stage .result-die-shadow { z-index: 1; right: auto; left: 50%; bottom: 14px; width: 100px; height: 12px; margin-left: -50px; background: rgba(0, 0, 0, .38); filter: blur(6px); will-change: transform, opacity, filter; }`,
   `.result-die-object[data-sides="4"] { width: 124px; height: 124px; }`,
-  `.result-die-object[data-sides="6"] { width: 144px; height: 144px; }`,
+  `.result-die-object[data-sides="6"] { width: 152px; height: 152px; }`,
   `.result-die-object[data-sides="8"] { width: 150px; height: 150px; }`,
   `.result-die-object[data-sides="10"] { width: 154px; height: 154px; }`,
   `.result-die-object[data-sides="12"] { width: 160px; height: 160px; }`,
@@ -71,6 +71,95 @@ function physicalEaseOutCubic(progress) {
 function physicalSmoothStep(progress) {
   const value = physicalClamp(progress);
   return value * value * (3 - 2 * value);
+}
+
+function physicalSmootherStep(progress) {
+  const value = physicalClamp(progress);
+  return value * value * value * (value * (value * 6 - 15) + 10);
+}
+
+function physicalQuatNormalize(quaternion) {
+  const length = Math.hypot(quaternion.x, quaternion.y, quaternion.z, quaternion.w) || 1;
+  return {
+    x: quaternion.x / length,
+    y: quaternion.y / length,
+    z: quaternion.z / length,
+    w: quaternion.w / length
+  };
+}
+
+function physicalQuatMultiply(left, right) {
+  return physicalQuatNormalize({
+    x: left.w * right.x + left.x * right.w + left.y * right.z - left.z * right.y,
+    y: left.w * right.y - left.x * right.z + left.y * right.w + left.z * right.x,
+    z: left.w * right.z + left.x * right.y - left.y * right.x + left.z * right.w,
+    w: left.w * right.w - left.x * right.x - left.y * right.y - left.z * right.z
+  });
+}
+
+function physicalQuatFromAxisAngle(axis, angle) {
+  const length = Math.hypot(axis.x, axis.y, axis.z) || 1;
+  const half = angle / 2;
+  const sine = Math.sin(half) / length;
+  return physicalQuatNormalize({
+    x: axis.x * sine,
+    y: axis.y * sine,
+    z: axis.z * sine,
+    w: Math.cos(half)
+  });
+}
+
+function physicalQuatFromEuler(rotation) {
+  const c1 = Math.cos(rotation.x / 2);
+  const c2 = Math.cos(rotation.y / 2);
+  const c3 = Math.cos(rotation.z / 2);
+  const s1 = Math.sin(rotation.x / 2);
+  const s2 = Math.sin(rotation.y / 2);
+  const s3 = Math.sin(rotation.z / 2);
+  return physicalQuatNormalize({
+    x: s1 * c2 * c3 + c1 * s2 * s3,
+    y: c1 * s2 * c3 - s1 * c2 * s3,
+    z: c1 * c2 * s3 + s1 * s2 * c3,
+    w: c1 * c2 * c3 - s1 * s2 * s3
+  });
+}
+
+function physicalQuatSlerp(from, to, progress) {
+  const amount = physicalClamp(progress);
+  let target = to;
+  let dot = from.x * to.x + from.y * to.y + from.z * to.z + from.w * to.w;
+  if (dot < 0) {
+    dot = -dot;
+    target = { x: -to.x, y: -to.y, z: -to.z, w: -to.w };
+  }
+  if (dot > 0.9995) {
+    return physicalQuatNormalize({
+      x: physicalLerp(from.x, target.x, amount),
+      y: physicalLerp(from.y, target.y, amount),
+      z: physicalLerp(from.z, target.z, amount),
+      w: physicalLerp(from.w, target.w, amount)
+    });
+  }
+  const theta = Math.acos(physicalClamp(dot, -1, 1));
+  const sine = Math.sin(theta) || 1;
+  const fromWeight = Math.sin((1 - amount) * theta) / sine;
+  const toWeight = Math.sin(amount * theta) / sine;
+  return physicalQuatNormalize({
+    x: from.x * fromWeight + target.x * toWeight,
+    y: from.y * fromWeight + target.y * toWeight,
+    z: from.z * fromWeight + target.z * toWeight,
+    w: from.w * fromWeight + target.w * toWeight
+  });
+}
+
+function physicalEulerFromQuat(quaternion) {
+  const q = physicalQuatNormalize(quaternion);
+  const sinPitch = physicalClamp(2 * (q.w * q.y + q.z * q.x), -1, 1);
+  return {
+    x: Math.atan2(2 * (q.w * q.x - q.y * q.z), 1 - 2 * (q.x * q.x + q.y * q.y)),
+    y: Math.asin(sinPitch),
+    z: Math.atan2(2 * (q.w * q.z - q.x * q.y), 1 - 2 * (q.y * q.y + q.z * q.z))
+  };
 }
 
 function physicalHash(seed) {
@@ -210,6 +299,14 @@ function physicalPath(context, points) {
   context.closePath();
 }
 
+function physicalInsetPoints(points, factor) {
+  const centroid = physicalFaceCentroid(points);
+  return points.map(([x, y]) => [
+    physicalLerp(centroid[0], x, factor),
+    physicalLerp(centroid[1], y, factor)
+  ]);
+}
+
 function drawPhysicalTexture(context, entry, sides, isLight, canvas) {
   const xs = entry.points.map(point => point[0]);
   const ys = entry.points.map(point => point[1]);
@@ -221,16 +318,29 @@ function drawPhysicalTexture(context, entry, sides, isLight, canvas) {
   context.save();
   physicalPath(context, entry.points);
   context.clip();
-  for (let index = 0; index < 6; index += 1) {
-    const x = physicalLerp(minX, maxX, physicalHash(seedBase + index * 2));
-    const y = physicalLerp(minY, maxY, physicalHash(seedBase + index * 2 + 1));
-    const radius = 0.45 + physicalHash(seedBase + index + 20) * 1.15;
+
+  const mineralWash = context.createLinearGradient(minX, minY, maxX, maxY);
+  mineralWash.addColorStop(0, isLight ? 'rgba(239, 246, 220, .08)' : 'rgba(230, 241, 211, .07)');
+  mineralWash.addColorStop(0.46, 'rgba(255, 255, 255, 0)');
+  mineralWash.addColorStop(1, isLight ? 'rgba(34, 49, 29, .11)' : 'rgba(9, 19, 10, .18)');
+  context.fillStyle = mineralWash;
+  context.fillRect(minX - 2, minY - 2, maxX - minX + 4, maxY - minY + 4);
+
+  for (let index = 0; index < 4; index += 1) {
+    const startY = physicalLerp(minY, maxY, 0.18 + physicalHash(seedBase + index * 7) * 0.64);
+    const bend = physicalSignedHash(seedBase + index * 7 + 1) * (maxY - minY) * 0.12;
     context.beginPath();
-    context.arc(x, y, radius, 0, Math.PI * 2);
-    context.fillStyle = isLight
-      ? `rgba(38, 54, 33, ${0.018 + physicalHash(seedBase + index + 40) * 0.025})`
-      : `rgba(221, 232, 205, ${0.014 + physicalHash(seedBase + index + 40) * 0.022})`;
-    context.fill();
+    context.moveTo(minX - 5, startY);
+    context.bezierCurveTo(
+      physicalLerp(minX, maxX, 0.34), startY + bend,
+      physicalLerp(minX, maxX, 0.67), startY - bend * 0.55,
+      maxX + 5, startY + bend * 0.25
+    );
+    context.lineWidth = 0.38 + physicalHash(seedBase + index + 30) * 0.42;
+    context.strokeStyle = isLight
+      ? `rgba(38, 57, 31, ${0.045 + physicalHash(seedBase + index + 50) * 0.035})`
+      : `rgba(225, 237, 207, ${0.035 + physicalHash(seedBase + index + 50) * 0.035})`;
+    context.stroke();
   }
   context.restore();
 }
@@ -240,9 +350,9 @@ function drawPhysicalFaceValue(context, face, label, reveal, isLight) {
   const centroid = physicalFaceCentroid(points);
   const area = physicalFaceArea(points);
   const angle = physicalFaceTextAngle(points);
-  const sizeFactor = label.length > 1 ? 0.50 : 0.68;
-  const fontSize = physicalClamp(Math.sqrt(area) * sizeFactor, 16, label.length > 1 ? 34 : 43);
-  const scale = 0.94 + reveal * 0.06;
+  const sizeFactor = label.length > 1 ? 0.49 : 0.66;
+  const fontSize = physicalClamp(Math.sqrt(area) * sizeFactor, 16, label.length > 1 ? 33 : 42);
+  const scale = 0.96 + reveal * 0.04;
 
   context.save();
   physicalPath(context, points);
@@ -253,16 +363,16 @@ function drawPhysicalFaceValue(context, face, label, reveal, isLight) {
   context.globalAlpha = reveal;
   context.textAlign = 'center';
   context.textBaseline = 'middle';
-  context.font = `700 ${fontSize}px Georgia, "Times New Roman", serif`;
+  context.font = `800 ${fontSize}px Georgia, "Times New Roman", serif`;
   context.lineJoin = 'round';
-  context.lineWidth = Math.max(0.8, fontSize * 0.038);
-  context.strokeStyle = isLight ? 'rgba(31, 43, 27, .64)' : 'rgba(15, 25, 16, .76)';
-  context.strokeText(label, 0, fontSize * 0.035);
-  context.shadowColor = 'rgba(8, 15, 9, .42)';
-  context.shadowBlur = Math.max(1, fontSize * 0.035);
-  context.shadowOffsetY = Math.max(0.7, fontSize * 0.022);
-  context.fillStyle = 'rgba(255, 255, 255, .98)';
-  context.fillText(label, 0, fontSize * 0.035);
+  context.shadowColor = 'rgba(7, 16, 8, .46)';
+  context.shadowBlur = Math.max(1.1, fontSize * 0.035);
+  context.shadowOffsetY = Math.max(0.8, fontSize * 0.025);
+  context.lineWidth = Math.max(0.95, fontSize * 0.042);
+  context.strokeStyle = isLight ? 'rgba(31, 48, 27, .72)' : 'rgba(12, 26, 14, .82)';
+  context.strokeText(label, 0, fontSize * 0.025);
+  context.fillStyle = 'rgba(250, 255, 245, .99)';
+  context.fillText(label, 0, fontSize * 0.025);
   context.restore();
 }
 
@@ -285,10 +395,10 @@ paintResultDie = function paintPhysicalMossDie(canvas, sides, rotation, lift = 0
   const center = cssSize / 2;
   const radius = cssSize * physicalRadiusForSides(mesh.sides);
   const project = point => {
-    const perspective = 4.25 / (4.25 - point[2]);
+    const perspective = 4.35 / (4.35 - point[2]);
     return [center + point[0] * radius * perspective, center + lift + point[1] * radius * perspective];
   };
-  const light = vectorNormalize([-0.48, -0.68, 0.72]);
+  const light = vectorNormalize([-0.52, -0.72, 0.68]);
   const isLight = document.documentElement.dataset.theme === 'light';
   const visibleFaces = mesh.faces.map((face, faceIndex) => {
     const [a, b, c] = face.map(index => transformed[index]);
@@ -305,31 +415,56 @@ paintResultDie = function paintPhysicalMossDie(canvas, sides, rotation, lift = 0
   context.lineJoin = 'round';
   for (const entry of visibleFaces) {
     const lightDot = Math.max(0, vectorDot(entry.normal, light));
-    const brightness = physicalClamp(0.30 + lightDot * 0.70, 0.30, 1);
+    const brightness = physicalClamp(0.26 + lightDot * 0.74, 0.26, 1);
     const xs = entry.points.map(point => point[0]);
     const ys = entry.points.map(point => point[1]);
-    const gradient = context.createLinearGradient(Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys));
+    const minX = Math.min(...xs);
+    const maxX = Math.max(...xs);
+    const minY = Math.min(...ys);
+    const maxY = Math.max(...ys);
     const percentileShift = canvas.classList.contains('percentile-die-first') ? 2.5 : canvas.classList.contains('percentile-die-second') ? -1.5 : 0;
-    const baseLightness = (isLight ? 38 + brightness * 17 : 25 + brightness * 18) + percentileShift;
-    gradient.addColorStop(0, `hsl(91 24% ${Math.min(62, baseLightness + 3.5)}%)`);
-    gradient.addColorStop(0.55, `hsl(94 22% ${baseLightness}%)`);
-    gradient.addColorStop(1, `hsl(86 25% ${Math.max(20, baseLightness - 4)}%)`);
+    const baseLightness = (isLight ? 35 + brightness * 18 : 21 + brightness * 20) + percentileShift;
+    const outerGradient = context.createLinearGradient(minX, minY, maxX, maxY);
+    outerGradient.addColorStop(0, `hsl(88 34% ${Math.min(60, baseLightness + 4)}%)`);
+    outerGradient.addColorStop(0.58, `hsl(94 31% ${baseLightness}%)`);
+    outerGradient.addColorStop(1, `hsl(82 36% ${Math.max(16, baseLightness - 7)}%)`);
 
     physicalPath(context, entry.points);
-    context.fillStyle = gradient;
+    context.fillStyle = outerGradient;
     context.fill();
-    drawPhysicalTexture(context, entry, mesh.sides, isLight, canvas);
+
+    const insetPoints = physicalInsetPoints(entry.points, mesh.sides === 6 ? 0.88 : 0.91);
+    const innerGradient = context.createLinearGradient(minX, minY, maxX, maxY);
+    innerGradient.addColorStop(0, `hsl(91 32% ${Math.min(64, baseLightness + 8 + lightDot * 4)}%)`);
+    innerGradient.addColorStop(0.52, `hsl(96 29% ${Math.min(57, baseLightness + 4)}%)`);
+    innerGradient.addColorStop(1, `hsl(87 33% ${Math.max(19, baseLightness - 2)}%)`);
+    physicalPath(context, insetPoints);
+    context.fillStyle = innerGradient;
+    context.fill();
+    drawPhysicalTexture(context, { ...entry, points: insetPoints }, mesh.sides, isLight, canvas);
+
+    context.save();
+    physicalPath(context, insetPoints);
+    context.clip();
+    const faceShade = context.createRadialGradient(
+      physicalLerp(minX, maxX, 0.38), physicalLerp(minY, maxY, 0.30), 2,
+      physicalLerp(minX, maxX, 0.48), physicalLerp(minY, maxY, 0.48), Math.max(maxX - minX, maxY - minY) * 0.78
+    );
+    faceShade.addColorStop(0, `rgba(244, 251, 228, ${0.035 + lightDot * 0.055})`);
+    faceShade.addColorStop(0.68, 'rgba(255, 255, 255, 0)');
+    faceShade.addColorStop(1, isLight ? 'rgba(29, 43, 25, .10)' : 'rgba(5, 14, 7, .18)');
+    context.fillStyle = faceShade;
+    context.fillRect(minX - 2, minY - 2, maxX - minX + 4, maxY - minY + 4);
+    context.restore();
 
     physicalPath(context, entry.points);
-    context.lineWidth = 1.35;
-    context.strokeStyle = isLight ? 'rgba(35, 49, 30, .72)' : 'rgba(15, 27, 17, .86)';
+    context.lineWidth = mesh.sides === 6 ? 2.25 : 1.8;
+    context.strokeStyle = isLight ? 'rgba(30, 47, 27, .76)' : 'rgba(8, 20, 10, .88)';
     context.stroke();
-    if (lightDot > 0.56) {
-      physicalPath(context, entry.points);
-      context.lineWidth = 0.55;
-      context.strokeStyle = `rgba(226, 238, 207, ${0.08 + lightDot * 0.12})`;
-      context.stroke();
-    }
+    physicalPath(context, insetPoints);
+    context.lineWidth = 0.8;
+    context.strokeStyle = `rgba(232, 242, 214, ${0.10 + lightDot * 0.14})`;
+    context.stroke();
   }
 
   const object = canvas.closest?.('.result-die-object');
@@ -338,17 +473,10 @@ paintResultDie = function paintPhysicalMossDie(canvas, sides, rotation, lift = 0
   const reveal = physicalClamp(Number(object?.dataset?.faceReveal ?? defaultReveal));
   if (reveal > 0 && Number.isFinite(value) && visibleFaces.length) {
     const frontFace = visibleFaces.reduce((best, entry) => {
-      const score = entry.normal[2] * 0.88 + Math.min(0.34, entry.area / 3300) + entry.depth * 0.08;
+      const score = entry.normal[2] * 0.90 + Math.min(0.34, entry.area / 3300) + entry.depth * 0.07;
       return !best || score > best.score ? { entry, score } : best;
     }, null)?.entry;
-    if (frontFace) {
-      context.save();
-      physicalPath(context, frontFace.points);
-      context.fillStyle = `rgba(238, 246, 222, ${reveal * 0.045})`;
-      context.fill();
-      context.restore();
-      drawPhysicalFaceValue(context, frontFace, physicalFaceLabel(canvas, sides, value), reveal, isLight);
-    }
+    if (frontFace) drawPhysicalFaceValue(context, frontFace, physicalFaceLabel(canvas, sides, value), reveal, isLight);
   }
   return true;
 };
@@ -406,78 +534,104 @@ function physicalTravel(stage, object) {
 }
 
 function physicalSinglePose(progress, travel, seed) {
-  const finalX = physicalSignedHash(seed + 3) * 12;
-  const flightHeight = 46 + physicalHash(seed + 4) * 10;
-  if (progress < PHYSICAL_DICE_IMPACTS[0]) {
-    const phase = progress / PHYSICAL_DICE_IMPACTS[0];
-    const eased = physicalEaseOutCubic(phase);
+  const finalX = physicalSignedHash(seed + 3) * 10;
+  const firstLanding = 0.18;
+  const wallImpact = PHYSICAL_DICE_IMPACTS[0];
+  const reboundEnd = PHYSICAL_DICE_IMPACTS[1];
+  const settleBounceEnd = PHYSICAL_DICE_IMPACTS[2];
+  if (progress < firstLanding) {
+    const phase = progress / firstLanding;
     return {
-      x: physicalLerp(-travel - 24, finalX - 30, eased),
-      y: -Math.sin(phase * Math.PI) * flightHeight - (1 - phase) * 9,
+      x: physicalLerp(-travel - 30, -travel * 0.55, phase),
+      y: -(1 - phase) * 11 - Math.sin(phase * Math.PI) * 18,
       scale: 0.96 + phase * 0.04
     };
   }
-  if (progress < PHYSICAL_DICE_IMPACTS[1]) {
-    const phase = (progress - PHYSICAL_DICE_IMPACTS[0]) / (PHYSICAL_DICE_IMPACTS[1] - PHYSICAL_DICE_IMPACTS[0]);
+  if (progress < wallImpact) {
+    const phase = (progress - firstLanding) / (wallImpact - firstLanding);
+    const hopEnvelope = 1 - phase * 0.72;
     return {
-      x: physicalLerp(finalX - 30, finalX - 7, physicalEaseOutCubic(phase)),
-      y: -Math.sin(phase * Math.PI) * (24 + physicalHash(seed + 5) * 5),
+      x: physicalLerp(-travel * 0.55, travel, phase),
+      y: -Math.abs(Math.sin(phase * Math.PI * 4)) * (2.2 + hopEnvelope * 5.4),
       scale: 1
     };
   }
-  if (progress < PHYSICAL_DICE_IMPACTS[2]) {
-    const phase = (progress - PHYSICAL_DICE_IMPACTS[1]) / (PHYSICAL_DICE_IMPACTS[2] - PHYSICAL_DICE_IMPACTS[1]);
+  if (progress < reboundEnd) {
+    const phase = (progress - wallImpact) / (reboundEnd - wallImpact);
     return {
-      x: physicalLerp(finalX - 7, finalX + 4, physicalEaseOutCubic(phase)),
-      y: -Math.sin(phase * Math.PI) * (9 + physicalHash(seed + 6) * 3),
+      x: physicalLerp(travel, finalX + 30, physicalEaseOutCubic(phase)),
+      y: -Math.sin(phase * Math.PI) * (29 + physicalHash(seed + 5) * 4),
       scale: 1
     };
   }
-  const phase = (progress - PHYSICAL_DICE_IMPACTS[2]) / (1 - PHYSICAL_DICE_IMPACTS[2]);
+  if (progress < settleBounceEnd) {
+    const phase = (progress - reboundEnd) / (settleBounceEnd - reboundEnd);
+    return {
+      x: physicalLerp(finalX + 30, finalX - 6, physicalEaseOutCubic(phase)),
+      y: -Math.sin(phase * Math.PI) * (10 + physicalHash(seed + 6) * 2.5),
+      scale: 1
+    };
+  }
+  const phase = (progress - settleBounceEnd) / (1 - settleBounceEnd);
   return {
-    x: physicalLerp(finalX + 4, finalX, physicalEaseOutCubic(phase)),
-    y: -Math.abs(Math.sin(phase * Math.PI * 2)) * (1 - phase) * 3.5,
+    x: physicalLerp(finalX - 6, finalX, physicalEaseOutCubic(phase)),
+    y: -Math.abs(Math.sin(phase * Math.PI * 2)) * (1 - phase) * 2.6,
     scale: 1
   };
 }
 
 function physicalInitialSpin(entry, direction = 1) {
+  const initialRotation = {
+    x: entry.finalRotation.x + direction * (0.95 + physicalHash(entry.seed + 8) * 0.55),
+    y: entry.finalRotation.y + (1.20 + physicalHash(entry.seed + 9) * 0.70),
+    z: entry.finalRotation.z + direction * (0.34 + physicalHash(entry.seed + 10) * 0.34)
+  };
   return {
-    rotation: {
-      x: entry.finalRotation.x + direction * Math.PI * (2.8 + physicalHash(entry.seed + 8) * 1.4),
-      y: entry.finalRotation.y + Math.PI * (3.6 + physicalHash(entry.seed + 9) * 1.8),
-      z: entry.finalRotation.z + direction * Math.PI * (1.2 + physicalHash(entry.seed + 10) * 0.8)
-    },
-    velocity: {
-      x: direction * (8.2 + physicalHash(entry.seed + 11) * 2.6),
-      y: 10.4 + physicalHash(entry.seed + 12) * 2.8,
-      z: direction * (4.0 + physicalHash(entry.seed + 13) * 1.8)
-    }
+    orientation: physicalQuatFromEuler(initialRotation),
+    rotation: initialRotation,
+    previousPose: null,
+    settleFrom: null,
+    settleTarget: physicalQuatFromEuler(entry.finalRotation),
+    direction,
+    rollRadius: entry.sides === 4 ? 51 : entry.sides === 6 ? 59 : entry.sides === 100 ? 56 : 62,
+    impactEnergy: 0
   };
 }
 
 function physicalApplyImpact(spin, impactIndex, direction = 1) {
-  const strength = [1, 0.55, 0.28][impactIndex] || 0.2;
-  spin.velocity.x = -spin.velocity.x * (0.30 + strength * 0.15) + direction * strength * 1.8;
-  spin.velocity.y = spin.velocity.y * (0.42 + strength * 0.14);
-  spin.velocity.z = -spin.velocity.z * (0.28 + strength * 0.18);
+  const strength = [1, 0.46, 0.20][impactIndex] || 0.12;
+  spin.direction = direction;
+  spin.impactEnergy = Math.max(spin.impactEnergy, strength);
 }
 
-function physicalAdvanceSpin(spin, finalRotation, deltaSeconds, progress) {
-  const damping = Math.exp(-deltaSeconds * (1.25 + progress * 2.6));
-  spin.velocity.x *= damping;
-  spin.velocity.y *= damping;
-  spin.velocity.z *= damping;
-  spin.rotation.x += spin.velocity.x * deltaSeconds;
-  spin.rotation.y += spin.velocity.y * deltaSeconds;
-  spin.rotation.z += spin.velocity.z * deltaSeconds;
-  if (progress > 0.80) {
-    const settle = physicalSmoothStep((progress - 0.80) / 0.20);
-    const blend = 0.035 + settle * 0.18;
-    spin.rotation.x = physicalLerp(spin.rotation.x, finalRotation.x, blend);
-    spin.rotation.y = physicalLerp(spin.rotation.y, finalRotation.y, blend);
-    spin.rotation.z = physicalLerp(spin.rotation.z, finalRotation.z, blend);
+function physicalAdvanceSpin(spin, finalRotation, deltaSeconds, progress, pose) {
+  if (pose && spin.previousPose) {
+    const deltaX = pose.x - spin.previousPose.x;
+    const deltaY = pose.y - spin.previousPose.y;
+    const distance = Math.hypot(deltaX, deltaY * 0.32);
+    const travelDirection = Math.sign(deltaX) || spin.direction || 1;
+    const rollAngle = distance / spin.rollRadius;
+    if (rollAngle > 0.0001) {
+      const rollAxis = { x: 0.58, y: travelDirection * 0.79, z: 0.19 };
+      spin.orientation = physicalQuatMultiply(physicalQuatFromAxisAngle(rollAxis, rollAngle), spin.orientation);
+    }
+    const airborne = physicalClamp(Math.max(0, -pose.y) / 42);
+    if (airborne > 0.02) {
+      const tumbleAngle = deltaSeconds * airborne * (0.52 + spin.impactEnergy * 0.42);
+      const tumbleAxis = { x: travelDirection * 0.42, y: 0.24, z: 0.68 };
+      spin.orientation = physicalQuatMultiply(physicalQuatFromAxisAngle(tumbleAxis, tumbleAngle), spin.orientation);
+    }
   }
+  if (pose) spin.previousPose = { x: pose.x, y: pose.y };
+  spin.impactEnergy *= Math.exp(-deltaSeconds * 7.2);
+
+  const settleStart = 0.84;
+  if (progress >= settleStart) {
+    if (!spin.settleFrom) spin.settleFrom = { ...spin.orientation };
+    const settle = physicalSmootherStep((progress - settleStart) / (1 - settleStart));
+    spin.orientation = physicalQuatSlerp(spin.settleFrom, spin.settleTarget, settle);
+  }
+  spin.rotation = physicalEulerFromQuat(spin.orientation);
 }
 
 function physicalNotation(sides) {
@@ -537,9 +691,9 @@ animateDiceResult = function animatePhysicalDiceResult(container, value, label, 
       nextImpact += 1;
     }
 
-    physicalAdvanceSpin(spin, entry.finalRotation, deltaSeconds, progress);
     const pose = physicalSinglePose(progress, travel, entry.seed);
-    const reveal = progress < 0.84 ? 0 : physicalSmoothStep((progress - 0.84) / 0.14);
+    physicalAdvanceSpin(spin, entry.finalRotation, deltaSeconds, progress, pose);
+    const reveal = progress < 0.86 ? 0 : physicalSmootherStep((progress - 0.86) / 0.12);
     entry.object.dataset.faceReveal = String(reveal);
     physicalSetPose(entry, pose.x, pose.y, pose.scale, 1);
     physicalPaintEntry(entry, spin.rotation, pose.y * 0.055);
@@ -594,35 +748,36 @@ function physicalPrepareDualShell(container, rolls, total, label, tone, contextL
 }
 
 function physicalDualPose(progress, side, separation, travel, seed, index) {
-  const firstImpact = 0.52;
-  const secondImpact = 0.71;
-  const thirdImpact = 0.83;
+  const firstImpact = 0.48;
+  const secondImpact = 0.68;
+  const thirdImpact = 0.86;
   const target = side * separation;
+  const collisionX = side * 8;
   if (progress < firstImpact) {
     const phase = progress / firstImpact;
     return {
-      x: physicalLerp(side * (travel + 18), target + side * 20, physicalEaseOutCubic(phase)),
-      y: -Math.sin(phase * Math.PI) * (42 + physicalHash(seed + 2) * 10) - (1 - phase) * (7 + index * 3)
+      x: physicalLerp(side * (travel + 22), collisionX, phase),
+      y: -(1 - phase) * (8 + index * 3) - Math.sin(phase * Math.PI) * (35 + physicalHash(seed + 2) * 8)
     };
   }
   if (progress < secondImpact) {
     const phase = (progress - firstImpact) / (secondImpact - firstImpact);
     return {
-      x: physicalLerp(target + side * 20, target + side * 6, physicalEaseOutCubic(phase)),
-      y: -Math.sin(phase * Math.PI) * (20 + physicalHash(seed + 3) * 5)
+      x: physicalLerp(collisionX, target * 0.78, physicalEaseOutCubic(phase)),
+      y: -Math.sin(phase * Math.PI) * (23 + physicalHash(seed + 3) * 4)
     };
   }
   if (progress < thirdImpact) {
     const phase = (progress - secondImpact) / (thirdImpact - secondImpact);
     return {
-      x: physicalLerp(target + side * 6, target, physicalEaseOutCubic(phase)),
-      y: -Math.sin(phase * Math.PI) * (8 + physicalHash(seed + 4) * 3)
+      x: physicalLerp(target * 0.78, target, physicalEaseOutCubic(phase)),
+      y: -Math.sin(phase * Math.PI) * (8 + physicalHash(seed + 4) * 2.5)
     };
   }
   const phase = (progress - thirdImpact) / (1 - thirdImpact);
   return {
     x: target,
-    y: -Math.abs(Math.sin(phase * Math.PI * 2)) * (1 - phase) * 2.5
+    y: -Math.abs(Math.sin(phase * Math.PI * 2)) * (1 - phase) * 2.2
   };
 }
 
@@ -677,7 +832,7 @@ function animateHighestDamageDice(container, rolls, total, label = 'obrażeń', 
     let previous = started;
     const travel = Math.max(92, Math.min(145, stageWidth / 2 - 28));
     const spins = entries.map((entry, index) => physicalInitialSpin(entry, index === 0 ? 1 : -1));
-    const impactPoints = [0.52, 0.71, 0.83];
+    const impactPoints = [0.48, 0.68, 0.86];
     let nextImpact = 0;
     let comparisonStarted = false;
 
@@ -695,10 +850,10 @@ function animateHighestDamageDice(container, rolls, total, label = 'obrażeń', 
 
       entries.forEach((entry, index) => {
         const side = index === 0 ? -1 : 1;
-        physicalAdvanceSpin(spins[index], entry.finalRotation, deltaSeconds, progress);
         const pose = physicalDualPose(progress, side, separation, travel, entry.seed, index);
-        const reveal = progress < 0.76 ? 0 : physicalSmoothStep((progress - 0.76) / 0.14);
-        const comparison = progress < 0.84 ? 0 : physicalSmoothStep((progress - 0.84) / 0.16);
+        physicalAdvanceSpin(spins[index], entry.finalRotation, deltaSeconds, progress, pose);
+        const reveal = progress < 0.74 ? 0 : physicalSmootherStep((progress - 0.74) / 0.14);
+        const comparison = progress < 0.86 ? 0 : physicalSmootherStep((progress - 0.86) / 0.14);
         const winner = winnerIndexes.includes(index);
         const comparisonY = isTie ? 0 : winner ? -4 * comparison : 8 * comparison;
         const comparisonScale = isTie
@@ -712,7 +867,7 @@ function animateHighestDamageDice(container, rolls, total, label = 'obrażeń', 
         physicalPaintEntry(entry, spins[index].rotation, pose.y * 0.055);
       });
 
-      if (!comparisonStarted && progress >= 0.84) {
+      if (!comparisonStarted && progress >= 0.86) {
         comparisonStarted = true;
         shell.classList.add('comparing');
         copy.textContent = isTie ? `Remis: ${total} ${label}` : `Wyższy wynik: ${total} ${label}`;
