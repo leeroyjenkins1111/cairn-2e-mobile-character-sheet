@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 
 // These checks intentionally keep enough perspective to read the object as a die,
 // while ensuring the result face and numeral remain upright for the player.
+// The captured review image is the visual acceptance artifact for this renderer.
 test.describe('visible dice result face v3', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
