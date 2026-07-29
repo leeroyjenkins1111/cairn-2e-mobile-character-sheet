@@ -11,13 +11,13 @@
 
   function heroRotation(sides) {
     const presets = {
-      4: { x: -0.28, y: 0.34, z: 0 },
-      6: { x: -0.18, y: 0.24, z: 0 },
-      8: { x: -0.26, y: 0.30, z: 0 },
-      10: { x: -0.24, y: 0.28, z: 0 },
-      12: { x: -0.23, y: 0.27, z: 0 },
-      20: { x: -0.24, y: 0.28, z: 0 },
-      100: { x: -0.22, y: 0.29, z: 0 }
+      4: { x: -0.34, y: 0.43, z: 0 },
+      6: { x: -0.28, y: 0.40, z: 0 },
+      8: { x: -0.34, y: 0.40, z: 0 },
+      10: { x: -0.32, y: 0.39, z: 0 },
+      12: { x: -0.31, y: 0.38, z: 0 },
+      20: { x: -0.32, y: 0.39, z: 0 },
+      100: { x: -0.30, y: 0.40, z: 0 }
     };
     return presets[Number(sides)] || presets[20];
   }
@@ -81,9 +81,9 @@
         centroid[1],
         Math.max(width, height) * 0.72
       );
-      patina.addColorStop(0, 'rgba(225, 239, 189, .11)');
-      patina.addColorStop(0.52, 'rgba(116, 145, 79, .035)');
-      patina.addColorStop(1, 'rgba(19, 43, 22, .13)');
+      patina.addColorStop(0, 'rgba(225, 239, 189, .10)');
+      patina.addColorStop(0.52, 'rgba(116, 145, 79, .03)');
+      patina.addColorStop(1, 'rgba(19, 43, 22, .12)');
       context.fillStyle = patina;
       context.fillRect(bounds.minX - 2, bounds.minY - 2, width + 4, height + 4);
 
@@ -107,10 +107,10 @@
           endY
         );
         context.lineCap = 'round';
-        context.lineWidth = 0.55 + localHash(seed + index * 37) * 0.85;
+        context.lineWidth = 0.45 + localHash(seed + index * 37) * 0.70;
         context.strokeStyle = index % 2
-          ? 'rgba(225, 235, 194, .095)'
-          : 'rgba(34, 61, 28, .16)';
+          ? 'rgba(225, 235, 194, .08)'
+          : 'rgba(34, 61, 28, .14)';
         context.stroke();
       }
 
@@ -120,8 +120,8 @@
 
   function engravedFontSize(face, label) {
     const area = physicalFaceArea(face.points);
-    const factor = label.length > 1 ? 0.39 : 0.53;
-    return physicalClamp(Math.sqrt(area) * factor, 15, label.length > 1 ? 28 : 37);
+    const factor = label.length > 1 ? 0.35 : 0.47;
+    return physicalClamp(Math.sqrt(area) * factor, 14, label.length > 1 ? 26 : 34);
   }
 
   function drawCarvedInlay(context, label, fontSize, reveal) {
@@ -134,40 +134,48 @@
     context.miterLimit = 2;
     context.globalAlpha = reveal;
 
+    // Dark cavity cut into the material. It stays centred so the value reads as recessed,
+    // rather than as a raised glyph with a drop shadow.
     context.save();
-    context.translate(1.35, 1.65);
-    context.lineWidth = Math.max(4.4, fontSize * 0.145);
-    context.strokeStyle = 'rgba(5, 15, 7, .90)';
-    context.shadowColor = 'rgba(0, 0, 0, .42)';
-    context.shadowBlur = Math.max(1.2, fontSize * 0.045);
-    context.shadowOffsetX = 0.7;
-    context.shadowOffsetY = 1.1;
+    context.lineWidth = Math.max(3.2, fontSize * 0.105);
+    context.strokeStyle = 'rgba(6, 17, 8, .88)';
+    context.shadowColor = 'rgba(0, 0, 0, .24)';
+    context.shadowBlur = Math.max(0.8, fontSize * 0.025);
     context.strokeText(label, 0, baseline);
-    context.fillStyle = 'rgba(13, 29, 14, .92)';
+    context.fillStyle = 'rgba(12, 29, 14, .86)';
     context.fillText(label, 0, baseline);
     context.restore();
 
+    // A narrow lower-right highlight suggests the illuminated inner wall of the carving.
     context.save();
-    context.translate(-0.72, -0.86);
-    context.scale(0.90, 0.90);
-    context.lineWidth = Math.max(1.15, fontSize * 0.038);
-    context.strokeStyle = 'rgba(251, 253, 238, .82)';
+    context.translate(0.62, 0.72);
+    context.scale(0.91, 0.91);
+    context.lineWidth = Math.max(1.2, fontSize * 0.038);
+    context.strokeStyle = 'rgba(246, 250, 228, .58)';
     context.strokeText(label, 0, baseline);
+    context.restore();
 
-    const fill = context.createLinearGradient(0, -fontSize * 0.58, 0, fontSize * 0.55);
-    fill.addColorStop(0, 'rgba(255, 255, 248, .99)');
-    fill.addColorStop(0.45, 'rgba(239, 244, 222, .99)');
-    fill.addColorStop(1, 'rgba(190, 204, 168, .99)');
+    // White inlay sits inside the cavity, leaving the dark edge visible around it.
+    context.save();
+    context.scale(0.88, 0.88);
+    context.lineWidth = Math.max(0.85, fontSize * 0.027);
+    context.strokeStyle = 'rgba(49, 67, 41, .70)';
+    context.strokeText(label, 0, baseline);
+    const fill = context.createLinearGradient(0, -fontSize * 0.55, 0, fontSize * 0.52);
+    fill.addColorStop(0, 'rgba(255, 255, 247, .99)');
+    fill.addColorStop(0.50, 'rgba(237, 242, 220, .99)');
+    fill.addColorStop(1, 'rgba(197, 210, 175, .99)');
     context.fillStyle = fill;
     context.fillText(label, 0, baseline);
     context.restore();
 
+    // Subtle top-left occlusion completes the inset illusion without creating an extrusion.
     context.save();
-    context.translate(-1.05, -1.15);
-    context.scale(0.90, 0.90);
-    context.globalAlpha = reveal * 0.44;
-    context.lineWidth = Math.max(0.75, fontSize * 0.024);
-    context.strokeStyle = 'rgba(255, 255, 255, .95)';
+    context.translate(-0.42, -0.48);
+    context.scale(0.88, 0.88);
+    context.globalAlpha = reveal * 0.32;
+    context.lineWidth = Math.max(0.65, fontSize * 0.021);
+    context.strokeStyle = 'rgba(17, 31, 16, .72)';
     context.strokeText(label, 0, baseline);
     context.restore();
   }
@@ -182,7 +190,7 @@
       physicalPath(context, face.points);
       context.clip();
       context.translate(centroid[0], centroid[1]);
-      context.scale(0.97 + reveal * 0.03, 0.97 + reveal * 0.03);
+      context.scale(0.98 + reveal * 0.02, 0.98 + reveal * 0.02);
       drawCarvedInlay(context, label, fontSize, reveal);
       context.restore();
     };
@@ -191,10 +199,10 @@
   const style = document.createElement('style');
   style.textContent = `
     html[data-dice-face-v3="true"] .result-die-canvas {
-      filter: saturate(.92) contrast(1.045) drop-shadow(0 9px 11px rgba(0, 0, 0, .30));
+      filter: saturate(.94) contrast(1.035) drop-shadow(0 7px 9px rgba(0, 0, 0, .25));
     }
     html[data-dice-face-v3="true"] .result-die-object:not(.is-tumbling) .result-die-canvas {
-      filter: saturate(.90) contrast(1.055) drop-shadow(0 11px 14px rgba(0, 0, 0, .36));
+      filter: saturate(.93) contrast(1.04) drop-shadow(0 9px 11px rgba(0, 0, 0, .30));
     }
   `;
   document.head.append(style);
