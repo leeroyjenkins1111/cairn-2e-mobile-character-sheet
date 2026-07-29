@@ -1,0 +1,73 @@
+name: Apply dice finish correction
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.event.pull_request.head.ref == 'fix/smooth-physical-dice-v2'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Remove final orientation jump and tighten timing
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+
+          path = Path('scripts/dice-motion.js')
+          text = path.read_text()
+          replacements = {
+              'const PHYSICAL_DICE_DURATION = 2200;\nconst PHYSICAL_DUAL_DICE_DURATION = 2320;':
+                  'const PHYSICAL_DICE_DURATION = 1750;\nconst PHYSICAL_DUAL_DICE_DURATION = 1980;',
+              'const settleStart = 0.84;':
+                  'const settleStart = 0.80;',
+              'const reveal = progress < 0.86 ? 0 : physicalSmootherStep((progress - 0.86) / 0.12);':
+                  'const reveal = progress < 0.92 ? 0 : physicalSmootherStep((progress - 0.92) / 0.08);',
+              '    const finalX = physicalSignedHash(entry.seed + 3) * 12;\n    physicalSetPose(entry, finalX, 0, 1, 1);\n    physicalPaintEntry(entry, entry.finalRotation);':
+                  '    physicalSetPose(entry, pose.x, 0, 1, 1);\n    physicalPaintEntry(entry, spin.rotation);',
+              'function physicalSetDualComparison(entries, winnerIndexes, isTie, separation) {':
+                  'function physicalSetDualComparison(entries, winnerIndexes, isTie, separation, settledRotations = null) {',
+              '    physicalPaintEntry(entry, entry.finalRotation);\n  });\n}':
+                  '    physicalPaintEntry(entry, settledRotations?.[index] || entry.finalRotation);\n  });\n}',
+              '        const reveal = progress < 0.74 ? 0 : physicalSmootherStep((progress - 0.74) / 0.14);':
+                  '        const reveal = progress < 0.88 ? 0 : physicalSmootherStep((progress - 0.88) / 0.10);',
+              '      physicalSetDualComparison(entries, winnerIndexes, isTie, separation);':
+                  '      physicalSetDualComparison(entries, winnerIndexes, isTie, separation, spins.map(spin => spin.rotation));'
+          }
+          for old, new in replacements.items():
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'Expected one occurrence, found {count}: {old[:80]}')
+              text = text.replace(old, new, 1)
+          path.write_text(text)
+
+          index = Path('index.html')
+          index.write_text(index.read_text().replace('dice-motion.js?v=0.26.2', 'dice-motion.js?v=0.26.3'))
+
+          worker = Path('service-worker.js')
+          worker_text = worker.read_text()
+          worker_text = worker_text.replace('cairn-mobile-sheet-v0.26.2', 'cairn-mobile-sheet-v0.26.3')
+          worker_text = worker_text.replace('dice-motion.js?v=0.26.2', 'dice-motion.js?v=0.26.3')
+          worker.write_text(worker_text)
+          PY
+          rm .github/workflows/apply-dice-finish-fix.yml
+          sha256sum index.html manifest.webmanifest service-worker.js icon.svg styles/app.css styles/ux-direct-editing.css scripts/app.js scripts/dice-motion.js scripts/dice-feedback.js scripts/ux-direct-editing.js scripts/typography-system.js scripts/character-redesign.js scripts/screen-unification.js scripts/inventory-spacing.js styles/character-redesign.css styles/screen-unification.css assets/forest-background.jpg > checksums.sha256
+          node --check scripts/dice-motion.js
+          node --check service-worker.js
+      - name: Commit correction
+        shell: bash
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add scripts/dice-motion.js index.html service-worker.js checksums.sha256 .github/workflows/apply-dice-finish-fix.yml
+          git commit -m "fix: remove final dice orientation glitch"
+          git push origin HEAD:${{ github.event.pull_request.head.ref }}
