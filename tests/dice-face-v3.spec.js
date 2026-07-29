@@ -4,6 +4,11 @@ test.describe('visible dice result face v3', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
     await page.waitForFunction(() => document.documentElement.dataset.diceFaceV3 === 'true');
+    const rendererFlags = await page.evaluate(() => ({
+      v2: document.documentElement.dataset.diceFaceV2,
+      v3: document.documentElement.dataset.diceFaceV3
+    }));
+    expect(rendererFlags).toEqual({ v2: undefined, v3: 'true' });
   });
 
   test('freezes a more front-facing k6 result before reveal', async ({ page }) => {
