@@ -1,7 +1,7 @@
 'use strict';
 
-const PHYSICAL_DICE_DURATION = 2200;
-const PHYSICAL_DUAL_DICE_DURATION = 2320;
+const PHYSICAL_DICE_DURATION = 1750;
+const PHYSICAL_DUAL_DICE_DURATION = 1980;
 const PHYSICAL_DICE_IMPACTS = Object.freeze([0.56, 0.76, 0.90]);
 const PHYSICAL_D10_CACHE = new Map();
 const baseCreateDieMesh = createDieMesh;
@@ -625,7 +625,7 @@ function physicalAdvanceSpin(spin, finalRotation, deltaSeconds, progress, pose) 
   if (pose) spin.previousPose = { x: pose.x, y: pose.y };
   spin.impactEnergy *= Math.exp(-deltaSeconds * 7.2);
 
-  const settleStart = 0.84;
+  const settleStart = 0.80;
   if (progress >= settleStart) {
     if (!spin.settleFrom) spin.settleFrom = { ...spin.orientation };
     const settle = physicalSmootherStep((progress - settleStart) / (1 - settleStart));
@@ -693,7 +693,7 @@ animateDiceResult = function animatePhysicalDiceResult(container, value, label, 
 
     const pose = physicalSinglePose(progress, travel, entry.seed);
     physicalAdvanceSpin(spin, entry.finalRotation, deltaSeconds, progress, pose);
-    const reveal = progress < 0.86 ? 0 : physicalSmootherStep((progress - 0.86) / 0.12);
+    const reveal = progress < 0.92 ? 0 : physicalSmootherStep((progress - 0.92) / 0.08);
     entry.object.dataset.faceReveal = String(reveal);
     physicalSetPose(entry, pose.x, pose.y, pose.scale, 1);
     physicalPaintEntry(entry, spin.rotation, pose.y * 0.055);
@@ -711,9 +711,8 @@ animateDiceResult = function animatePhysicalDiceResult(container, value, label, 
     shell.classList.remove('rolling');
     shell.classList.add('settled');
     shell.setAttribute('aria-label', `${label}: ${value}. ${context.textContent}.`);
-    const finalX = physicalSignedHash(entry.seed + 3) * 12;
-    physicalSetPose(entry, finalX, 0, 1, 1);
-    physicalPaintEntry(entry, entry.finalRotation);
+    physicalSetPose(entry, pose.x, 0, 1, 1);
+    physicalPaintEntry(entry, spin.rotation);
     triggerHaptic(resultHapticForTone(tone));
   };
 
@@ -781,7 +780,7 @@ function physicalDualPose(progress, side, separation, travel, seed, index) {
   };
 }
 
-function physicalSetDualComparison(entries, winnerIndexes, isTie, separation) {
+function physicalSetDualComparison(entries, winnerIndexes, isTie, separation, settledRotations = null) {
   entries.forEach((entry, index) => {
     const side = index === 0 ? -1 : 1;
     const winner = winnerIndexes.includes(index);
@@ -792,7 +791,7 @@ function physicalSetDualComparison(entries, winnerIndexes, isTie, separation) {
     entry.object.dataset.faceReveal = '1';
     entry.object.classList.remove('is-tumbling');
     entry.number.textContent = String(entry.value);
-    physicalPaintEntry(entry, entry.finalRotation);
+    physicalPaintEntry(entry, settledRotations?.[index] || entry.finalRotation);
   });
 }
 
@@ -852,7 +851,7 @@ function animateHighestDamageDice(container, rolls, total, label = 'obrażeń', 
         const side = index === 0 ? -1 : 1;
         const pose = physicalDualPose(progress, side, separation, travel, entry.seed, index);
         physicalAdvanceSpin(spins[index], entry.finalRotation, deltaSeconds, progress, pose);
-        const reveal = progress < 0.74 ? 0 : physicalSmootherStep((progress - 0.74) / 0.14);
+        const reveal = progress < 0.88 ? 0 : physicalSmootherStep((progress - 0.88) / 0.10);
         const comparison = progress < 0.86 ? 0 : physicalSmootherStep((progress - 0.86) / 0.14);
         const winner = winnerIndexes.includes(index);
         const comparisonY = isTie ? 0 : winner ? -4 * comparison : 8 * comparison;
@@ -878,7 +877,7 @@ function animateHighestDamageDice(container, rolls, total, label = 'obrażeń', 
         return;
       }
 
-      physicalSetDualComparison(entries, winnerIndexes, isTie, separation);
+      physicalSetDualComparison(entries, winnerIndexes, isTie, separation, spins.map(spin => spin.rotation));
       shell.removeAttribute('aria-hidden');
       shell.classList.remove('rolling');
       shell.classList.add('settled', 'comparing');
