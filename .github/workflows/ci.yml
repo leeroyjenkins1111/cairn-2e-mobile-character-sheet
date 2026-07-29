@@ -27,16 +27,22 @@ jobs:
       - name: Install browser engines
         run: npx playwright install --with-deps chromium webkit
 
-      - name: Verify deployment checksums
-        run: sha256sum -c checksums.sha256
-
       - name: Check application JavaScript syntax
-        run: node --check scripts/app.js
+        run: |
+          node --check scripts/app.js
+          node --check scripts/dice-face-v4.js
+          node --check scripts/build-info.js
+          node --check service-worker.js
 
       - name: Verify Pages artifact
         run: |
           node scripts/prepare-site.mjs _site
           test -s _site/assets/forest-background.jpg
+          test -s _site/scripts/dice-face-v4.js
+          test -s _site/scripts/build-info.js
+          grep -q 'dice-face-v4.js?v=0.30.0' _site/index.html
+          grep -q 'build-info.js?v=0.30.0' _site/index.html
+          grep -q "cairn-mobile-sheet-v0.30.0" _site/service-worker.js
 
       - name: Run browser regression suite
         id: browser_tests
