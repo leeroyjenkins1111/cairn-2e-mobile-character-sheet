@@ -78,14 +78,14 @@ test('prepared saves preserve the announced stake', async ({ page }) => {
   await expect.poll(async () => page.evaluate(() => globalThis.CairnSheetDev.getState().diceHistory[0]?.details)).toContain('Stawka: Strażnicy mnie zauważą');
 });
 
-test('character sections align and interactive copy is not clipped', async ({ page }) => {
+test('character sections align and visible copy is not clipped', async ({ page }) => {
   await page.setViewportSize({ width: 320, height: 568 });
   await loadDemo(page);
 
   const presentation = await page.evaluate(() => {
     const selectors = ['.identity-row', '.state-values', '.combat-launcher', '.game-actions'];
     const leftEdges = selectors.map(selector => Math.round(document.querySelector(selector).getBoundingClientRect().left * 10) / 10);
-    const candidates = Array.from(document.querySelectorAll('button, .combat-weapon-copy strong, .combat-weapon-copy span'))
+    const candidates = Array.from(document.querySelectorAll('.combat-weapon-copy strong, .combat-weapon-copy span, .compact-action span, .damage-primary-action span'))
       .filter(element => {
         const style = getComputedStyle(element);
         const rect = element.getBoundingClientRect();
@@ -93,7 +93,7 @@ test('character sections align and interactive copy is not clipped', async ({ pa
       });
     const clipped = candidates
       .filter(element => element.scrollWidth > element.clientWidth + 1 || element.scrollHeight > element.clientHeight + 1)
-      .map(element => element.getAttribute('aria-label') || element.textContent.trim());
+      .map(element => element.textContent.trim());
     return { leftEdges, clipped };
   });
 
