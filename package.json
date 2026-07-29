@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "check:syntax": "node scripts/check-js-syntax.mjs",
     "test": "playwright test",
     "test:ci": "playwright test --reporter=line"
   },
