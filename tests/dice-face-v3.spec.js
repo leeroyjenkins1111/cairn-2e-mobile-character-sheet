@@ -1,5 +1,7 @@
 import { test, expect } from '@playwright/test';
 
+// These checks intentionally keep enough perspective to read the object as a die,
+// while ensuring the result face and numeral remain upright for the player.
 test.describe('visible dice result face v3', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
