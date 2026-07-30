@@ -148,10 +148,5 @@ function enhanceCharacterView() {
   enhanceCombatAndGameActions();
 }
 
-const renderCharacterViewBase = renderCharacterView;
-renderCharacterView = function renderCharacterViewWithDirectEditing() {
-  renderCharacterViewBase();
-  enhanceCharacterView();
-};
-
+globalThis.CairnRenderHooks.addCharacterHook(enhanceCharacterView);
 enhanceCharacterView();

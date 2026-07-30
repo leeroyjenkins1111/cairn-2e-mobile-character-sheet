@@ -1,7 +1,6 @@
 'use strict';
 
 (() => {
-  const originalRenderCharacterView = renderCharacterView;
   const SVG_NS = 'http://www.w3.org/2000/svg';
 
   function displayDamageNotation(notation) {
@@ -162,10 +161,6 @@
     if (damageDescription) damageDescription.textContent = 'Pancerz → Ochrona → SIŁ';
   }
 
-  renderCharacterView = function renderCharacterViewRedesigned() {
-    originalRenderCharacterView();
-    enhanceCharacterCopy();
-  };
-
+  globalThis.CairnRenderHooks.addCharacterHook(enhanceCharacterCopy);
   renderAll();
 })();
