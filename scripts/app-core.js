@@ -2220,8 +2220,13 @@ function rotateDiePoint(point, rotation) {
   return [afterY[0] * cosZ - afterY[1] * sinZ, afterY[0] * sinZ + afterY[1] * cosZ, afterY[2]];
 }
 
-function finalDieRotation(sides, value) {
+function finalDieRotationBase(sides, value) {
   return { x: 0.5 + (Number(value) % 4) * 0.17, y: 0.65 + (Number(value) % 7) * 0.11, z: -0.12 + (Number(sides) % 5) * 0.045 };
+}
+
+function finalDieRotation(sides, value) {
+  const adapter = globalThis.CairnDiceRenderer?.getAdapter?.('finalDieRotation');
+  return adapter ? adapter(sides, value, finalDieRotationBase) : finalDieRotationBase(sides, value);
 }
 
 function paintResultDie(canvas, sides, rotation, lift = 0) {

@@ -208,6 +208,7 @@
 
 
 globalThis.CairnDiceRenderer.register({
+  finalDieRotation: sides => ({ ...heroRotation(sides) }),
   physicalAdvanceSpin: advanceAndLockResult,
   physicalPaintEntry: paintStableResult,
   drawPhysicalTexture: drawConsolidatedStone,

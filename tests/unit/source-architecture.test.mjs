@@ -65,6 +65,8 @@ test('renderery używają jawnych rejestrów zamiast globalnych nadpisań', () =
   assert.match(characterRedesign, /registerRenderer\('combatLauncher'/);
   assert.match(diceMotion, /CairnDiceRenderer/);
   assert.match(diceRenderer, /CairnDiceRenderer\.register/);
+  assert.match(core, /getAdapter\?\.\('finalDieRotation'\)/);
+  assert.match(diceRenderer, /finalDieRotation:\s*sides/);
 });
 
 test('runtime nie tworzy ani nie wstrzykuje arkuszy CSS', () => {

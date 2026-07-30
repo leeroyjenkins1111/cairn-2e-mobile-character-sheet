@@ -7,6 +7,9 @@ const PHYSICAL_D10_CACHE = new Map();
 const baseCreateDieMesh = createDieMesh;
 const physicalDiceAdapters = Object.create(null);
 globalThis.CairnDiceRenderer = Object.freeze({
+  getAdapter(name) {
+    return physicalDiceAdapters[name] || null;
+  },
   register(adapters) {
     if (!adapters || typeof adapters !== 'object') throw new TypeError('Dice renderer adapters must be an object.');
     for (const [name, adapter] of Object.entries(adapters)) {
