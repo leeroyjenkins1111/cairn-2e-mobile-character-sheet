@@ -25,15 +25,15 @@ test('capture structural UI review screenshots', async ({ page, browserName }) =
   await page.setViewportSize({ width: 390, height: 744 });
   await shot(page, '01a-character-compact-dark-390x744');
   await page.setViewportSize({ width: 390, height: 844 });
-  await page.locator('.combat-launcher').getByRole('button', { name: 'Opcje walki' }).click();
-  await expect(page.locator('#sheetTitle')).toHaveText('Walka');
+  await page.evaluate(() => globalThis.CairnSheetDev.performFirstRoundDexSave(1));
+  await expect(page.locator('#sheetTitle')).toHaveText('Pierwsza runda walki');
   await shot(page, '01b-combat-flow-dark-390x844');
   await page.getByRole('button', { name: 'Zamknij panel' }).click();
   await page.getByRole('button', { name: 'Ekwipunek', exact: true }).click();
   await shot(page, '02-inventory-dark-390x844');
   await page.getByRole('button', { name: 'Kości', exact: true }).click();
   await page.getByRole('button', { name: 'Rzuć kością k8' }).click();
-  await expect(page.locator('.animated-dice-result')).toHaveClass(/settled/);
+  await expect(page.locator('#diceResult .animated-dice-result')).toHaveClass(/settled/);
   await shot(page, '03-dice-dark-390x844');
   await page.getByRole('button', { name: 'Ustawienia i dane' }).click();
   await page.getByRole('checkbox', { name: 'Haptyka' }).scrollIntoViewIfNeeded();
