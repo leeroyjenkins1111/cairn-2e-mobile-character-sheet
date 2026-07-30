@@ -45,20 +45,30 @@ Aplikacja używa `schemaVersion: 3`. Aktualny układ interfejsu nie zmienia form
 
 ## Struktura aplikacji
 
-- `index.html` — semantyczny shell, cztery widoki, tab bar i bottom sheet;
+- `index.html` — semantyczny shell, cztery widoki, tab bar, bottom sheet i jawna kolejność assetów runtime;
+- `scripts/app-config.js` — konfiguracja i wersja aplikacji;
+- `scripts/app-core.js` — model danych, logika Cairn, persystencja, import/eksport i bazowe renderowanie;
+- `scripts/app-bootstrap.js` — wiązanie zdarzeń i funkcja inicjalizacji;
+- `scripts/app-entry.js` — końcowy punkt wejścia uruchamiany po rejestracji rozszerzeń;
+- `scripts/inventory-domain.js` — czysty, niezależny od DOM model podsumowania ekwipunku;
+- `scripts/render-hooks.js`, `scripts/inventory-view.js`, `scripts/character-redesign.js` i pozostałe pliki runtime — jawnie rejestrowane renderery, hooki oraz rozszerzenia interfejsu;
 - `styles/app.css` — bazowy layout i system wizualny;
-- `styles/character-redesign.css` i `styles/screen-unification.css` — aktualne warstwy stylów ekranów;
-- `scripts/app.js` — model danych, logika Cairn, bazowe renderowanie i interakcje;
-- `scripts/*.js` — rozszerzenia interfejsu, animacji kości, informacji o buildzie i zachowania PWA;
+- `styles/character-redesign.css` i `styles/screen-unification.css` — warstwy stylów ekranów;
+- `styles/dice-runtime.css` — prezentacja fizycznych kości i ich układu ruchu;
+- `styles/runtime-overrides.css` — małe, przekrojowe korekty runtime, które nie mają jeszcze własnej warstwy;
 - `service-worker.js` — jawny cache lokalnych plików do pracy offline;
-- `tests/` — regresja funkcjonalna, dostępnościowa i screenshoty do review.
+- `scripts/prepare-site.mjs` — budowa katalogu `_site` używanego zarówno przez Pages, jak i Playwright;
+- `tests/unit/` — testy czystej logiki oraz kontraktów źródłowych;
+- `tests/*.spec.js` — regresja funkcjonalna, dostępnościowa, persystencji i screenshoty do review.
 
-Runtime nie używa frameworka, bundlera, zewnętrznych fontów ani zależności sieciowych. Kolejność skryptów w `index.html` ma obecnie znaczenie, ponieważ część rozszerzeń opakowuje bazowe funkcje aplikacji.
+Runtime nie używa frameworka, bundlera, zewnętrznych fontów ani zależności sieciowych. Kolejność skryptów w `index.html` jest kontraktem: konfiguracja i core są ładowane przed rejestrami rozszerzeń, a `app-entry.js` inicjalizuje aplikację jako ostatni asset.
 
 ## Uruchomienie lokalne
 
 ```bash
-python3 -m http.server 4173
+npm ci
+npm run build
+python3 -m http.server 4173 --directory _site
 ```
 
 Następnie otwórz `http://127.0.0.1:4173`.
@@ -69,13 +79,16 @@ Następnie otwórz `http://127.0.0.1:4173`.
 npm ci
 npx playwright install chromium webkit
 npm run check:syntax
+npm run test:unit
+npm run check:version
+npm run check:production
 npm test
 ```
 
-`npm run check:syntax` automatycznie sprawdza wszystkie pliki `.js` i `.mjs` w katalogu `scripts/` oraz `service-worker.js`.
+`check:production` buduje dokładnie ten sam katalog `_site`, który trafia do GitHub Pages, i sprawdza obecność wymaganych modułów, stylów oraz wpisów Service Workera. Testy Playwright obejmują również pełny reload zapisu i cykl backup → modyfikacja → import → checkpoint.
 
 CI publikuje diagnostykę Playwright i wizualny zestaw review jako artefakty workflow.
 
 ## Publikacja
 
-Zmiany w gałęzi `main` są wdrażane przez `.github/workflows/deploy-pages.yml`. Workflow sprawdza synchronizację wersji, buduje katalog `_site`, weryfikuje wymagane assety i publikuje artefakt GitHub Pages.
+Zmiany w gałęzi `main` są wdrażane przez `.github/workflows/deploy-pages.yml`. Workflow sprawdza synchronizację wersji, buduje katalog `_site`, uruchamia wspólną walidację produkcyjnego runtime i publikuje artefakt GitHub Pages.
