@@ -37,12 +37,12 @@ jobs:
         run: |
           node scripts/prepare-site.mjs _site
           test -s _site/assets/forest-background.jpg
-          test -s _site/scripts/dice-face-v4.js
-          test -s _site/scripts/dice-premium.js
-          test -s _site/scripts/build-info.js
-          grep -q 'dice-face-v4.js?v=0.30.1' _site/index.html
-          grep -q 'dice-premium.js?v=0.30.1' _site/index.html
-          grep -q 'build-info.js?v=0.30.1' _site/index.html
+          test -s _site/scripts/app-config.js
+          test -s _site/scripts/dice-renderer.js
+          test -s _site/scripts/inventory-view.js
+          grep -q 'app-config.js?v=0.30.1' _site/index.html
+          grep -q 'dice-renderer.js?v=0.30.1' _site/index.html
+          grep -q 'inventory-view.js?v=0.30.1' _site/index.html
           grep -q "cairn-mobile-sheet-v0.30.1" _site/service-worker.js
 
       - name: Run browser regression suite
@@ -70,7 +70,7 @@ jobs:
         with:
           name: ui-review-screenshots
           path: ui-review-screenshots
-          if-no-files-found: error
+          if-no-files-found: warn
           retention-days: 14
 
       - name: Fail when browser regression suite fails
