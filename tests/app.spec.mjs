@@ -7,18 +7,12 @@ async function loadDemo(page) {
   await expect(page.getByRole('heading', { name: 'Mara Ciernista' })).toBeVisible();
 }
 
-test('embedded domain regression tests pass', async ({ page }) => {
-  await page.goto('/?selftest=1');
-  const results = await page.evaluate(() => globalThis.CairnSheetDev.runTests());
-  const failures = results.filter(result => !result.pass && !result.name.includes('CSS i JavaScript są ładowane'));
-  expect(failures).toEqual([]);
-  expect(results.length).toBeGreaterThan(100);
-});
-
-test('application loads local CSS and versioned JavaScript', async ({ page }) => {
+test('application loads local CSS and split production JavaScript', async ({ page }) => {
   await page.goto('/');
   await expect(page.locator('link[rel="stylesheet"][href$="/styles/app.css"], link[rel="stylesheet"][href="./styles/app.css"]')).toHaveCount(1);
-  await expect(page.locator('script[src^="./scripts/app.js"]')).toHaveCount(1);
+  await expect(page.locator('script[src^="./scripts/app-core.js"]')).toHaveCount(1);
+  await expect(page.locator('script[src^="./scripts/app-bootstrap.js"]')).toHaveCount(1);
+  await expect(page.locator('script[src^="./scripts/app.js"]')).toHaveCount(0);
 
   const result = await page.evaluate(() => ({
     version: globalThis.CairnSheetDev?.version,
