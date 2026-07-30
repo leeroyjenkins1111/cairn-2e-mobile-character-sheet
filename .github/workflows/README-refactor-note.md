@@ -1,1 +1,0 @@
-Temporary migration workflows have completed. This marker prevents the refactor branch from being mistaken for an unreviewed runtime generation step and should be removed before merge if no longer useful.
