@@ -19,7 +19,6 @@ const siteFiles = [
   'scripts/ux-direct-editing.js',
   'scripts/typography-system.js',
   'scripts/character-redesign.js',
-  'scripts/screen-unification.js',
   'scripts/inventory-spacing.js',
   'assets/forest-background.jpg'
 ];
