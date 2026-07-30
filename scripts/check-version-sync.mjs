@@ -3,7 +3,7 @@ import { readFile } from 'node:fs/promises';
 const packageJson = JSON.parse(await readFile('package.json', 'utf8'));
 const expected = packageJson.version;
 const files = {
-  build: await readFile('scripts/build-info.js', 'utf8'),
+  config: await readFile('scripts/app-config.js', 'utf8'),
   index: await readFile('index.html', 'utf8'),
   worker: await readFile('service-worker.js', 'utf8')
 };
@@ -17,7 +17,7 @@ const mismatchedAssets = versionedAssets
 
 const assertions = [
   [typeof expected === 'string' && /^\d+\.\d+\.\d+$/.test(expected), 'package.json semantic version'],
-  [files.build.includes(`BUILD_VERSION = '${expected}'`), 'scripts/build-info.js BUILD_VERSION'],
+  [files.config.includes(`const VERSION = '${expected}'`), 'scripts/app-config.js VERSION'],
   [files.worker.includes(`cairn-mobile-sheet-v${expected}`), 'service worker cache version'],
   [mismatchedAssets.length === 0, `index asset versions: ${mismatchedAssets.join(', ') || 'ok'}`],
   ...versionedAssets.map(({ asset }) => [files.worker.includes(`'./${asset.replace(/^\.\//, '')}'`), `service worker asset ${asset}`])
@@ -29,4 +29,4 @@ if (failures.length) {
   process.exit(1);
 }
 
-console.log(`Version ${expected} from package.json is synchronized across build metadata, versioned assets and the PWA cache.`);
+console.log(`Version ${expected} from package.json is synchronized across runtime config, versioned assets and the PWA cache.`);

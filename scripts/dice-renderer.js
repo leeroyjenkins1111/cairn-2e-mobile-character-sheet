@@ -1,29 +1,61 @@
 'use strict';
 
 (() => {
+  const LOCK_START = 0.72;
+  const LOCK_END = 0.84;
   const GLYPH_OVERSAMPLE = 4;
 
-  function clamp01(value) {
-    return Math.max(0, Math.min(1, Number(value) || 0));
-  }
+  const clamp01 = value => Math.max(0, Math.min(1, Number(value) || 0));
+  const seeded = seed => {
+    const value = Math.sin(Number(seed) * 12.9898 + 78.233) * 43758.5453;
+    return value - Math.floor(value);
+  };
 
   function boundsFor(points) {
     const xs = points.map(point => point[0]);
     const ys = points.map(point => point[1]);
     return {
-      minX: Math.min(...xs),
-      maxX: Math.max(...xs),
-      minY: Math.min(...ys),
-      maxY: Math.max(...ys)
+      minX: Math.min(...xs), maxX: Math.max(...xs),
+      minY: Math.min(...ys), maxY: Math.max(...ys)
     };
   }
 
-  function seeded(seed) {
-    const value = Math.sin(Number(seed) * 12.9898 + 78.233) * 43758.5453;
-    return value - Math.floor(value);
+  function heroRotation(sides) {
+    const presets = {
+      4: { x: -0.38, y: 0.44, z: 0 }, 6: { x: -0.31, y: 0.42, z: 0 },
+      8: { x: -0.36, y: 0.41, z: 0 }, 10: { x: -0.34, y: 0.40, z: 0 },
+      12: { x: -0.33, y: 0.39, z: 0 }, 20: { x: -0.34, y: 0.40, z: 0 },
+      100: { x: -0.32, y: 0.41, z: 0 }
+    };
+    return presets[Number(sides)] || presets[20];
   }
 
-  function drawPremiumStone(context, face, sides, isLight, canvas) {
+  if (typeof finalDieRotation === 'function') {
+    finalDieRotation = sides => ({ ...heroRotation(sides) });
+  }
+
+  if (typeof physicalAdvanceSpin === 'function') {
+    const advanceSpin = physicalAdvanceSpin;
+    physicalAdvanceSpin = function advanceAndLockResult(spin, finalRotation, deltaSeconds, progress, pose) {
+      advanceSpin(spin, finalRotation, deltaSeconds, progress, pose);
+      if (progress < LOCK_START) return;
+      if (!spin.rendererLockFrom) spin.rendererLockFrom = { ...spin.orientation };
+      const phase = physicalClamp((progress - LOCK_START) / (LOCK_END - LOCK_START));
+      spin.orientation = physicalQuatSlerp(spin.rendererLockFrom, spin.settleTarget, physicalSmootherStep(phase));
+      if (progress >= LOCK_END) spin.orientation = { ...spin.settleTarget };
+      spin.rotation = physicalEulerFromQuat(spin.orientation);
+    };
+  }
+
+  if (typeof physicalPaintEntry === 'function') {
+    const paintEntry = physicalPaintEntry;
+    physicalPaintEntry = function paintStableResult(entry, rotation, lift = 0) {
+      if (entry?.object?.classList?.contains('is-tumbling')) entry.object.dataset.faceReveal = '0';
+      return paintEntry(entry, rotation, lift);
+    };
+  }
+
+  function drawPremiumStone(context, face, sides) {
     if (!face?.points?.length) return;
     const bounds = boundsFor(face.points);
     const width = bounds.maxX - bounds.minX;
@@ -35,14 +67,7 @@
     physicalPath(context, face.points);
     context.clip();
 
-    const body = context.createRadialGradient(
-      bounds.minX + width * 0.28,
-      bounds.minY + height * 0.18,
-      1,
-      centroid[0],
-      centroid[1],
-      Math.max(width, height) * 0.88
-    );
+    const body = context.createRadialGradient(bounds.minX + width * 0.28, bounds.minY + height * 0.18, 1, centroid[0], centroid[1], Math.max(width, height) * 0.88);
     body.addColorStop(0, 'rgba(244, 249, 218, .16)');
     body.addColorStop(0.28, 'rgba(144, 168, 96, .055)');
     body.addColorStop(0.72, 'rgba(30, 62, 32, .07)');
@@ -50,36 +75,23 @@
     context.fillStyle = body;
     context.fillRect(bounds.minX - 4, bounds.minY - 4, width + 8, height + 8);
 
-    // Fine mineral veins: low contrast, irregular and layered.
     for (let index = 0; index < 8; index += 1) {
       const a = seeded(seed + index * 17);
       const b = seeded(seed + index * 29 + 3);
       const c = seeded(seed + index * 41 + 7);
-      const startX = bounds.minX - width * 0.12;
-      const startY = bounds.minY + height * (0.06 + a * 0.88);
-      const endX = bounds.maxX + width * 0.12;
-      const endY = bounds.minY + height * (0.06 + b * 0.88);
       context.beginPath();
-      context.moveTo(startX, startY);
+      context.moveTo(bounds.minX - width * 0.12, bounds.minY + height * (0.06 + a * 0.88));
       context.bezierCurveTo(
-        bounds.minX + width * (0.20 + b * 0.18),
-        bounds.minY + height * (0.02 + c * 0.70),
-        bounds.minX + width * (0.68 + c * 0.16),
-        bounds.minY + height * (0.28 + a * 0.62),
-        endX,
-        endY
+        bounds.minX + width * (0.20 + b * 0.18), bounds.minY + height * (0.02 + c * 0.70),
+        bounds.minX + width * (0.68 + c * 0.16), bounds.minY + height * (0.28 + a * 0.62),
+        bounds.maxX + width * 0.12, bounds.minY + height * (0.06 + b * 0.88)
       );
       context.lineCap = 'round';
       context.lineWidth = 0.24 + seeded(seed + index * 47) * 0.48;
-      context.strokeStyle = index % 3 === 0
-        ? 'rgba(221, 202, 143, .12)'
-        : index % 2
-          ? 'rgba(235, 242, 207, .075)'
-          : 'rgba(22, 46, 24, .15)';
+      context.strokeStyle = index % 3 === 0 ? 'rgba(221, 202, 143, .12)' : index % 2 ? 'rgba(235, 242, 207, .075)' : 'rgba(22, 46, 24, .15)';
       context.stroke();
     }
 
-    // Micro scratches kept sparse so the material does not become noisy.
     for (let index = 0; index < 10; index += 1) {
       const x = bounds.minX + width * (0.08 + seeded(seed + index * 59) * 0.84);
       const y = bounds.minY + height * (0.08 + seeded(seed + index * 61 + 5) * 0.84);
@@ -105,9 +117,9 @@
 
   if (typeof drawPhysicalTexture === 'function') {
     const baseTexture = drawPhysicalTexture;
-    drawPhysicalTexture = function drawPremiumMossStone(context, face, sides, isLight, canvas) {
+    drawPhysicalTexture = function drawConsolidatedStone(context, face, sides, isLight, canvas) {
       baseTexture(context, face, sides, isLight, canvas);
-      drawPremiumStone(context, face, sides, isLight, canvas);
+      drawPremiumStone(context, face, sides);
     };
   }
 
@@ -134,7 +146,7 @@
     return physicalClamp(Math.sqrt(area) * factor, 13, label.length > 1 ? 25 : 32);
   }
 
-  function renderSupersampledGlyph(label, fontSize, reveal) {
+  function renderGlyph(label, fontSize, reveal) {
     const padding = Math.ceil(fontSize * 0.42);
     const cssSize = Math.ceil(fontSize * 2.2 + padding * 2);
     const canvas = document.createElement('canvas');
@@ -151,7 +163,6 @@
     context.font = `700 ${fontSize}px "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif`;
     const baseline = fontSize * 0.01;
 
-    // Recessed cavity. This is deliberately soft and narrow: no black sticker outline.
     context.save();
     context.lineWidth = Math.max(2.0, fontSize * 0.068);
     context.strokeStyle = 'rgba(9, 22, 11, .76)';
@@ -161,7 +172,6 @@
     context.strokeText(label, 0, baseline);
     context.restore();
 
-    // Inner wall highlight, offset by less than one output pixel after downsampling.
     context.save();
     context.translate(fontSize * 0.012, fontSize * 0.016);
     context.scale(0.925, 0.925);
@@ -170,7 +180,6 @@
     context.strokeText(label, 0, baseline);
     context.restore();
 
-    // Warm ivory inlay without a dark perimeter stroke.
     context.save();
     context.scale(0.895, 0.895);
     const fill = context.createLinearGradient(0, -fontSize * 0.52, 0, fontSize * 0.50);
@@ -181,7 +190,6 @@
     context.fillText(label, 0, baseline);
     context.restore();
 
-    // Top-left occlusion makes the inlay feel cut into the stone rather than raised.
     context.save();
     context.translate(-fontSize * 0.010, -fontSize * 0.012);
     context.scale(0.895, 0.895);
@@ -195,35 +203,32 @@
   }
 
   if (typeof drawPhysicalFaceValue === 'function') {
-    drawPhysicalFaceValue = function drawPremiumCarvedValue(context, face, label, reveal) {
+    drawPhysicalFaceValue = function drawConsolidatedFaceValue(context, face, label, reveal) {
       if (!face?.points?.length || reveal <= 0) return;
       const centroid = physicalFaceCentroid(face.points);
       const fontSize = glyphFontSize(face, label);
-      const angle = localFaceAngle(face.points);
-      const glyph = renderSupersampledGlyph(label, fontSize, reveal);
-
+      const glyph = renderGlyph(label, fontSize, reveal);
       context.save();
       physicalPath(context, face.points);
       context.clip();
       context.translate(centroid[0], centroid[1]);
-      context.rotate(angle);
+      context.rotate(localFaceAngle(face.points));
       context.imageSmoothingEnabled = true;
       context.imageSmoothingQuality = 'high';
-      const drawSize = glyph.cssSize;
-      context.drawImage(glyph.canvas, -drawSize / 2, -drawSize / 2, drawSize, drawSize);
+      context.drawImage(glyph.canvas, -glyph.cssSize / 2, -glyph.cssSize / 2, glyph.cssSize, glyph.cssSize);
       context.restore();
     };
   }
 
   const style = document.createElement('style');
   style.textContent = `
-    html[data-dice-premium="true"] .result-die-canvas {
+    html[data-dice-renderer="consolidated"] .result-die-canvas {
       filter: saturate(.88) contrast(1.035) brightness(1.015) drop-shadow(0 7px 10px rgba(0, 0, 0, .24));
     }
-    html[data-dice-premium="true"] .result-die-object:not(.is-tumbling) .result-die-canvas {
+    html[data-dice-renderer="consolidated"] .result-die-object:not(.is-tumbling) .result-die-canvas {
       filter: saturate(.87) contrast(1.045) brightness(1.02) drop-shadow(0 9px 13px rgba(0, 0, 0, .29));
     }
   `;
   document.head.append(style);
-  document.documentElement.dataset.dicePremium = 'true';
+  document.documentElement.dataset.diceRenderer = 'consolidated';
 })();

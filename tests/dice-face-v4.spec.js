@@ -1,21 +1,21 @@
 import { test, expect } from '@playwright/test';
 
 // The value must never be painted on a moving face: reveal happens once, after pose and rotation lock.
-test.describe('stable carved dice renderer v4', () => {
+test.describe('consolidated carved dice renderer', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/');
-    await page.waitForFunction(() => document.documentElement.dataset.diceFaceV4 === 'true');
+    await page.waitForFunction(() => document.documentElement.dataset.diceRenderer === 'consolidated');
   });
 
   test('keeps the numeral hidden for the entire tumble and reveals it once after settling', async ({ page }) => {
     await page.evaluate(() => {
       const host = document.createElement('div');
-      host.id = 'dice-v4-test-host';
+      host.id = 'dice-renderer-test-host';
       document.body.append(host);
       animateDiceResult(host, 4, 'Wynik', 6, 'neutral');
     });
 
-    const object = page.locator('#dice-v4-test-host .result-die-object');
+    const object = page.locator('#dice-renderer-test-host .result-die-object');
     await expect(object).toHaveClass(/is-tumbling/);
     await page.waitForTimeout(1200);
     await expect(object).toHaveAttribute('data-face-reveal', '0');
@@ -41,21 +41,21 @@ test.describe('stable carved dice renderer v4', () => {
     expect(result.second).toEqual(result.first);
   });
 
-  test('captures the final v4 k6 for visual review', async ({ page }) => {
+  test('captures the final consolidated k6 for visual review', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.reload();
-    await page.waitForFunction(() => document.documentElement.dataset.diceFaceV4 === 'true');
+    await page.waitForFunction(() => document.documentElement.dataset.diceRenderer === 'consolidated');
     await page.evaluate(() => {
       const host = document.createElement('div');
-      host.id = 'dice-v4-review';
+      host.id = 'dice-renderer-review';
       host.style.width = '360px';
       host.style.padding = '20px';
       host.style.background = '#211322';
       document.body.replaceChildren(host);
       animateDiceResult(host, 4, 'Wynik', 6, 'neutral');
     });
-    const review = page.locator('#dice-v4-review');
+    const review = page.locator('#dice-renderer-review');
     await expect(review.locator('.result-die-canvas')).toHaveCount(1);
-    await review.screenshot({ path: 'ui-review-screenshots/03-dice-face-v4.png' });
+    await review.screenshot({ path: 'ui-review-screenshots/03-dice-renderer.png' });
   });
 });
