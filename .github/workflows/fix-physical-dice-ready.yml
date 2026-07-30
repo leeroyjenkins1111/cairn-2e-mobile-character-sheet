@@ -1,0 +1,64 @@
+name: Fix physical dice readiness marker
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    if: github.head_ref == 'refactor/runtime-registry-and-entrypoint' && github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - name: Restore physical dice readiness contract
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+
+          path = Path('scripts/dice-motion.js')
+          text = path.read_text(encoding='utf-8')
+          marker = "globalThis.CairnDiceRenderer = Object.freeze({"
+          if text.count(marker) != 1:
+              raise SystemExit('CairnDiceRenderer registry marker not found exactly once')
+
+          insertion_point = "});\n\n\n\nfunction physicalClamp"
+          replacement = "});\n\n// Public readiness signal used by browser tests and diagnostics.\n// CSS is static; this marker only confirms that the physical dice module loaded.\ndocument.documentElement.dataset.physicalDice = 'true';\n\nfunction physicalClamp"
+          if text.count(insertion_point) != 1:
+              raise SystemExit('registry closing block not found exactly once')
+          path.write_text(text.replace(insertion_point, replacement, 1), encoding='utf-8')
+
+          test_path = Path('tests/unit/source-architecture.test.mjs')
+          tests = test_path.read_text(encoding='utf-8')
+          anchor = "assert.match(diceMotion, /CairnDiceRenderer/);"
+          if anchor not in tests:
+              raise SystemExit('dice motion architecture assertion anchor not found')
+          tests = tests.replace(anchor, anchor + "\n  assert.match(diceMotion, /dataset\\.physicalDice = 'true'/);", 1)
+          test_path.write_text(tests, encoding='utf-8')
+          PY
+      - name: Restore workflow files
+        run: git checkout HEAD -- .github
+      - name: Validate
+        run: |
+          npm run check:syntax
+          npm run test:unit
+          npm run check:version
+          npm run check:production
+          npx playwright test tests/dice-motion.spec.js
+      - name: Commit fix
+        run: |
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add scripts/dice-motion.js tests/unit/source-architecture.test.mjs
+          git commit -m "Przywróć marker gotowości fizycznych kości"
+          git push origin HEAD:${{ github.head_ref }}
