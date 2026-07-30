@@ -4,7 +4,7 @@
 // 1. Constants
 // ============================================================
 const APP_ID = 'cairn-mobile-sheet';
-const APP_VERSION = '0.23.0';
+const APP_VERSION = globalThis.CAIRN_APP_CONFIG?.version || '0.30.1';
 const SCHEMA_VERSION = 3;
 const STORAGE_KEY = `${APP_ID}:state`;
 const RECOVERY_KEY = `${APP_ID}:recovery`;
