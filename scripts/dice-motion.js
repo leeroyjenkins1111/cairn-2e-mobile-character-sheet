@@ -5,55 +5,24 @@ const PHYSICAL_DUAL_DICE_DURATION = 1980;
 const PHYSICAL_DICE_IMPACTS = Object.freeze([0.56, 0.76, 0.90]);
 const PHYSICAL_D10_CACHE = new Map();
 const baseCreateDieMesh = createDieMesh;
-
-const PHYSICAL_DICE_RULES = [
-  `.animated-dice-result, .dual-dice-result { width: 100%; max-width: 100%; min-width: 0; display: grid; justify-items: center; gap: 3px; text-align: center; }`,
-  `.animated-dice-result { overflow: visible; }`,
-  `.result-die-scene.die-motion-stage { position: relative; width: min(100%, 360px); height: 178px; overflow: visible; isolation: isolate; }`,
-  `.die-motion-stage::before, .dual-dice-stage::before { content: ""; position: absolute; z-index: 0; left: 50%; bottom: 12px; width: min(82%, 270px); height: 54px; border-radius: 50%; transform: translateX(-50%); background: radial-gradient(ellipse at center, rgba(7, 10, 7, .22) 0 18%, rgba(7, 10, 7, .09) 42%, transparent 72%); pointer-events: none; }`,
-  `:root[data-theme="light"] .die-motion-stage::before, :root[data-theme="light"] .dual-dice-stage::before { background: radial-gradient(ellipse at center, rgba(52, 55, 42, .16) 0 18%, rgba(52, 55, 42, .06) 44%, transparent 74%); }`,
-  `.die-motion-stage .result-die-object, .dual-dice-stage .result-die-object { z-index: 2; will-change: transform, opacity; transform-origin: 50% 68%; }`,
-  `.die-motion-stage .result-die-shadow, .dual-dice-stage .result-die-shadow { z-index: 1; right: auto; left: 50%; bottom: 14px; width: 100px; height: 12px; margin-left: -50px; background: rgba(0, 0, 0, .38); filter: blur(6px); will-change: transform, opacity, filter; }`,
-  `.result-die-object[data-sides="4"] { width: 124px; height: 124px; }`,
-  `.result-die-object[data-sides="6"] { width: 152px; height: 152px; }`,
-  `.result-die-object[data-sides="8"] { width: 150px; height: 150px; }`,
-  `.result-die-object[data-sides="10"] { width: 154px; height: 154px; }`,
-  `.result-die-object[data-sides="12"] { width: 160px; height: 160px; }`,
-  `.result-die-object[data-sides="20"] { width: 164px; height: 164px; }`,
-  `.result-die-object[data-sides="100"] { width: 164px; height: 154px; }`,
-  `.result-die-object[data-sides="100"] .percentile-die { width: 112px; height: 112px; top: 16px; bottom: auto; }`,
-  `.result-die-object[data-sides="100"] .percentile-die-first { right: auto; left: -4px; }`,
-  `.result-die-object[data-sides="100"] .percentile-die-second { right: -4px; left: auto; top: 28px; }`,
-  `.result-die-value { position: absolute !important; width: 1px !important; height: 1px !important; padding: 0 !important; margin: -1px !important; overflow: hidden !important; clip: rect(0, 0, 0, 0) !important; white-space: nowrap !important; border: 0 !important; }`,
-  `.result-die-notation { display: none !important; }`,
-  `.result-die-copy { min-height: 22px; }`,
-  `.result-die-context { min-height: 18px; color: var(--text-faint); font-size: .72rem; letter-spacing: .01em; }`,
-  `.animated-dice-result.rolling .result-die-copy, .dual-dice-result.rolling .result-die-copy { opacity: .66; }`,
-  `.animated-dice-result.settled .result-die-copy, .dual-dice-result.settled .result-die-copy { animation: result-copy-in 240ms ease-out; }`,
-  `.dual-dice-stage { position: relative; width: min(100%, 360px); height: 178px; overflow: visible; isolation: isolate; }`,
-  `.dual-dice-stage .result-die-scene { position: absolute; top: 0; left: 0; width: 164px; height: 172px; display: grid; place-items: center; }`,
-  `.dual-dice-result .damage-die-loser { pointer-events: none; }`,
-  `.dual-dice-result.comparing .damage-die-winner .result-die-object { filter: saturate(1.06) brightness(1.04); }`,
-  `.dual-dice-result.comparing .damage-die-winner::after { content: "wyższy"; position: absolute; z-index: 4; left: 50%; bottom: 2px; transform: translateX(-50%); padding: 2px 8px; border: 1px solid color-mix(in srgb, var(--character-gold, var(--brass)) 68%, transparent); border-radius: 999px; background: color-mix(in srgb, var(--surface-raised) 86%, transparent); color: var(--character-gold, var(--brass-bright)); font-size: .62rem; font-weight: 760; letter-spacing: .06em; text-transform: uppercase; }`,
-  `.dual-dice-result.comparing.is-tie .damage-die-winner::after { content: "remis"; }`,
-  `:root[data-reduce-motion="true"] .die-motion-stage .result-die-object, :root[data-reduce-motion="true"] .die-motion-stage .result-die-shadow, :root[data-reduce-motion="true"] .dual-dice-stage .result-die-object, :root[data-reduce-motion="true"] .dual-dice-stage .result-die-shadow { transition: none !important; }`,
-  `@media (max-width: 350px) { .dual-dice-stage { transform: scale(.9); transform-origin: center top; margin-bottom: -17px; } .result-die-context { font-size: .68rem; } }`,
-  `@media (prefers-reduced-motion: reduce) { .die-motion-stage .result-die-object, .die-motion-stage .result-die-shadow, .dual-dice-stage .result-die-object, .dual-dice-stage .result-die-shadow { transition: none !important; } }`
-];
-
-function installPhysicalDiceStyles() {
-  if (document.documentElement.dataset.physicalDice === 'true') return;
-  const sheet = [...document.styleSheets].find(entry => entry.href?.endsWith('/styles/app.css'));
-  if (!sheet) {
-    requestAnimationFrame(installPhysicalDiceStyles);
-    return;
+const physicalDiceAdapters = Object.create(null);
+globalThis.CairnDiceRenderer = Object.freeze({
+  getAdapter(name) {
+    return physicalDiceAdapters[name] || null;
+  },
+  register(adapters) {
+    if (!adapters || typeof adapters !== 'object') throw new TypeError('Dice renderer adapters must be an object.');
+    for (const [name, adapter] of Object.entries(adapters)) {
+      if (typeof adapter !== 'function') throw new TypeError(`Dice renderer adapter ${name} must be a function.`);
+      if (physicalDiceAdapters[name]) throw new Error(`Dice renderer adapter ${name} is already registered.`);
+      physicalDiceAdapters[name] = adapter;
+    }
   }
-  document.documentElement.dataset.physicalDice = 'true';
-  for (const rule of PHYSICAL_DICE_RULES) {
-    try { sheet.insertRule(rule, sheet.cssRules.length); }
-    catch (_) {}
-  }
-}
+});
+
+// Public readiness signal used by browser tests and diagnostics.
+// CSS is static; this marker only confirms that the physical dice module loaded.
+document.documentElement.dataset.physicalDice = 'true';
 
 function physicalClamp(value, min = 0, max = 1) {
   return Math.min(max, Math.max(min, value));
@@ -308,6 +277,11 @@ function physicalInsetPoints(points, factor) {
 }
 
 function drawPhysicalTexture(context, entry, sides, isLight, canvas) {
+  const adapter = physicalDiceAdapters.drawPhysicalTexture;
+  return adapter ? adapter(context, entry, sides, isLight, canvas, drawPhysicalTextureBase) : drawPhysicalTextureBase(context, entry, sides, isLight, canvas);
+}
+
+function drawPhysicalTextureBase(context, entry, sides, isLight, canvas) {
   const xs = entry.points.map(point => point[0]);
   const ys = entry.points.map(point => point[1]);
   const minX = Math.min(...xs);
@@ -346,6 +320,11 @@ function drawPhysicalTexture(context, entry, sides, isLight, canvas) {
 }
 
 function drawPhysicalFaceValue(context, face, label, reveal, isLight) {
+  const adapter = physicalDiceAdapters.drawPhysicalFaceValue;
+  return adapter ? adapter(context, face, label, reveal, isLight, drawPhysicalFaceValueBase) : drawPhysicalFaceValueBase(context, face, label, reveal, isLight);
+}
+
+function drawPhysicalFaceValueBase(context, face, label, reveal, isLight) {
   const points = face.points;
   const centroid = physicalFaceCentroid(points);
   const area = physicalFaceArea(points);
@@ -500,6 +479,11 @@ function physicalEntry(scene, roll, salt = 0) {
 }
 
 function physicalPaintEntry(entry, rotation, lift = 0) {
+  const adapter = physicalDiceAdapters.physicalPaintEntry;
+  return adapter ? adapter(entry, rotation, lift, physicalPaintEntryBase) : physicalPaintEntryBase(entry, rotation, lift);
+}
+
+function physicalPaintEntryBase(entry, rotation, lift = 0) {
   entry.canvases.forEach((canvas, index) => {
     const percentile = entry.sides === 100;
     const offset = percentile
@@ -605,6 +589,11 @@ function physicalApplyImpact(spin, impactIndex, direction = 1) {
 }
 
 function physicalAdvanceSpin(spin, finalRotation, deltaSeconds, progress, pose) {
+  const adapter = physicalDiceAdapters.physicalAdvanceSpin;
+  return adapter ? adapter(spin, finalRotation, deltaSeconds, progress, pose, physicalAdvanceSpinBase) : physicalAdvanceSpinBase(spin, finalRotation, deltaSeconds, progress, pose);
+}
+
+function physicalAdvanceSpinBase(spin, finalRotation, deltaSeconds, progress, pose) {
   if (pose && spin.previousPose) {
     const deltaX = pose.x - spin.previousPose.x;
     const deltaY = pose.y - spin.previousPose.y;
@@ -925,4 +914,3 @@ openItemDamageResultSheet = function openItemDamageResultSheetWithPhysicalDice(i
   animateDiceResult(resultPanel, result.total, 'obrażeń', resultSides, 'success', `${item.name} · ${notation}`);
 };
 
-installPhysicalDiceStyles();

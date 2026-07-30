@@ -1,19 +1,8 @@
 'use strict';
 
 (() => {
-  const characterHooks = new Set();
-  const renderCharacterViewBase = renderCharacterView;
-
+  if (!globalThis.CairnRuntime) throw new Error('CairnRuntime must be loaded before render-hooks.js.');
   globalThis.CairnRenderHooks = Object.freeze({
-    addCharacterHook(hook) {
-      if (typeof hook !== 'function') throw new TypeError('Character render hook must be a function.');
-      characterHooks.add(hook);
-      return () => characterHooks.delete(hook);
-    }
+    addCharacterHook: globalThis.CairnRuntime.addCharacterHook
   });
-
-  renderCharacterView = function renderCharacterViewWithHooks() {
-    renderCharacterViewBase();
-    for (const hook of characterHooks) hook();
-  };
 })();

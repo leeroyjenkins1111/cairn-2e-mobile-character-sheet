@@ -84,7 +84,7 @@
     return makeWeaponSvg(WEAPON_ICONS[weaponIconType(ready[0])]);
   }
 
-  renderCombatLauncher = function renderCombatLauncherRedesigned() {
+  function renderCombatLauncherRedesigned() {
     const ready = heldWeaponItems();
     const panicked = state.conditions.panicked;
     const section = createEl('section', {
@@ -154,6 +154,8 @@
     return section;
   };
 
+  globalThis.CairnRuntime.registerRenderer('combatLauncher', renderCombatLauncherRedesigned);
+
   function enhanceCharacterCopy() {
     const damageTitle = document.querySelector('#view-character .damage-primary-action strong');
     if (damageTitle) damageTitle.textContent = 'Otrzymaj obrażenia';
@@ -162,5 +164,4 @@
   }
 
   globalThis.CairnRenderHooks.addCharacterHook(enhanceCharacterCopy);
-  renderAll();
 })();

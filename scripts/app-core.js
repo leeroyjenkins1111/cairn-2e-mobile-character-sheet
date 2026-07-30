@@ -4,6 +4,41 @@
 // 1. Constants
 // ============================================================
 const APP_ID = 'cairn-mobile-sheet';
+
+const runtimeRenderers = {
+  character: null,
+  inventory: null,
+  combatLauncher: null
+};
+const characterRenderHooks = new Set();
+
+function registerRuntimeRenderer(name, renderer) {
+  if (!Object.prototype.hasOwnProperty.call(runtimeRenderers, name)) throw new Error(`Unknown runtime renderer: ${name}`);
+  if (typeof renderer !== 'function') throw new TypeError(`Runtime renderer ${name} must be a function.`);
+  if (runtimeRenderers[name]) throw new Error(`Runtime renderer ${name} is already registered.`);
+  runtimeRenderers[name] = renderer;
+  return () => { if (runtimeRenderers[name] === renderer) runtimeRenderers[name] = null; };
+}
+
+function addCharacterRenderHook(hook) {
+  if (typeof hook !== 'function') throw new TypeError('Character render hook must be a function.');
+  characterRenderHooks.add(hook);
+  return () => characterRenderHooks.delete(hook);
+}
+
+function renderCharacterScreen() {
+  (runtimeRenderers.character || renderCharacterView)();
+  for (const hook of characterRenderHooks) {
+    try { hook(); }
+    catch (error) { console.error('Character render hook failed.', error); }
+  }
+}
+
+globalThis.CairnRuntime = Object.freeze({
+  registerRenderer: registerRuntimeRenderer,
+  addCharacterHook: addCharacterRenderHook
+});
+
 const APP_VERSION = globalThis.CAIRN_APP_CONFIG?.version || '0.30.1';
 const SCHEMA_VERSION = 3;
 const STORAGE_KEY = `${APP_ID}:state`;
@@ -1834,8 +1869,8 @@ function setView(view, { announceChange = false } = {}) {
     if (nav.dataset.nav === activeView) nav.setAttribute('aria-current', 'page');
     else nav.removeAttribute('aria-current');
   }
-  if (activeView === 'character') renderCharacterView();
-  if (activeView === 'inventory') renderInventoryView();
+  if (activeView === 'character') renderCharacterScreen();
+  if (activeView === 'inventory') (runtimeRenderers.inventory || renderInventoryView)();
   if (activeView === 'dice') renderDiceView();
   if (activeView === 'more') renderMoreView();
   updateViewAccessibility(announceChange);
@@ -1848,8 +1883,8 @@ function renderAll() {
   document.documentElement.dataset.activeView = activeView;
   $('#headerTitle').textContent = (VIEW_META[activeView] || VIEW_META.character).label;
   $('#quickUndoBtn').disabled = !safeArray(state.changeHistory).some(entry => entry.undoable);
-  renderCharacterView();
-  renderInventoryView();
+  renderCharacterScreen();
+  (runtimeRenderers.inventory || renderInventoryView)();
   renderDiceView();
   renderMoreView();
   updateViewAccessibility(false);
@@ -2185,8 +2220,13 @@ function rotateDiePoint(point, rotation) {
   return [afterY[0] * cosZ - afterY[1] * sinZ, afterY[0] * sinZ + afterY[1] * cosZ, afterY[2]];
 }
 
-function finalDieRotation(sides, value) {
+function finalDieRotationBase(sides, value) {
   return { x: 0.5 + (Number(value) % 4) * 0.17, y: 0.65 + (Number(value) % 7) * 0.11, z: -0.12 + (Number(sides) % 5) * 0.045 };
+}
+
+function finalDieRotation(sides, value) {
+  const adapter = globalThis.CairnDiceRenderer?.getAdapter?.('finalDieRotation');
+  return adapter ? adapter(sides, value, finalDieRotationBase) : finalDieRotationBase(sides, value);
 }
 
 function paintResultDie(canvas, sides, rotation, lift = 0) {
@@ -2798,7 +2838,7 @@ function renderCharacterView() {
 
   const sessionPrompt = renderSessionPrompt();
   if (sessionPrompt) sessionLayout.append(sessionPrompt);
-  sessionLayout.append(renderCombatLauncher());
+  sessionLayout.append((runtimeRenderers.combatLauncher || renderCombatLauncher)());
 
   const gameActions = createEl('section', { className: 'game-actions', attrs: { 'aria-label': 'Akcje w grze' } });
   gameActions.append(createEl('button', {

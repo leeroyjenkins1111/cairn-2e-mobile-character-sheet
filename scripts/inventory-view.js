@@ -15,7 +15,7 @@
     ]);
   }
 
-  renderInventoryView = function renderConsolidatedInventoryView() {
+  function renderConsolidatedInventoryView() {
     const root = document.querySelector('#view-inventory');
     if (!root) return;
     root.replaceChildren();
@@ -81,5 +81,5 @@
     root.append(listCard);
   };
 
-  renderInventoryView();
+  globalThis.CairnRuntime.registerRenderer('inventory', renderConsolidatedInventoryView);
 })();
