@@ -16,28 +16,24 @@
   <link rel="stylesheet" href="./styles/character-redesign.css?v=0.30.1">
   <link rel="stylesheet" href="./styles/screen-unification.css?v=0.30.1">
   <link rel="stylesheet" href="./styles/runtime-overrides.css?v=0.30.1">
+  <link rel="stylesheet" href="./styles/dice-runtime.css?v=0.30.1">
 </head>
 <body>
   <a class="skip-link" href="#main">Przejdź do głównego ekranu</a>
   <div class="app-shell">
     <header class="app-header">
-      <div class="brand">
-        <p class="brand-kicker">Cairn 2e</p>
-        <p class="brand-title" id="headerTitle">Postać</p>
-      </div>
+      <div class="brand"><p class="brand-kicker">Cairn 2e</p><p class="brand-title" id="headerTitle">Postać</p></div>
       <div class="header-actions">
         <button class="btn btn-icon btn-ghost" id="appSettingsBtn" type="button" aria-label="Ustawienia i dane" title="Ustawienia i dane"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4V21a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14H2.8v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1a1.7 1.7 0 0 0 1.9.3A1.7 1.7 0 0 0 10 3V2.8h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v4H21a1.7 1.7 0 0 0-1.6 1z"></path></svg></button>
         <button class="btn btn-icon btn-ghost" id="quickUndoBtn" type="button" aria-label="Cofnij ostatnią zmianę" title="Cofnij"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M9 7H5v-4"></path><path d="M5.5 7.5a8 8 0 1 1-1.2 7.2"></path></svg></button>
       </div>
     </header>
-
     <main class="main" id="main" tabindex="-1" aria-label="Treść karty postaci">
       <section class="view" id="view-character" data-view="character" aria-labelledby="nav-character"></section>
       <section class="view" id="view-inventory" data-view="inventory" aria-labelledby="nav-inventory" hidden></section>
       <section class="view" id="view-dice" data-view="dice" aria-labelledby="nav-dice" hidden></section>
       <section class="view" id="view-more" data-view="more" aria-labelledby="nav-more" hidden></section>
     </main>
-
     <nav class="bottom-nav" aria-label="Główna nawigacja">
       <button class="nav-btn" id="nav-character" type="button" data-nav="character" aria-controls="view-character" aria-current="page"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="12" cy="8" r="3"></circle><path d="M6.5 19c.8-3.2 2.7-5 5.5-5s4.7 1.8 5.5 5"></path></svg></span><span>Postać</span></button>
       <button class="nav-btn" id="nav-inventory" type="button" data-nav="inventory" aria-controls="view-inventory"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M5 7h14v12H5z"></path><path d="M8 7V5h8v2M9 11h6"></path></svg></span><span>Ekwipunek</span></button>
@@ -45,28 +41,12 @@
       <button class="nav-btn" id="nav-more" type="button" data-nav="more" aria-controls="view-more"><span class="nav-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="5" cy="12" r="1"></circle><circle cx="12" cy="12" r="1"></circle><circle cx="19" cy="12" r="1"></circle></svg></span><span>Dziennik</span></button>
     </nav>
   </div>
-
-  <div class="sheet-backdrop" id="sheetBackdrop" aria-hidden="true">
-    <section class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle">
-      <div>
-        <div class="sheet-handle" aria-hidden="true"></div>
-        <div class="sheet-head">
-          <h2 id="sheetTitle" tabindex="-1">Panel</h2>
-          <button class="btn btn-icon btn-ghost" id="sheetCloseBtn" type="button" aria-label="Zamknij panel">×</button>
-        </div>
-      </div>
-      <div class="sheet-body" id="sheetBody"></div>
-      <div class="sheet-foot" id="sheetFoot"></div>
-    </section>
-  </div>
-
+  <div class="sheet-backdrop" id="sheetBackdrop" aria-hidden="true"><section class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetTitle"><div><div class="sheet-handle" aria-hidden="true"></div><div class="sheet-head"><h2 id="sheetTitle" tabindex="-1">Panel</h2><button class="btn btn-icon btn-ghost" id="sheetCloseBtn" type="button" aria-label="Zamknij panel">×</button></div></div><div class="sheet-body" id="sheetBody"></div><div class="sheet-foot" id="sheetFoot"></div></section></div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <div class="sr-only" id="liveRegion" aria-live="assertive" aria-atomic="true"></div>
   <div class="sr-only" id="viewLiveRegion" aria-live="polite" aria-atomic="true"></div>
-
   <input class="hidden" id="importFileInput" type="file" accept="application/json,.json">
   <input class="hidden" id="backupFileInput" type="file" accept="application/json,.json">
-
   <script src="./scripts/app-config.js?v=0.30.1"></script>
   <script src="./scripts/app-core.js?v=0.30.1"></script>
   <script src="./scripts/app-bootstrap.js?v=0.30.1"></script>
@@ -74,6 +54,7 @@
   <script src="./scripts/dice-motion.js?v=0.30.1"></script>
   <script src="./scripts/dice-feedback.js?v=0.30.1"></script>
   <script src="./scripts/ux-direct-editing.js?v=0.30.1"></script>
+  <script src="./scripts/inventory-domain.js?v=0.30.1"></script>
   <script src="./scripts/inventory-view.js?v=0.30.1"></script>
   <script src="./scripts/typography-system.js?v=0.30.1"></script>
   <script src="./scripts/character-redesign.js?v=0.30.1"></script>
