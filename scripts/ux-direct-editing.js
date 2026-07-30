@@ -1,45 +1,5 @@
 'use strict';
 
-const DIRECT_EDITING_RULES = [
-  `.inventory-summary-stat-button { border: 0; border-radius: 0; background: transparent; color: var(--text); cursor: pointer; }`,
-  `.inventory-summary-stat-button:active, .inventory-summary-stat-button:hover { background: color-mix(in srgb, var(--surface-soft) 46%, transparent); }`,
-  `.inventory-summary-stat-button small { color: var(--moss); font-size: .58rem; font-weight: 720; letter-spacing: .04em; text-transform: uppercase; }`,
-  `.inventory-add-item-button { min-height: 42px; padding-inline: 12px; font-size: .76rem; white-space: nowrap; }`,
-  `.inventory-add-item-button svg { width: 18px; height: 18px; }`,
-  `.direct-save-shortcut { position: fixed; right: 1px; bottom: calc(var(--nav-height, 64px) + 1px); z-index: 20; width: 2px; height: 2px; padding: 0; border: 0; opacity: .01; overflow: hidden; pointer-events: auto; }`,
-  `.character-quick-stat { width: 100%; min-width: 0; border: 0; text-align: left; color: inherit; background: transparent; cursor: pointer; }`,
-  `.character-quick-stat:hover, .character-quick-stat:active { background: color-mix(in srgb, var(--surface-soft) 52%, transparent); }`,
-  `.character-quick-stat:focus-visible { outline: 2px solid var(--focus); outline-offset: -2px; }`,
-  `.combat-weapon-copy { min-width: 0; cursor: pointer; border-radius: 8px; }`,
-  `.combat-weapon-copy:hover, .combat-weapon-copy:active { background: color-mix(in srgb, var(--surface-soft) 45%, transparent); }`,
-  `.combat-weapon-copy strong, .combat-weapon-copy span { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }`,
-  `.combat-order-action { min-height: 48px; min-width: 0; justify-content: flex-start; padding: 4px 8px; text-align: left; }`,
-  `.combat-order-action > span { min-width: 0; display: grid; gap: 0; }`,
-  `.combat-order-action strong { font-size: .78rem; line-height: 1.05; }`,
-  `.combat-order-action small { min-width: 0; font-size: .59rem; line-height: 1.05; font-weight: 560; opacity: .78; overflow-wrap: anywhere; }`,
-  `.game-actions .compact-action { min-height: 50px; }`,
-  `.game-actions .compact-action svg { width: 22px; height: 22px; }`,
-  `.damage-primary-action > span { min-width: 0; }`,
-  `.damage-primary-action strong { font-size: .98rem; }`,
-  `.damage-primary-action small { min-width: 0; overflow-wrap: anywhere; }`,
-  `.attribute-wil .mind-icon { width: 18px; height: 18px; flex: 0 0 auto; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }`,
-  `html[style*="font-size"] .combat-weapon-row { grid-template-columns: minmax(0, 1fr); }`,
-  `html[style*="font-size"] .combat-weapon-action { width: 100%; min-width: 0; }`,
-  `html[style*="font-size"] .combat-quick-actions { grid-template-columns: minmax(0, 1fr); }`,
-  `html[style*="font-size"] .secondary-action-grid { grid-template-columns: minmax(0, 1fr); }`,
-  `html[style*="font-size"] .combat-launcher, html[style*="font-size"] .game-actions, html[style*="font-size"] .section-heading { min-width: 0; max-width: 100%; }`,
-  `html[style*="font-size"] .combat-order-action, html[style*="font-size"] .damage-primary-action { width: 100%; min-width: 0; max-width: 100%; }`
-];
-
-function installDirectEditingStyles() {
-  const sheet = [...document.styleSheets].find(entry => entry.href?.endsWith('/styles/app.css'));
-  if (!sheet) return;
-  for (const rule of DIRECT_EDITING_RULES) {
-    try { sheet.insertRule(rule, sheet.cssRules.length); }
-    catch (_) {}
-  }
-}
-
 function openAttributeEditSheet(attrKey) {
   const stat = state.stats[attrKey];
   const current = numberInput(stat.current, 0, 99);
@@ -183,67 +143,10 @@ function enhanceCombatAndGameActions() {
   }
 }
 
-function makeInventoryStatButton(statKey, value, label, onClick, ariaLabel) {
-  return createEl('button', {
-    type: 'button',
-    className: 'inventory-summary-stat inventory-summary-stat-button',
-    dataset: { inventoryStat: statKey },
-    attrs: { 'aria-label': ariaLabel },
-    onclick: onClick
-  }, [
-    createEl('strong', { text: value }),
-    createEl('span', { text: label }),
-    createEl('small', { text: 'Edytuj' })
-  ]);
-}
-
-function enhanceInventoryActions() {
-  const root = document.querySelector('#view-inventory');
-  const stats = root?.querySelector('.inventory-summary-stats');
-  if (!stats || stats.dataset.directEditReady === 'true') return;
-  stats.dataset.directEditReady = 'true';
-
-  const usage = calculateInventoryUsage();
-  const armor = deriveArmor();
-  stats.replaceChildren(
-    makeInventoryStatButton('fatigue', usage.fatigueSlots, 'zmęczenia', openAddFatigueSheet, `Zmęczenie: ${usage.fatigueSlots}. Dodaj zmęczenie.`),
-    makeInventoryStatButton('armor', armor.effective, 'pancerz', openArmorSheet, `Pancerz: ${armor.effective}. Otwórz ustawienia pancerza.`),
-    makeInventoryStatButton('gold', state.stats.gold, 'złoto', openGoldSheet, `Złoto: ${state.stats.gold}. Zmień ilość złota.`)
-  );
-
-  root.querySelector('.inventory-tools')?.remove();
-  root.querySelector('.gold-button')?.remove();
-
-  const actions = root.querySelector('.inventory-summary-actions');
-  const addButton = actions?.querySelector('[aria-label="Dodaj przedmiot"]');
-  if (actions && addButton) {
-    const labeledAddButton = createEl('button', {
-      type: 'button',
-      className: 'btn btn-primary inventory-add-item-button',
-      attrs: { 'aria-label': 'Dodaj przedmiot do ekwipunku' },
-      onclick: () => openItemSheet()
-    }, [uiIcon('plus'), createEl('span', { text: 'Dodaj przedmiot' })]);
-    addButton.replaceWith(labeledAddButton);
-  }
-}
-
 function enhanceCharacterView() {
   enhanceCharacterStatEditing();
   enhanceCombatAndGameActions();
 }
 
-const renderCharacterViewBase = renderCharacterView;
-renderCharacterView = function renderCharacterViewWithDirectEditing() {
-  renderCharacterViewBase();
-  enhanceCharacterView();
-};
-
-const renderInventoryViewBase = renderInventoryView;
-renderInventoryView = function renderInventoryViewWithDirectActions() {
-  renderInventoryViewBase();
-  enhanceInventoryActions();
-};
-
-installDirectEditingStyles();
+globalThis.CairnRenderHooks.addCharacterHook(enhanceCharacterView);
 enhanceCharacterView();
-enhanceInventoryActions();
