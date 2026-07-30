@@ -4,9 +4,10 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "build": "node scripts/prepare-site.mjs _site",
     "check:syntax": "node scripts/check-js-syntax.mjs",
     "check:version": "node scripts/check-version-sync.mjs",
-    "check:production": "node scripts/prepare-site.mjs _site && node scripts/check-production-runtime.mjs",
+    "check:production": "npm run build && node scripts/check-production-runtime.mjs",
     "test": "playwright test",
     "test:ci": "playwright test --reporter=line"
   },
