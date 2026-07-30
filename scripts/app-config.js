@@ -7,6 +7,7 @@
   globalThis.CAIRN_APP_CONFIG = config;
   document.documentElement.dataset.buildVersion = VERSION;
 
+  if (typeof state === 'object' && state) state.appVersion = VERSION;
   if (globalThis.CairnSheetDev) globalThis.CairnSheetDev.version = VERSION;
 
   if (typeof createDefaultState === 'function') {
@@ -23,19 +24,15 @@
     };
   }
 
-  if (typeof openAppSettingsSheet === 'function') {
-    const openAppSettingsSheetBase = openAppSettingsSheet;
-    openAppSettingsSheet = function openVersionedAppSettingsSheet(...args) {
-      const result = openAppSettingsSheetBase(...args);
-      const settings = document.querySelector('.settings-sheet');
-      if (settings) {
-        for (const element of settings.querySelectorAll('strong')) {
-          if (/^Wersja\s+\d+\.\d+\.\d+$/.test(element.textContent || '')) {
-            element.textContent = `Wersja ${VERSION}`;
-          }
-        }
+  function updateVisibleVersion() {
+    const settings = document.querySelector('.settings-sheet');
+    if (!settings) return;
+    for (const element of settings.querySelectorAll('strong')) {
+      if (/^Wersja\s+\d+\.\d+\.\d+$/.test(element.textContent || '')) {
+        element.textContent = `Wersja ${VERSION}`;
       }
-      return result;
-    };
+    }
   }
+
+  document.querySelector('#appSettingsBtn')?.addEventListener('click', () => queueMicrotask(updateVisibleVersion));
 })();
