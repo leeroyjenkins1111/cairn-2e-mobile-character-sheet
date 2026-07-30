@@ -64,6 +64,7 @@ test('renderery używają jawnych rejestrów zamiast globalnych nadpisań', () =
   assert.doesNotMatch(characterRedesign, /renderCombatLauncher\s*=/);
   assert.match(characterRedesign, /registerRenderer\('combatLauncher'/);
   assert.match(diceMotion, /CairnDiceRenderer/);
+  assert.match(diceMotion, /dataset\.physicalDice = 'true'/);
   assert.match(diceRenderer, /CairnDiceRenderer\.register/);
   assert.match(core, /getAdapter\?\.\('finalDieRotation'\)/);
   assert.match(diceRenderer, /finalDieRotation:\s*sides/);

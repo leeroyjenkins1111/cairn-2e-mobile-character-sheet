@@ -20,7 +20,9 @@ globalThis.CairnDiceRenderer = Object.freeze({
   }
 });
 
-
+// Public readiness signal used by browser tests and diagnostics.
+// CSS is static; this marker only confirms that the physical dice module loaded.
+document.documentElement.dataset.physicalDice = 'true';
 
 function physicalClamp(value, min = 0, max = 1) {
   return Math.min(max, Math.max(min, value));
