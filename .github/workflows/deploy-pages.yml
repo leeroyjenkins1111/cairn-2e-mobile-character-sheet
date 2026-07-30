@@ -35,21 +35,25 @@ jobs:
         run: npm ci
 
       - name: Verify synchronized version
-        run: node scripts/check-version-sync.mjs
+        run: npm run check:version
 
       - name: Prepare static site
-        run: node scripts/prepare-site.mjs _site
+        run: npm run build
 
       - name: Verify deployed build
         run: |
-          test -s _site/scripts/dice-face-v4.js
-          test -s _site/scripts/dice-premium.js
-          test -s _site/scripts/build-info.js
-          grep -q 'app.js?v=0.30.1' _site/index.html
-          grep -q 'dice-face-v4.js?v=0.30.1' _site/index.html
-          grep -q 'dice-premium.js?v=0.30.1' _site/index.html
-          grep -q 'build-info.js?v=0.30.1' _site/index.html
-          grep -q "BUILD_VERSION = '0.30.1'" _site/scripts/build-info.js
+          node scripts/check-production-runtime.mjs
+          test -s _site/assets/forest-background.jpg
+          test -s _site/styles/runtime-overrides.css
+          test -s _site/scripts/app-core.js
+          test -s _site/scripts/app-bootstrap.js
+          test -s _site/scripts/app-config.js
+          test -s _site/scripts/dice-renderer.js
+          test -s _site/scripts/inventory-view.js
+          grep -q 'app-core.js?v=0.30.1' _site/index.html
+          grep -q 'app-bootstrap.js?v=0.30.1' _site/index.html
+          grep -q 'runtime-overrides.css?v=0.30.1' _site/index.html
+          grep -q 'dice-renderer.js?v=0.30.1' _site/index.html
           grep -q "cairn-mobile-sheet-v0.30.1" _site/service-worker.js
 
       - name: Configure Pages
