@@ -16,6 +16,7 @@ const siteFiles = [
   'scripts/app-core.js',
   'scripts/app-bootstrap.js',
   'scripts/app-config.js',
+  'scripts/render-hooks.js',
   'scripts/dice-motion.js',
   'scripts/dice-feedback.js',
   'scripts/dice-renderer.js',
