@@ -30,13 +30,8 @@
     return presets[Number(sides)] || presets[20];
   }
 
-  if (typeof finalDieRotation === 'function') {
-    finalDieRotation = sides => ({ ...heroRotation(sides) });
-  }
 
-  if (typeof physicalAdvanceSpin === 'function') {
-    const advanceSpin = physicalAdvanceSpin;
-    physicalAdvanceSpin = function advanceAndLockResult(spin, finalRotation, deltaSeconds, progress, pose) {
+  function advanceAndLockResult(spin, finalRotation, deltaSeconds, progress, pose, advanceSpin) {
       advanceSpin(spin, finalRotation, deltaSeconds, progress, pose);
       if (progress < LOCK_START) return;
       if (!spin.rendererLockFrom) spin.rendererLockFrom = { ...spin.orientation };
@@ -44,15 +39,11 @@
       spin.orientation = physicalQuatSlerp(spin.rendererLockFrom, spin.settleTarget, physicalSmootherStep(phase));
       if (progress >= LOCK_END) spin.orientation = { ...spin.settleTarget };
       spin.rotation = physicalEulerFromQuat(spin.orientation);
-    };
   }
 
-  if (typeof physicalPaintEntry === 'function') {
-    const paintEntry = physicalPaintEntry;
-    physicalPaintEntry = function paintStableResult(entry, rotation, lift = 0) {
+  function paintStableResult(entry, rotation, lift = 0, paintEntry) {
       if (entry?.object?.classList?.contains('is-tumbling')) entry.object.dataset.faceReveal = '0';
       return paintEntry(entry, rotation, lift);
-    };
   }
 
   function drawPremiumStone(context, face, sides) {
@@ -115,12 +106,9 @@
     context.restore();
   }
 
-  if (typeof drawPhysicalTexture === 'function') {
-    const baseTexture = drawPhysicalTexture;
-    drawPhysicalTexture = function drawConsolidatedStone(context, face, sides, isLight, canvas) {
+  function drawConsolidatedStone(context, face, sides, isLight, canvas, baseTexture) {
       baseTexture(context, face, sides, isLight, canvas);
       drawPremiumStone(context, face, sides);
-    };
   }
 
   function localFaceAngle(points) {
@@ -202,8 +190,7 @@
     return { canvas, cssSize };
   }
 
-  if (typeof drawPhysicalFaceValue === 'function') {
-    drawPhysicalFaceValue = function drawConsolidatedFaceValue(context, face, label, reveal) {
+  function drawConsolidatedFaceValue(context, face, label, reveal) {
       if (!face?.points?.length || reveal <= 0) return;
       const centroid = physicalFaceCentroid(face.points);
       const fontSize = glyphFontSize(face, label);
@@ -217,18 +204,15 @@
       context.imageSmoothingQuality = 'high';
       context.drawImage(glyph.canvas, -glyph.cssSize / 2, -glyph.cssSize / 2, glyph.cssSize, glyph.cssSize);
       context.restore();
-    };
   }
 
-  const style = document.createElement('style');
-  style.textContent = `
-    html[data-dice-renderer="consolidated"] .result-die-canvas {
-      filter: saturate(.88) contrast(1.035) brightness(1.015) drop-shadow(0 7px 10px rgba(0, 0, 0, .24));
-    }
-    html[data-dice-renderer="consolidated"] .result-die-object:not(.is-tumbling) .result-die-canvas {
-      filter: saturate(.87) contrast(1.045) brightness(1.02) drop-shadow(0 9px 13px rgba(0, 0, 0, .29));
-    }
-  `;
-  document.head.append(style);
+
+globalThis.CairnDiceRenderer.register({
+  physicalAdvanceSpin: advanceAndLockResult,
+  physicalPaintEntry: paintStableResult,
+  drawPhysicalTexture: drawConsolidatedStone,
+  drawPhysicalFaceValue: drawConsolidatedFaceValue
+});
+
   document.documentElement.dataset.diceRenderer = 'consolidated';
 })();

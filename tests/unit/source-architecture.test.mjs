@@ -2,13 +2,16 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { access, readFile } from 'node:fs/promises';
 
-const [index, core, bootstrap, worker, directEditing, characterRedesign] = await Promise.all([
+const [index, core, bootstrap, worker, directEditing, characterRedesign, renderHooks, diceMotion, diceRenderer] = await Promise.all([
   readFile('index.html', 'utf8'),
   readFile('scripts/app-core.js', 'utf8'),
   readFile('scripts/app-bootstrap.js', 'utf8'),
   readFile('service-worker.js', 'utf8'),
   readFile('scripts/ux-direct-editing.js', 'utf8'),
-  readFile('scripts/character-redesign.js', 'utf8')
+  readFile('scripts/character-redesign.js', 'utf8'),
+  readFile('scripts/render-hooks.js', 'utf8'),
+  readFile('scripts/dice-motion.js', 'utf8'),
+  readFile('scripts/dice-renderer.js', 'utf8')
 ]);
 
 const sourceRuntime = `${core}\n${bootstrap}`;
@@ -44,4 +47,27 @@ test('style nie są kopiowane do arkusza w runtime', () => {
 
 test('widok ekwipunku nie jest ponownie opakowywany przez direct editing', () => {
   assert.doesNotMatch(directEditing, /renderInventoryViewBase|renderInventoryViewWithDirectActions|enhanceInventoryActions/);
+});
+
+
+test('runtime inicjalizuje się przez końcowy entrypoint', async () => {
+  const entry = await readFile('scripts/app-entry.js', 'utf8');
+  assert.doesNotMatch(bootstrap, /initialize\(\);\s*$/);
+  assert.match(entry, /initialize\(\);/);
+  assert.match(index, /scripts\/app-entry\.js\?v=/);
+  assert.match(worker, /scripts\/app-entry\.js\?v=/);
+});
+
+test('renderery używają jawnych rejestrów zamiast globalnych nadpisań', () => {
+  assert.match(core, /registerRuntimeRenderer/);
+  assert.doesNotMatch(renderHooks, /renderCharacterView\s*=/);
+  assert.doesNotMatch(characterRedesign, /renderCombatLauncher\s*=/);
+  assert.match(characterRedesign, /registerRenderer\('combatLauncher'/);
+  assert.match(diceMotion, /CairnDiceRenderer/);
+  assert.match(diceRenderer, /CairnDiceRenderer\.register/);
+});
+
+test('runtime nie tworzy ani nie wstrzykuje arkuszy CSS', () => {
+  const runtime = [core, bootstrap, directEditing, characterRedesign, renderHooks, diceMotion, diceRenderer].join('\n');
+  assert.doesNotMatch(runtime, /insertRule|document\.createElement\(['"]style['"]\)|style\.textContent/);
 });

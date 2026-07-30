@@ -365,4 +365,3 @@ function initialize() {
   };
 }
 
-initialize();

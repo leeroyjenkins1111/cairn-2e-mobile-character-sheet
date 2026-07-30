@@ -173,3 +173,37 @@ html[data-dice-renderer="consolidated"] .result-die-canvas {
 html[data-dice-renderer="consolidated"] .result-die-object:not(.is-tumbling) .result-die-canvas {
   filter: saturate(.87) contrast(1.045) brightness(1.02) drop-shadow(0 9px 13px rgba(0, 0, 0, .29));
 }
+
+/* Physical dice layout — static replacement for runtime insertRule. */
+.animated-dice-result, .dual-dice-result { width: 100%; max-width: 100%; min-width: 0; display: grid; justify-items: center; gap: 3px; text-align: center; }
+.animated-dice-result { overflow: visible; }
+.result-die-scene.die-motion-stage { position: relative; width: min(100%, 360px); height: 178px; overflow: visible; isolation: isolate; }
+.die-motion-stage::before, .dual-dice-stage::before { content: ""; position: absolute; z-index: 0; left: 50%; bottom: 12px; width: min(82%, 270px); height: 54px; border-radius: 50%; transform: translateX(-50%); background: radial-gradient(ellipse at center, rgba(7, 10, 7, .22) 0 18%, rgba(7, 10, 7, .09) 42%, transparent 72%); pointer-events: none; }
+:root[data-theme="light"] .die-motion-stage::before, :root[data-theme="light"] .dual-dice-stage::before { background: radial-gradient(ellipse at center, rgba(52, 55, 42, .16) 0 18%, rgba(52, 55, 42, .06) 44%, transparent 74%); }
+.die-motion-stage .result-die-object, .dual-dice-stage .result-die-object { z-index: 2; will-change: transform, opacity; transform-origin: 50% 68%; }
+.die-motion-stage .result-die-shadow, .dual-dice-stage .result-die-shadow { z-index: 1; right: auto; left: 50%; bottom: 14px; width: 100px; height: 12px; margin-left: -50px; background: rgba(0, 0, 0, .38); filter: blur(6px); will-change: transform, opacity, filter; }
+.result-die-object[data-sides="4"] { width: 124px; height: 124px; }
+.result-die-object[data-sides="6"] { width: 152px; height: 152px; }
+.result-die-object[data-sides="8"] { width: 150px; height: 150px; }
+.result-die-object[data-sides="10"] { width: 154px; height: 154px; }
+.result-die-object[data-sides="12"] { width: 160px; height: 160px; }
+.result-die-object[data-sides="20"] { width: 164px; height: 164px; }
+.result-die-object[data-sides="100"] { width: 164px; height: 154px; }
+.result-die-object[data-sides="100"] .percentile-die { width: 112px; height: 112px; top: 16px; bottom: auto; }
+.result-die-object[data-sides="100"] .percentile-die-first { right: auto; left: -4px; }
+.result-die-object[data-sides="100"] .percentile-die-second { right: -4px; left: auto; top: 28px; }
+.result-die-value { position: absolute !important; width: 1px !important; height: 1px !important; padding: 0 !important; margin: -1px !important; overflow: hidden !important; clip: rect(0, 0, 0, 0) !important; white-space: nowrap !important; border: 0 !important; }
+.result-die-notation { display: none !important; }
+.result-die-copy { min-height: 22px; }
+.result-die-context { min-height: 18px; color: var(--text-faint); font-size: .72rem; letter-spacing: .01em; }
+.animated-dice-result.rolling .result-die-copy, .dual-dice-result.rolling .result-die-copy { opacity: .66; }
+.animated-dice-result.settled .result-die-copy, .dual-dice-result.settled .result-die-copy { animation: result-copy-in 240ms ease-out; }
+.dual-dice-stage { position: relative; width: min(100%, 360px); height: 178px; overflow: visible; isolation: isolate; }
+.dual-dice-stage .result-die-scene { position: absolute; top: 0; left: 0; width: 164px; height: 172px; display: grid; place-items: center; }
+.dual-dice-result .damage-die-loser { pointer-events: none; }
+.dual-dice-result.comparing .damage-die-winner .result-die-object { filter: saturate(1.06) brightness(1.04); }
+.dual-dice-result.comparing .damage-die-winner::after { content: "wyższy"; position: absolute; z-index: 4; left: 50%; bottom: 2px; transform: translateX(-50%); padding: 2px 8px; border: 1px solid color-mix(in srgb, var(--character-gold, var(--brass)) 68%, transparent); border-radius: 999px; background: color-mix(in srgb, var(--surface-raised) 86%, transparent); color: var(--character-gold, var(--brass-bright)); font-size: .62rem; font-weight: 760; letter-spacing: .06em; text-transform: uppercase; }
+.dual-dice-result.comparing.is-tie .damage-die-winner::after { content: "remis"; }
+:root[data-reduce-motion="true"] .die-motion-stage .result-die-object, :root[data-reduce-motion="true"] .die-motion-stage .result-die-shadow, :root[data-reduce-motion="true"] .dual-dice-stage .result-die-object, :root[data-reduce-motion="true"] .dual-dice-stage .result-die-shadow { transition: none !important; }
+@media (max-width: 350px) { .dual-dice-stage { transform: scale(.9); transform-origin: center top; margin-bottom: -17px; } .result-die-context { font-size: .68rem; } }
+@media (prefers-reduced-motion: reduce) { .die-motion-stage .result-die-object, .die-motion-stage .result-die-shadow, .dual-dice-stage .result-die-object, .dual-dice-stage .result-die-shadow { transition: none !important; } }
