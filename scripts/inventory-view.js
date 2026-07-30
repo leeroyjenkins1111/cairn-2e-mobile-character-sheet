@@ -1,6 +1,10 @@
 'use strict';
 
 (() => {
+  if (typeof globalThis.CairnInventoryDomain?.createInventoryOverviewModel !== 'function') {
+    throw new Error('CairnInventoryDomain must be loaded before inventory-view.js.');
+  }
+
   function inventoryStatButton(statKey, value, label, onClick, ariaLabel) {
     return createEl('button', {
       type: 'button',
@@ -30,6 +34,11 @@
 
     const usage = calculateInventoryUsage();
     const armor = deriveArmor();
+    const overviewModel = globalThis.CairnInventoryDomain.createInventoryOverviewModel({
+      usage,
+      armor,
+      gold: state.stats.gold
+    });
     const overview = createEl('section', {
       className: 'inventory-overview',
       attrs: { 'aria-label': 'Stan ekwipunku' }
@@ -37,11 +46,8 @@
 
     overview.append(createEl('div', { className: 'inventory-summary-head' }, [
       createEl('div', {}, [
-        createEl('strong', { className: 'inventory-summary-title', text: `${usage.total}/10 miejsc` }),
-        createEl('span', {
-          className: 'section-caption',
-          text: usage.total === 10 ? 'Pełny ekwipunek · OCHR krytyczne' : `${10 - usage.total} wolnych`
-        })
+        createEl('strong', { className: 'inventory-summary-title', text: overviewModel.capacityLabel }),
+        createEl('span', { className: 'section-caption', text: overviewModel.capacityCaption })
       ]),
       createEl('div', { className: 'inventory-summary-actions' }, [
         createEl('button', {
@@ -54,9 +60,9 @@
     ]));
 
     overview.append(createEl('div', { className: 'inventory-summary-stats' }, [
-      inventoryStatButton('fatigue', usage.fatigueSlots, 'zmęczenia', openAddFatigueSheet, `Zmęczenie: ${usage.fatigueSlots}. Dodaj zmęczenie.`),
-      inventoryStatButton('armor', armor.effective, 'pancerz', openArmorSheet, `Pancerz: ${armor.effective}. Otwórz ustawienia pancerza.`),
-      inventoryStatButton('gold', state.stats.gold, 'złoto', openGoldSheet, `Złoto: ${state.stats.gold}. Zmień ilość złota.`)
+      inventoryStatButton('fatigue', overviewModel.stats.fatigue.value, overviewModel.stats.fatigue.label, openAddFatigueSheet, `Zmęczenie: ${overviewModel.stats.fatigue.value}. Dodaj zmęczenie.`),
+      inventoryStatButton('armor', overviewModel.stats.armor.value, overviewModel.stats.armor.label, openArmorSheet, `Pancerz: ${overviewModel.stats.armor.value}. Otwórz ustawienia pancerza.`),
+      inventoryStatButton('gold', overviewModel.stats.gold.value, overviewModel.stats.gold.label, openGoldSheet, `Złoto: ${overviewModel.stats.gold.value}. Zmień ilość złota.`)
     ]));
     overview.append(renderSlotMeter(usage));
     overview.append(createEl('p', {
@@ -79,7 +85,7 @@
     for (const group of grouped) groups.append(renderInventoryGroup(group));
     listCard.append(groups);
     root.append(listCard);
-  };
+  }
 
   globalThis.CairnRuntime.registerRenderer('inventory', renderConsolidatedInventoryView);
 })();
