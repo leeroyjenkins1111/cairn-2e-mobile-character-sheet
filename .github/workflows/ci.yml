@@ -31,18 +31,21 @@ jobs:
         run: npm run check:syntax
 
       - name: Verify synchronized application version
-        run: node scripts/check-version-sync.mjs
+        run: npm run check:version
 
-      - name: Verify Pages artifact
+      - name: Build and verify production runtime
         run: |
-          node scripts/prepare-site.mjs _site
+          npm run check:production
           test -s _site/assets/forest-background.jpg
+          test -s _site/styles/runtime-overrides.css
+          test -s _site/scripts/app-core.js
+          test -s _site/scripts/app-bootstrap.js
           test -s _site/scripts/app-config.js
           test -s _site/scripts/dice-renderer.js
           test -s _site/scripts/inventory-view.js
-          grep -q 'app-config.js?v=0.30.1' _site/index.html
-          grep -q 'dice-renderer.js?v=0.30.1' _site/index.html
-          grep -q 'inventory-view.js?v=0.30.1' _site/index.html
+          grep -q 'app-core.js?v=0.30.1' _site/index.html
+          grep -q 'app-bootstrap.js?v=0.30.1' _site/index.html
+          grep -q 'runtime-overrides.css?v=0.30.1' _site/index.html
           grep -q "cairn-mobile-sheet-v0.30.1" _site/service-worker.js
 
       - name: Run browser regression suite
