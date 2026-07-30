@@ -22,14 +22,33 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium webkit
-      - name: Execute migration
+      - name: Execute corrected migration
         run: |
           python3 <<'PY'
           from pathlib import Path
           import textwrap
+
           workflow = Path('.github/workflows/apply-domain-lifecycle-refactor.yml').read_text(encoding='utf-8')
           script = workflow.split("python3 <<'PY'\n", 1)[1].split('\n          PY', 1)[0]
           exec(textwrap.dedent(script), {'__name__': '__main__'})
+
+          domain = Path('scripts/domain-rules.js')
+          text = domain.read_text(encoding='utf-8')
+          domain.write_text(text.replace("\\'use strict\\';", "'use strict';", 1), encoding='utf-8')
+
+          tests = Path('tests/unit/domain-rules.test.mjs')
+          text = tests.read_text(encoding='utf-8')
+          old = """  assert.deepEqual({ ...rules.parseDamageFormulaNotation(' d6 + d8 ') }, { dice: [6, 8], keep: 'highest', blast: false });
+  assert.deepEqual({ ...rules.normalizeDamageFormula({ dice: ['12'], blast: true }) }, { dice: [12], keep: 'sum', blast: true });
+"""
+          new = """  const parsed = rules.parseDamageFormulaNotation(' d6 + d8 ');
+  assert.deepEqual({ ...parsed, dice: Array.from(parsed.dice) }, { dice: [6, 8], keep: 'highest', blast: false });
+  const normalized = rules.normalizeDamageFormula({ dice: ['12'], blast: true });
+  assert.deepEqual({ ...normalized, dice: Array.from(normalized.dice) }, { dice: [12], keep: 'sum', blast: true });
+"""
+          if text.count(old) != 1:
+              raise SystemExit('cross-realm assertions not found exactly once')
+          tests.write_text(text.replace(old, new, 1), encoding='utf-8')
           PY
       - name: Restore workflow files
         run: git checkout HEAD -- .github
