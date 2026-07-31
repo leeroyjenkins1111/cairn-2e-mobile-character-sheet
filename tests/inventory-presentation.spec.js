@@ -11,7 +11,7 @@ async function loadDemoInventory(page) {
 }
 
 test.describe('czytelność listy ekwipunku', () => {
-  test('oddziela sekcje i nie powtarza stanu przy każdym przedmiocie', async ({ page }) => {
+  test('oddziela sekcje przedmiotów i pokazuje zmęczenie jako status postaci', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await loadDemoInventory(page);
 
@@ -26,6 +26,26 @@ test.describe('czytelność listy ekwipunku', () => {
     await expect(inventory.locator('[data-inventory-group="held"]')).toContainText('Trzymane');
     await expect(inventory.locator('[data-inventory-group="worn"]')).toContainText('Noszone');
     await expect(inventory.locator('[data-inventory-group="stored"]')).toContainText('Schowane');
+
+    await expect(inventory.locator('[data-inventory-group="fatigue"]')).toHaveCount(0);
+    const fatigueStatus = inventory.locator('[data-inventory-status="fatigue"]');
+    await expect(fatigueStatus).toBeVisible();
+    await expect(fatigueStatus).toContainText('Status postaci');
+    await expect(fatigueStatus).toContainText('Zmęczenie');
+    await expect(fatigueStatus.locator('.inventory-row')).toHaveCount(0);
+    await expect(fatigueStatus.locator('.inventory-fatigue-entry')).not.toHaveCount(0);
+    await expect(inventory.locator('.inventory-list')).not.toContainText('Zmęczenie');
+  });
+
+  test('aktywne zmęczenie nadal można usunąć po regeneracji', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await loadDemoInventory(page);
+
+    const fatigueEntry = page.locator('[data-inventory-status="fatigue"] .inventory-fatigue-entry').first();
+    await expect(fatigueEntry).toBeVisible();
+    await fatigueEntry.click();
+    await expect(page.getByRole('heading', { name: 'Usuń zmęczenie' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Usuń jedno zmęczenie' })).toBeVisible();
   });
 
   test('nazwy mogą się zawijać i lista nie tworzy poziomego overflow na 320 px', async ({ page }) => {
@@ -37,14 +57,14 @@ test.describe('czytelność listy ekwipunku', () => {
     await expect(title).toBeVisible();
     await expect(title).toHaveCSS('white-space', 'normal');
 
-    const overflowingRows = await inventory.locator('.inventory-row').evaluateAll(rows => rows.filter(row => row.scrollWidth > row.clientWidth + 1).length);
+    const overflowingRows = await inventory.locator('.inventory-row, .inventory-fatigue-entry').evaluateAll(rows => rows.filter(row => row.scrollWidth > row.clientWidth + 1).length);
     expect(overflowingRows).toBe(0);
 
     const pageOverflows = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
     expect(pageOverflows).toBe(false);
   });
 
-  test('sekcje pozostają zwijane bez utraty zawartości', async ({ page }) => {
+  test('sekcje przedmiotów pozostają zwijane bez utraty zawartości', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await loadDemoInventory(page);
 
