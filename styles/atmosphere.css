@@ -8,11 +8,9 @@
 /* Shared glass and spacing ------------------------------------------------ */
 .card,
 .panel,
-.character-state,
 .combat-launcher,
 .inventory-overview,
 .dice-result,
-.journal-section,
 .empty-state {
   border-color: var(--color-border-subtle);
   background-color: var(--color-surface-page-translucent);
@@ -25,7 +23,6 @@
 .card-pad,
 .combat-launcher,
 .inventory-overview,
-.journal-section,
 .report-block,
 .alert,
 .session-alert,
@@ -41,7 +38,6 @@
 .dice-console,
 .quick-dice,
 .dice-utilities,
-.journal-section,
 .combat-launcher,
 .form-grid,
 .sheet-list,
@@ -67,42 +63,36 @@
 }
 .btn:hover { border-color: var(--color-border); }
 .btn-primary {
-  border-color: color-mix(in srgb, var(--color-accent-secondary) 54%, transparent);
-  background: color-mix(in srgb, var(--color-accent-secondary) 12%, transparent);
+  border-color: color-mix(in srgb, var(--color-accent-secondary) 50%, transparent);
+  background: color-mix(in srgb, var(--color-accent-secondary) 10%, transparent);
   color: var(--color-accent-secondary-strong);
 }
 .btn-primary:hover {
-  background: color-mix(in srgb, var(--color-accent-secondary) 18%, transparent);
+  background: color-mix(in srgb, var(--color-accent-secondary) 16%, transparent);
 }
 .btn-quiet {
   border-color: var(--color-border-subtle);
   background: rgba(241, 225, 231, .045);
 }
-:root[data-theme="light"] .btn-quiet {
-  background: rgba(43, 34, 44, .04);
-}
+:root[data-theme="light"] .btn-quiet { background: rgba(43, 34, 44, .04); }
 .btn-ghost {
   border-color: transparent;
   background: transparent;
   color: var(--color-ink-secondary);
 }
 .btn-danger {
-  border-color: color-mix(in srgb, var(--color-state-danger) 48%, transparent);
+  border-color: color-mix(in srgb, var(--color-state-danger) 44%, transparent);
   background: var(--color-state-danger-surface);
   color: var(--color-state-danger);
 }
 .btn-icon { border-radius: var(--radius-pill); }
 
 .section-heading,
-.section-head {
-  gap: var(--space-2);
-}
+.section-head { gap: var(--space-2); }
 .section-heading h1,
 .section-heading h2,
 .section-head h2,
-.section-head h3 {
-  font-size: var(--type-section);
-}
+.section-head h3 { font-size: var(--type-section); }
 .section-title > svg,
 .action-row svg,
 .compact-action svg {
@@ -126,12 +116,12 @@
 }
 .condition-chip.active,
 .combat-status {
-  border-color: color-mix(in srgb, var(--color-state-danger) 44%, transparent);
+  border-color: color-mix(in srgb, var(--color-state-danger) 40%, transparent);
   color: var(--color-state-danger);
 }
 .condition-chip.good,
 .session-live-badge {
-  border-color: color-mix(in srgb, var(--color-accent-primary) 44%, transparent);
+  border-color: color-mix(in srgb, var(--color-accent-primary) 40%, transparent);
   color: var(--color-accent-primary);
 }
 
@@ -207,9 +197,7 @@ textarea { min-height: 108px; }
 .history-disclosure,
 .combat-ready-disclosure,
 .combat-scenarios,
-.dice-utilities {
-  border-color: var(--color-border-subtle);
-}
+.dice-utilities { border-color: var(--color-border-subtle); }
 .toast {
   border-color: var(--color-border);
   border-left-width: 2px;
@@ -218,8 +206,8 @@ textarea { min-height: 108px; }
   -webkit-backdrop-filter: blur(14px);
 }
 
-/* Character: identity on the artwork, information on restrained glass --- */
-#view-character { gap: var(--panel-gap); }
+/* Character -------------------------------------------------------------- */
+#view-character,
 .character-session { gap: var(--panel-gap); }
 .character-state {
   padding: 0;
@@ -234,14 +222,12 @@ textarea { min-height: 108px; }
   padding: 2px 2px var(--space-2);
 }
 .avatar {
-  border-color: color-mix(in srgb, var(--color-accent-primary) 78%, transparent);
+  border-color: color-mix(in srgb, var(--color-accent-primary) 76%, transparent);
   background: rgba(8, 5, 15, .30);
   color: var(--color-accent-primary);
 }
-:root[data-theme="light"] .avatar { background: rgba(250, 246, 241, .32); }
-.avatar::before {
-  border-color: color-mix(in srgb, var(--color-accent-secondary) 56%, transparent);
-}
+:root[data-theme="light"] .avatar { background: rgba(250, 246, 241, .30); }
+.avatar::before { border-color: color-mix(in srgb, var(--color-accent-secondary) 54%, transparent); }
 .character-background { color: var(--color-accent-primary); }
 .state-values {
   padding: var(--panel-pad);
@@ -255,17 +241,13 @@ textarea { min-height: 108px; }
 }
 .protection-control,
 .character-quick-stat,
-.attribute-control {
-  background: transparent;
-}
+.attribute-control { background: transparent; }
 .protection-control:hover,
 .protection-control:active,
 .character-quick-stat:hover,
 .character-quick-stat:active,
 .attribute-control:hover,
-.attribute-control:active {
-  background: var(--color-surface-interactive);
-}
+.attribute-control:active { background: var(--color-surface-interactive); }
 .state-secondary { padding-left: var(--panel-pad); }
 .protection-meter {
   height: 2px;
@@ -283,9 +265,7 @@ textarea { min-height: 108px; }
 }
 .attribute-glyph,
 .attribute-dex .attribute-glyph,
-.attribute-wil .attribute-glyph {
-  color: var(--color-accent-primary);
-}
+.attribute-wil .attribute-glyph { color: var(--color-accent-primary); }
 .game-actions {
   padding-top: 0;
   border-top: 0;
@@ -294,8 +274,8 @@ textarea { min-height: 108px; }
 .damage-primary-action {
   min-height: 54px;
   padding: 9px var(--panel-pad);
-  border-color: color-mix(in srgb, var(--color-state-danger) 38%, var(--color-border-subtle));
-  background: color-mix(in srgb, var(--color-state-danger) 8%, var(--color-surface-page-translucent));
+  border-color: color-mix(in srgb, var(--color-state-danger) 28%, var(--color-border-subtle));
+  background: color-mix(in srgb, var(--color-state-danger) 5%, var(--color-surface-page-translucent));
 }
 .damage-primary-action > svg:first-child { color: var(--color-state-danger); }
 .damage-primary-action small { display: none; }
@@ -326,7 +306,7 @@ textarea { min-height: 108px; }
   color: var(--color-ink-secondary);
 }
 
-/* Inventory: aligned rows, only essential metadata ----------------------- */
+/* Inventory -------------------------------------------------------------- */
 .inventory-overview { gap: var(--panel-gap); }
 .inventory-summary-head { gap: var(--space-2); }
 .inventory-summary-title { font-size: 1.5rem; }
@@ -343,7 +323,7 @@ textarea { min-height: 108px; }
   border-color: var(--color-border-subtle);
   background: rgba(18, 11, 28, .08);
 }
-:root[data-theme="light"] .inventory-summary-stats { background: rgba(250, 246, 241, .18); }
+:root[data-theme="light"] .inventory-summary-stats { background: rgba(250, 246, 241, .16); }
 .inventory-summary-stat {
   min-height: 56px;
   border-right-color: var(--color-border-subtle);
@@ -354,6 +334,7 @@ textarea { min-height: 108px; }
 .slot-cell { background: var(--color-border-subtle); }
 .slot-cell.filled { background: var(--color-accent-primary); }
 .slot-cell.fatigue { background: var(--color-state-danger); }
+.inventory-list { gap: var(--space-2); }
 .inventory-groups { gap: var(--space-3); }
 .inventory-group { border-top-color: var(--color-border-subtle); }
 .inventory-group > summary {
@@ -371,9 +352,7 @@ textarea { min-height: 108px; }
   gap: var(--space-1);
 }
 .inventory-row-main:hover { background: var(--color-surface-interactive); }
-.inventory-row-title {
-  align-items: flex-start;
-}
+.inventory-row-title { align-items: flex-start; }
 .inventory-row-title strong {
   overflow: visible;
   text-overflow: clip;
@@ -389,7 +368,7 @@ textarea { min-height: 108px; }
 }
 .inventory-detail-copy { background: transparent; }
 
-/* Dice: retain the renderer, remove explanatory noise -------------------- */
+/* Dice ------------------------------------------------------------------- */
 .dice-console,
 .quick-dice,
 .dice-utilities { gap: var(--panel-gap); }
@@ -399,30 +378,44 @@ textarea { min-height: 108px; }
   border-color: var(--color-border-subtle);
   background: var(--color-surface-page-translucent);
 }
-.die-button {
+#view-dice .die-button:not(.is-recent) {
   border-color: var(--color-border-subtle);
   background: var(--color-surface-page-translucent);
+  color: var(--color-ink-secondary);
 }
+#view-dice .die-button:not(.is-recent) svg { color: currentColor; stroke: currentColor; }
 .die-button.is-recent {
-  border-color: color-mix(in srgb, var(--color-accent-secondary) 50%, transparent);
+  border-color: color-mix(in srgb, var(--color-accent-secondary) 48%, transparent);
   color: var(--color-accent-secondary-strong);
 }
 #view-dice .dice-utilities .action-row small,
 #view-dice .combat-scenarios-disclosure small,
 #view-dice .scenario-copy small,
-#view-dice .combat-scenarios-body > p {
-  display: none;
-}
+#view-dice .combat-scenarios-body > p { display: none; }
 .combat-scenarios-disclosure > summary { min-height: 54px; }
 .scenario-button { min-height: 58px; }
 
-/* Journal: fewer cards, no clipped previews ------------------------------ */
-.journal-section { gap: var(--panel-gap); }
+/* Journal: one continuous page, not a stack of cards --------------------- */
+#view-journal { gap: 0; }
+#view-journal .journal-section {
+  min-width: 0;
+  padding: var(--panel-pad) 2px;
+  border: 0;
+  border-bottom: 1px solid var(--color-border-subtle);
+  border-radius: 0;
+  display: grid;
+  gap: var(--panel-gap);
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+#view-journal .journal-section:first-child { padding-top: var(--space-2); }
+#view-journal .journal-section > p.muted { display: none; }
+#view-journal .journal-section .section-heading h2 { font-size: 1.2rem; }
 .journal-entry-row,
 .history-item,
-.session-event {
-  border-bottom-color: var(--color-border-subtle);
-}
+.session-event { border-bottom-color: var(--color-border-subtle); }
 .notes-preview {
   display: block;
   overflow: visible;
@@ -431,9 +424,7 @@ textarea { min-height: 108px; }
   overflow-wrap: anywhere;
 }
 .journal-disclosure > summary,
-.history-disclosure > summary {
-  min-height: 48px;
-}
+.history-disclosure > summary { min-height: 48px; }
 .journal-disclosure > summary span {
   display: none;
   overflow: visible;
@@ -450,9 +441,7 @@ textarea { min-height: 108px; }
 .history-disclosure[open] > summary::after { content: "−"; }
 .session-log-card > p.muted { display: none; }
 .session-event { grid-template-columns: 62px minmax(0, 1fr); }
-.session-archive-button {
-  white-space: normal;
-}
+.session-archive-button { white-space: normal; }
 
 /* No truncation: wrap rather than clip ----------------------------------- */
 .brand-title,
@@ -502,11 +491,11 @@ html[style*="font-size"] .nav-btn > span:last-child {
   .combat-launcher,
   .inventory-overview,
   .dice-result,
-  .journal-section,
   .sheet,
   .empty-state {
     background-color: var(--color-surface-raised);
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
   }
+  #view-journal .journal-section { background: var(--color-surface-raised); }
 }
