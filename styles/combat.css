@@ -1,0 +1,142 @@
+/* Focused composition for the Character combat and damage actions. */
+.combat-launcher {
+  gap: 0;
+}
+
+.combat-launcher .section-heading {
+  min-height: 42px;
+  margin-bottom: 2px;
+}
+
+.combat-launcher .section-title > svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.combat-panel-row {
+  width: 100%;
+  min-width: 0;
+  min-height: 60px;
+  padding: 10px 3px;
+  border: 0;
+  border-top: 1px solid var(--color-border-subtle);
+  border-radius: 0;
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr) auto 16px;
+  align-items: center;
+  gap: var(--space-2);
+  background: transparent;
+  color: var(--color-ink-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.combat-panel-row:hover,
+.combat-panel-row:active {
+  background: var(--color-surface-interactive);
+}
+
+.combat-panel-row > svg {
+  width: 24px;
+  height: 24px;
+  fill: none;
+  stroke: var(--color-accent-primary);
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.combat-panel-copy {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.combat-panel-copy strong {
+  max-width: 100%;
+  overflow: visible;
+  color: var(--color-ink-primary);
+  font-size: .96rem;
+  line-height: 1.18;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.combat-panel-copy small {
+  max-width: 100%;
+  overflow: visible;
+  color: var(--color-ink-muted);
+  font-size: .72rem;
+  line-height: 1.2;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.combat-panel-value {
+  color: var(--color-ink-secondary);
+  font: 650 1rem/1 var(--font-display);
+  white-space: nowrap;
+}
+
+.combat-weapon-choice > svg:last-child {
+  width: 15px;
+  height: 15px;
+  stroke: var(--color-ink-muted);
+}
+
+.combat-turn-row {
+  grid-template-columns: 28px minmax(0, 1fr) auto;
+}
+
+.combat-turn-value {
+  color: var(--color-ink-secondary);
+  font-size: .72rem;
+  font-weight: 760;
+  letter-spacing: .04em;
+  white-space: nowrap;
+}
+
+.damage-primary-action {
+  margin-top: 0;
+}
+
+.damage-primary-action > svg:first-child {
+  width: 23px;
+  height: 23px;
+  fill: none;
+  stroke: var(--color-state-danger);
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+@media (max-width: 359px) {
+  .combat-panel-row {
+    grid-template-columns: 26px minmax(0, 1fr) auto 14px;
+    gap: 7px;
+  }
+
+  .combat-turn-row {
+    grid-template-columns: 26px minmax(0, 1fr) auto;
+  }
+}
+
+@media (forced-colors: active) {
+  .combat-panel-row {
+    border-color: CanvasText;
+  }
+
+  .combat-panel-row > svg,
+  .combat-launcher .section-title > svg,
+  .damage-primary-action > svg:first-child {
+    stroke: ButtonText;
+  }
+}

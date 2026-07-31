@@ -7,7 +7,8 @@ const DESIGN_MODULES = [
   '/styles/components.css',
   '/styles/screens.css',
   '/styles/dice.css',
-  '/styles/atmosphere.css'
+  '/styles/atmosphere.css',
+  '/styles/combat.css'
 ];
 
 test.describe('production artifact contract', () => {
