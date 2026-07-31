@@ -9,12 +9,13 @@ const designStylePaths = [
   'styles/dice.css'
 ];
 
-const [index, core, bootstrap, worker, inventoryDomain, ...designStyles] = await Promise.all([
+const [index, core, bootstrap, worker, inventoryDomain, appStyles, ...designStyles] = await Promise.all([
   readFile('_site/index.html', 'utf8'),
   readFile('_site/scripts/app-core.js', 'utf8'),
   readFile('_site/scripts/app-bootstrap.js', 'utf8'),
   readFile('_site/service-worker.js', 'utf8'),
   readFile('_site/scripts/inventory-domain.js', 'utf8'),
+  readFile('_site/styles/app.css', 'utf8'),
   ...designStylePaths.map(path => readFile(`_site/${path}`, 'utf8'))
 ]);
 
@@ -31,10 +32,16 @@ const assertions = [
   [index.includes('scripts/inventory-domain.js?v='), 'index loads inventory-domain.js'],
   [worker.includes('scripts/inventory-domain.js?v='), 'service worker caches inventory-domain.js'],
   [inventoryDomain.includes('createInventoryOverviewModel'), 'inventory domain is present in production'],
-  ...designStylePaths.flatMap(path => [
-    [index.includes(`${path}?v=`), `index loads ${path}`],
-    [worker.includes(`${path}?v=`), `service worker caches ${path}`]
-  ]),
+  [index.includes('href="./styles/app.css"'), 'index loads the single CSS entrypoint'],
+  [worker.includes("'./styles/app.css'"), 'service worker caches the CSS entrypoint'],
+  ...designStylePaths.flatMap(path => {
+    const filename = path.split('/').pop();
+    return [
+      [appStyles.includes(`./${filename}?v=`), `app.css imports ${filename}`],
+      [worker.includes(`${path}?v=`), `service worker caches ${path}`]
+    ];
+  }),
+  [!appStyles.includes('{'), 'app.css contains imports only'],
   [styleSource.includes('--color-surface-page'), 'semantic surface tokens are present'],
   [styleSource.includes(':root[data-theme="light"]'), 'light theme tokens are present'],
   [styleSource.includes('@media (forced-colors: active)'), 'forced-colors support is present'],
@@ -43,6 +50,7 @@ const assertions = [
   [!index.includes('character-redesign.css'), 'legacy character CSS is not loaded'],
   [!index.includes('screen-unification.css'), 'legacy screen unification CSS is not loaded'],
   [!index.includes('runtime-overrides.css'), 'legacy override CSS is not loaded'],
+  [!index.includes('dice-runtime.css'), 'legacy dice CSS is not loaded'],
   [!index.includes('typography-system.js'), 'runtime typography injection is removed'],
   [!index.includes('inventory-spacing.js'), 'runtime inventory spacing injection is removed'],
   [!bootstrap.trimEnd().endsWith('initialize();'), 'bootstrap does not initialize itself'],
