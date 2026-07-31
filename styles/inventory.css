@@ -1,4 +1,4 @@
-/* Inventory list hierarchy: distinct carry sections, quieter rows and unclipped names. */
+/* Inventory hierarchy: fatigue is a character status; carry groups contain items only. */
 #view-inventory .inventory-list {
   gap: var(--space-2);
 }
@@ -10,6 +10,143 @@
 
 #view-inventory .inventory-list > .section-heading h2 {
   font-size: 1.42rem;
+}
+
+.inventory-fatigue-status {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--color-state-danger) 42%, var(--color-border-subtle));
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--color-surface-page-translucent) 94%, var(--color-state-danger) 6%);
+}
+
+.inventory-fatigue-status::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 3px;
+  background: var(--color-state-danger);
+  opacity: .78;
+  pointer-events: none;
+}
+
+.inventory-fatigue-head {
+  min-height: 76px;
+  padding: var(--space-3) var(--space-4);
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.inventory-fatigue-icon {
+  width: 38px;
+  height: 38px;
+  border: 1px solid color-mix(in srgb, var(--color-state-danger) 48%, var(--color-border-subtle));
+  border-radius: var(--radius-pill);
+  display: grid;
+  place-items: center;
+  background: var(--color-state-danger-surface);
+  color: var(--color-state-danger);
+}
+
+.inventory-fatigue-icon svg {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.inventory-fatigue-copy {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.inventory-fatigue-copy .section-kicker {
+  color: var(--color-state-danger);
+}
+
+.inventory-fatigue-copy h2 {
+  font: 650 1.15rem/1.1 var(--font-display);
+}
+
+.inventory-fatigue-copy p {
+  color: var(--color-ink-secondary);
+  font-size: var(--type-meta);
+  line-height: 1.3;
+  overflow-wrap: anywhere;
+}
+
+.inventory-fatigue-count {
+  min-width: 34px;
+  color: var(--color-state-danger);
+  font: 650 1.7rem/1 var(--font-display);
+  text-align: center;
+}
+
+.inventory-fatigue-list {
+  border-top: 1px solid color-mix(in srgb, var(--color-state-danger) 24%, var(--color-border-subtle));
+}
+
+.inventory-fatigue-entry {
+  width: 100%;
+  min-height: 58px;
+  padding: 9px var(--space-4);
+  border: 0;
+  border-bottom: 1px solid var(--color-border-subtle);
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  align-items: center;
+  gap: var(--space-3);
+  background: transparent;
+  color: var(--color-ink-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.inventory-fatigue-entry:last-child {
+  border-bottom: 0;
+}
+
+.inventory-fatigue-entry:hover,
+.inventory-fatigue-entry:active {
+  background: color-mix(in srgb, var(--color-state-danger-surface) 58%, transparent);
+}
+
+.inventory-fatigue-marker {
+  width: 28px;
+  height: 28px;
+  border: 1px solid color-mix(in srgb, var(--color-state-danger) 54%, var(--color-border-subtle));
+  border-radius: var(--radius-pill);
+  display: grid;
+  place-items: center;
+  color: var(--color-state-danger);
+  font-size: .74rem;
+  font-weight: 780;
+}
+
+.inventory-fatigue-entry-copy {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.inventory-fatigue-entry-copy strong {
+  font-size: .92rem;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
+}
+
+.inventory-fatigue-entry-copy > span {
+  color: var(--color-ink-muted);
+  font-size: var(--type-meta);
+  line-height: 1.25;
+  overflow-wrap: anywhere;
 }
 
 .inventory-groups {
@@ -42,11 +179,6 @@
 
 .inventory-group[data-inventory-group="held"] {
   background: color-mix(in srgb, var(--color-surface-page-translucent) 94%, var(--color-accent-primary) 6%);
-}
-
-.inventory-group[data-inventory-group="fatigue"] {
-  --inventory-group-accent: var(--color-state-danger);
-  background: color-mix(in srgb, var(--color-surface-page-translucent) 95%, var(--color-state-danger) 5%);
 }
 
 .inventory-group[data-inventory-group="spent"] {
@@ -169,8 +301,27 @@
 }
 
 @media (max-width: 359px) {
+  .inventory-fatigue-head,
+  .inventory-fatigue-entry,
   .inventory-group > summary {
     padding-inline: var(--space-3);
+  }
+
+  .inventory-fatigue-head {
+    grid-template-columns: 34px minmax(0, 1fr) auto;
+    gap: var(--space-2);
+  }
+
+  .inventory-fatigue-icon {
+    width: 34px;
+    height: 34px;
+  }
+
+  .inventory-fatigue-entry {
+    gap: var(--space-2);
+  }
+
+  .inventory-group > summary {
     gap: var(--space-2);
   }
 
@@ -191,12 +342,16 @@
 }
 
 @media (forced-colors: active) {
+  .inventory-fatigue-status,
+  .inventory-fatigue-list,
+  .inventory-fatigue-entry,
   .inventory-group,
   .inventory-group-list,
   .inventory-row {
     border-color: CanvasText;
   }
 
+  .inventory-fatigue-status::before,
   .inventory-group::before {
     background: Highlight;
   }
