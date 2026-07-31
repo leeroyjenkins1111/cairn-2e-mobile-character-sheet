@@ -406,3 +406,16 @@ input[type="checkbox"] {
     -webkit-backdrop-filter: none;
   }
 }
+
+/* Character action components align with the inset state surface. */
+#view-character .game-actions,
+#view-character .combat-launcher {
+  margin-inline: var(--space-4);
+}
+
+@media (max-height: 700px) {
+  #view-character .game-actions,
+  #view-character .combat-launcher {
+    margin-inline: var(--space-3);
+  }
+}
