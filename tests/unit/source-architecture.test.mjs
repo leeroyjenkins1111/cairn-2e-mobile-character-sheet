@@ -9,7 +9,8 @@ const designStylePaths = [
   'styles/components.css',
   'styles/screens.css',
   'styles/dice.css',
-  'styles/atmosphere.css'
+  'styles/atmosphere.css',
+  'styles/combat.css'
 ];
 
 const [index, core, bootstrap, worker, directEditing, characterRedesign, renderHooks, diceMotion, diceRenderer, appStyles, ...designStyles] = await Promise.all([
@@ -87,6 +88,13 @@ test('runtime nie tworzy ani nie wstrzykuje arkuszy CSS', () => {
   assert.doesNotMatch(runtime, /insertRule|document\.createElement\(['"]style['"]\)|style\.textContent/);
 });
 
+test('panel walki zachowuje wąski zakres działań', () => {
+  assert.match(characterRedesign, /Wybierz broń/);
+  assert.match(characterRedesign, /Ustal kolejność tur/);
+  assert.doesNotMatch(characterRedesign, /combat-options-button/);
+  assert.doesNotMatch(characterRedesign, /combat-roll-action/);
+});
+
 test('Wędrowny Dziennik jest jedynym statycznym systemem CSS', async () => {
   await assert.doesNotReject(() => access('styles/app.css'));
   assert.match(index, /href="\.\/styles\/app\.css"/);
@@ -118,6 +126,7 @@ test('Wędrowny Dziennik jest jedynym statycznym systemem CSS', async () => {
   assert.match(designSource, /@media \(forced-colors: active\)/);
   assert.match(designSource, /@media \(prefers-reduced-motion: reduce\)/);
   assert.match(designSource, /The forest illustration is the visual anchor/);
+  assert.match(designSource, /\.combat-panel-row/);
   assert.doesNotMatch(designSource, /--character-(gold|rose|olive|glass)/);
   assert.doesNotMatch(directEditing, /direct-save-shortcut/);
 });
