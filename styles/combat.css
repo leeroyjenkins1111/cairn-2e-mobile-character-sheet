@@ -93,15 +93,11 @@
 }
 
 .combat-turn-row {
-  grid-template-columns: 28px minmax(0, 1fr) auto;
+  grid-template-columns: 28px minmax(0, 1fr);
 }
 
 .combat-turn-value {
-  color: var(--color-ink-secondary);
-  font-size: .72rem;
-  font-weight: 760;
-  letter-spacing: .04em;
-  white-space: nowrap;
+  display: none;
 }
 
 .damage-primary-action {
@@ -260,7 +256,7 @@
   }
 
   .combat-turn-row {
-    grid-template-columns: 26px minmax(0, 1fr) auto;
+    grid-template-columns: 26px minmax(0, 1fr);
   }
 
   .weapon-modifier-group {
