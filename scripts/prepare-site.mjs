@@ -9,11 +9,12 @@ const siteFiles = [
   'manifest.webmanifest',
   'service-worker.js',
   'icon.svg',
-  'styles/app.css',
-  'styles/character-redesign.css',
-  'styles/screen-unification.css',
-  'styles/runtime-overrides.css',
-  'styles/dice-runtime.css',
+  'styles/tokens.css',
+  'styles/foundations.css',
+  'styles/shell.css',
+  'styles/components.css',
+  'styles/screens.css',
+  'styles/dice.css',
   'scripts/app-core.js',
   'scripts/app-bootstrap.js',
   'scripts/app-entry.js',
@@ -25,9 +26,7 @@ const siteFiles = [
   'scripts/inventory-domain.js',
   'scripts/inventory-view.js',
   'scripts/ux-direct-editing.js',
-  'scripts/typography-system.js',
   'scripts/character-redesign.js',
-  'scripts/inventory-spacing.js',
   'assets/forest-background.jpg'
 ];
 
