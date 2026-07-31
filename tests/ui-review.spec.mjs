@@ -22,13 +22,19 @@ test('capture structural UI review screenshots', async ({ page, browserName }) =
   await loadDemo(page);
 
   await shot(page, '01-character-dark-390x844');
+  await page.locator('.combat-launcher').getByRole('button', { name: /Wybierz broń/ }).click();
+  await expect(page.locator('#sheetTitle')).toHaveText('Walka');
+  await expect(page.locator('.weapon-picker')).toBeVisible();
+  await shot(page, '01a-weapon-picker-dark-390x844');
+  await page.getByRole('button', { name: 'Zamknij panel' }).click();
+
   await page.setViewportSize({ width: 390, height: 744 });
-  await shot(page, '01a-character-compact-dark-390x744');
+  await shot(page, '01b-character-compact-dark-390x744');
   await page.setViewportSize({ width: 390, height: 844 });
   await page.evaluate(() => globalThis.CairnSheetDev.performFirstRoundDexSave(1));
   await expect(page.locator('#sheetTitle')).toHaveText('Pierwsza runda walki');
   await expect(page.locator('#sheet .animated-dice-result')).toHaveClass(/settled/);
-  await shot(page, '01b-combat-flow-dark-390x844');
+  await shot(page, '01c-combat-flow-dark-390x844');
   await page.getByRole('button', { name: 'Zamknij panel' }).click();
   await page.getByRole('button', { name: 'Ekwipunek', exact: true }).click();
   await shot(page, '02-inventory-dark-390x844');
@@ -55,10 +61,14 @@ test('capture structural UI review screenshots', async ({ page, browserName }) =
   await shot(page, '06-inventory-light-390x844');
   await page.getByRole('button', { name: 'Postać', exact: true }).click();
   await shot(page, '06a-character-light-390x844');
+  await page.locator('.combat-launcher').getByRole('button', { name: /Wybierz broń/ }).click();
+  await expect(page.locator('.weapon-picker')).toBeVisible();
+  await shot(page, '06b-weapon-picker-light-390x844');
+  await page.getByRole('button', { name: 'Zamknij panel' }).click();
   await page.getByRole('button', { name: 'Kości', exact: true }).click();
-  await shot(page, '06b-dice-light-390x844');
+  await shot(page, '06c-dice-light-390x844');
   await page.getByRole('button', { name: 'Dziennik', exact: true }).click();
-  await shot(page, '06c-journal-light-390x844');
+  await shot(page, '06d-journal-light-390x844');
 
   await page.getByRole('button', { name: 'Ustawienia i dane' }).click();
   await page.getByRole('checkbox', { name: 'Jasny motyw' }).uncheck();
