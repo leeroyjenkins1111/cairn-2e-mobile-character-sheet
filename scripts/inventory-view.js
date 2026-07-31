@@ -85,8 +85,7 @@
       attrs: { 'aria-label': `${group.label}: ${inventoryGroupCountLabel(group)}, ${formatSlotLabel(group.slots)}` }
     }, [
       createEl('span', { className: 'inventory-group-title' }, [
-        createEl('strong', { text: group.label }),
-        createEl('span', { className: 'inventory-group-meta', text: `${inventoryGroupCountLabel(group)} · ${formatSlotLabel(group.slots)}` })
+        createEl('strong', { text: group.label })
       ])
     ]));
 
