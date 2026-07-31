@@ -2,6 +2,7 @@ const CACHE_NAME = 'cairn-mobile-sheet-v0.30.1';
 const APP_SHELL = [
   './',
   './index.html',
+  './styles/app.css',
   './styles/tokens.css?v=0.30.1',
   './styles/foundations.css?v=0.30.1',
   './styles/shell.css?v=0.30.1',
