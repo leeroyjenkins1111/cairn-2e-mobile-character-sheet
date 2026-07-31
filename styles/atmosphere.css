@@ -1,0 +1,501 @@
+/*
+ * Atmosphere layer
+ * The forest illustration is the visual anchor. Components provide only
+ * structure, contrast and interaction. This is a static design-system module,
+ * not a runtime override layer.
+ */
+
+/* Shared glass and spacing ------------------------------------------------ */
+.card,
+.panel,
+.combat-launcher,
+.inventory-overview,
+.dice-result,
+.empty-state {
+  border-color: var(--color-border-subtle);
+  background-color: var(--color-surface-page-translucent);
+  background-image: none;
+  box-shadow: var(--shadow-raised);
+  backdrop-filter: blur(8px) saturate(105%);
+  -webkit-backdrop-filter: blur(8px) saturate(105%);
+}
+
+.card-pad,
+.combat-launcher,
+.inventory-overview,
+.report-block,
+.alert,
+.session-alert,
+.recovery-checkpoint-item,
+.settings-sheet-danger {
+  padding: var(--panel-pad);
+}
+
+.view,
+.character-session,
+.inventory-list,
+.inventory-groups,
+.dice-console,
+.quick-dice,
+.dice-utilities,
+.combat-launcher,
+.form-grid,
+.sheet-list,
+.settings-sheet {
+  gap: var(--panel-gap);
+}
+
+#view-character .game-actions,
+#view-character .combat-launcher {
+  width: 100%;
+  margin-inline: 0;
+}
+
+/* Quiet controls --------------------------------------------------------- */
+.btn {
+  padding: 9px 12px;
+  border-color: var(--color-border-subtle);
+  background: var(--color-surface-interactive);
+  font-size: .9rem;
+  box-shadow: none;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.btn:hover { border-color: var(--color-border); }
+.btn-primary {
+  border-color: color-mix(in srgb, var(--color-accent-secondary) 50%, transparent);
+  background: color-mix(in srgb, var(--color-accent-secondary) 10%, transparent);
+  color: var(--color-accent-secondary-strong);
+}
+.btn-primary:hover {
+  background: color-mix(in srgb, var(--color-accent-secondary) 16%, transparent);
+}
+.btn-quiet {
+  border-color: var(--color-border-subtle);
+  background: rgba(241, 225, 231, .045);
+}
+:root[data-theme="light"] .btn-quiet { background: rgba(43, 34, 44, .04); }
+.btn-ghost {
+  border-color: transparent;
+  background: transparent;
+  color: var(--color-ink-secondary);
+}
+.btn-danger {
+  border-color: color-mix(in srgb, var(--color-state-danger) 44%, transparent);
+  background: var(--color-state-danger-surface);
+  color: var(--color-state-danger);
+}
+.btn-icon { border-radius: var(--radius-pill); }
+
+.section-heading,
+.section-head { gap: var(--space-2); }
+.section-heading h1,
+.section-heading h2,
+.section-head h2,
+.section-head h3 { font-size: var(--type-section); }
+.section-title > svg,
+.action-row svg,
+.compact-action svg {
+  color: var(--color-accent-primary);
+  stroke: currentColor;
+}
+
+.tag,
+.condition-chip,
+.combat-status,
+.carry-status {
+  border-color: var(--color-border-subtle);
+  background: rgba(18, 11, 28, .10);
+  color: var(--color-ink-secondary);
+}
+:root[data-theme="light"] .tag,
+:root[data-theme="light"] .condition-chip,
+:root[data-theme="light"] .combat-status,
+:root[data-theme="light"] .carry-status {
+  background: rgba(250, 246, 241, .24);
+}
+.condition-chip.active,
+.combat-status {
+  border-color: color-mix(in srgb, var(--color-state-danger) 40%, transparent);
+  color: var(--color-state-danger);
+}
+.condition-chip.good,
+.session-live-badge {
+  border-color: color-mix(in srgb, var(--color-accent-primary) 40%, transparent);
+  color: var(--color-accent-primary);
+}
+
+.action-row {
+  min-height: 54px;
+  padding: 10px 0;
+  gap: var(--space-2);
+  border-bottom-color: var(--color-border-subtle);
+}
+.action-row:first-child { border-top-color: var(--color-border-subtle); }
+.action-row:hover { background: var(--color-surface-interactive); }
+.action-row-value {
+  color: var(--color-ink-muted);
+  font-weight: 700;
+}
+
+input,
+select,
+textarea {
+  padding: 10px 11px;
+  border-color: var(--color-border);
+  background: var(--color-surface-sunken);
+  box-shadow: none;
+}
+textarea { min-height: 108px; }
+.field { gap: var(--space-1); }
+.help { line-height: 1.35; }
+
+.report-block,
+.data-status,
+.recovery-checkpoint-item {
+  border-color: var(--color-border-subtle);
+  background: var(--color-surface-soft);
+  box-shadow: none;
+}
+.alert,
+.session-alert {
+  border-color: var(--color-border-subtle);
+  border-left-width: 2px;
+  background: var(--color-surface-page-translucent);
+  box-shadow: none;
+}
+.empty-state {
+  padding: var(--panel-pad);
+  border-style: solid;
+}
+.empty-state::before { display: none; }
+
+/* Sheets keep stronger contrast, but remain translucent ------------------ */
+.sheet-backdrop { background: var(--color-overlay); }
+.sheet {
+  border-color: var(--color-border);
+  background-color: var(--color-surface-raised);
+  background-image: none;
+  backdrop-filter: blur(18px) saturate(108%);
+  -webkit-backdrop-filter: blur(18px) saturate(108%);
+}
+.sheet-head {
+  min-height: 54px;
+  padding: 5px var(--panel-pad) 8px;
+  border-bottom-color: var(--color-border-subtle);
+}
+.sheet-body { padding: var(--panel-pad) var(--panel-pad) var(--space-5); }
+.sheet-foot {
+  padding: 10px var(--panel-pad) calc(10px + env(safe-area-inset-bottom));
+  border-top-color: var(--color-border-subtle);
+  background: transparent;
+}
+.settings-sheet-section,
+.settings-row,
+.inventory-secondary-actions,
+.journal-disclosure,
+.history-disclosure,
+.combat-ready-disclosure,
+.combat-scenarios,
+.dice-utilities { border-color: var(--color-border-subtle); }
+.toast {
+  border-color: var(--color-border);
+  border-left-width: 2px;
+  background: var(--color-surface-raised);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+/* Character -------------------------------------------------------------- */
+#view-character,
+.character-session { gap: var(--panel-gap); }
+.character-state {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.identity-row {
+  min-height: 62px;
+  padding: 2px 2px var(--space-2);
+}
+.avatar {
+  border-color: color-mix(in srgb, var(--color-accent-primary) 76%, transparent);
+  background: rgba(8, 5, 15, .30);
+  color: var(--color-accent-primary);
+}
+:root[data-theme="light"] .avatar { background: rgba(250, 246, 241, .30); }
+.avatar::before { border-color: color-mix(in srgb, var(--color-accent-secondary) 54%, transparent); }
+.character-background { color: var(--color-accent-primary); }
+.state-values {
+  padding: var(--panel-pad);
+  gap: var(--panel-pad);
+  border: 1px solid var(--color-border-subtle);
+  border-bottom: 0;
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  background: var(--color-surface-page-translucent);
+  backdrop-filter: blur(8px) saturate(105%);
+  -webkit-backdrop-filter: blur(8px) saturate(105%);
+}
+.protection-control,
+.character-quick-stat,
+.attribute-control { background: transparent; }
+.protection-control:hover,
+.protection-control:active,
+.character-quick-stat:hover,
+.character-quick-stat:active,
+.attribute-control:hover,
+.attribute-control:active { background: var(--color-surface-interactive); }
+.state-secondary { padding-left: var(--panel-pad); }
+.protection-meter {
+  height: 2px;
+  margin: 0 var(--panel-pad);
+  background: var(--color-border-subtle);
+}
+.attribute-row {
+  padding: 3px var(--space-1) 4px;
+  border: 1px solid var(--color-border-subtle);
+  border-top: 0;
+  border-radius: 0 0 var(--radius-lg) var(--radius-lg);
+  background: var(--color-surface-page-translucent);
+  backdrop-filter: blur(8px) saturate(105%);
+  -webkit-backdrop-filter: blur(8px) saturate(105%);
+}
+.attribute-glyph,
+.attribute-dex .attribute-glyph,
+.attribute-wil .attribute-glyph { color: var(--color-accent-primary); }
+.game-actions {
+  padding-top: 0;
+  border-top: 0;
+  gap: var(--space-2);
+}
+.damage-primary-action {
+  min-height: 54px;
+  padding: 9px var(--panel-pad);
+  border-color: color-mix(in srgb, var(--color-state-danger) 28%, var(--color-border-subtle));
+  background: color-mix(in srgb, var(--color-state-danger) 5%, var(--color-surface-page-translucent));
+}
+.damage-primary-action > svg:first-child { color: var(--color-state-danger); }
+.damage-primary-action small { display: none; }
+.secondary-action-grid { gap: var(--space-2); }
+.compact-action {
+  min-height: 56px;
+  border-color: var(--color-border-subtle);
+  background: var(--color-surface-page-translucent);
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+}
+.combat-launcher {
+  border-color: var(--color-border-subtle);
+  background: var(--color-surface-page-translucent);
+}
+.combat-main-row { min-height: 62px; }
+.combat-main-copy small,
+.combat-weapon-copy > span { display: none; }
+.combat-main-copy strong,
+.combat-weapon-copy strong {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.combat-order-badge {
+  border-color: var(--color-border-subtle);
+  color: var(--color-ink-secondary);
+}
+
+/* Inventory -------------------------------------------------------------- */
+.inventory-overview { gap: var(--panel-gap); }
+.inventory-summary-head { gap: var(--space-2); }
+.inventory-summary-title { font-size: 1.5rem; }
+.inventory-summary-actions { gap: var(--space-1); }
+.inventory-add-item-button {
+  width: var(--touch-min);
+  min-width: var(--touch-min);
+  height: var(--touch-min);
+  padding: 0;
+  border-radius: var(--radius-pill);
+}
+.inventory-add-item-button > span:not(.sr-only) { display: none; }
+.inventory-summary-stats {
+  border-color: var(--color-border-subtle);
+  background: rgba(18, 11, 28, .08);
+}
+:root[data-theme="light"] .inventory-summary-stats { background: rgba(250, 246, 241, .16); }
+.inventory-summary-stat {
+  min-height: 56px;
+  border-right-color: var(--color-border-subtle);
+}
+.inventory-summary-stat:hover { background: var(--color-surface-interactive); }
+.inventory-summary-stat small,
+.inventory-legend { display: none; }
+.slot-cell { background: var(--color-border-subtle); }
+.slot-cell.filled { background: var(--color-accent-primary); }
+.slot-cell.fatigue { background: var(--color-state-danger); }
+.inventory-list { gap: var(--space-2); }
+.inventory-groups { gap: var(--space-3); }
+.inventory-group { border-top-color: var(--color-border-subtle); }
+.inventory-group > summary {
+  min-height: 48px;
+  padding: 9px 0;
+}
+.inventory-group-title span { display: none; }
+.inventory-row {
+  min-height: 64px;
+  border-bottom-color: var(--color-border-subtle);
+}
+.inventory-row-main {
+  min-height: 64px;
+  padding: 10px 0;
+  gap: var(--space-1);
+}
+.inventory-row-main:hover { background: var(--color-surface-interactive); }
+.inventory-row-title { align-items: flex-start; }
+.inventory-row-title strong {
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+.inventory-row-facts { gap: 2px 7px; }
+.inventory-row-note { display: none; }
+.inventory-trailing-action {
+  min-width: 62px;
+  max-width: 92px;
+  margin-left: var(--space-2);
+}
+.inventory-detail-copy { background: transparent; }
+
+/* Dice ------------------------------------------------------------------- */
+.dice-console,
+.quick-dice,
+.dice-utilities { gap: var(--panel-gap); }
+.dice-result {
+  min-height: 204px;
+  padding: var(--panel-pad);
+  border-color: var(--color-border-subtle);
+  background: var(--color-surface-page-translucent);
+}
+#view-dice .die-button:not(.is-recent) {
+  border-color: var(--color-border-subtle);
+  background: var(--color-surface-page-translucent);
+  color: var(--color-ink-secondary);
+}
+#view-dice .die-button:not(.is-recent) svg { color: currentColor; stroke: currentColor; }
+.die-button.is-recent {
+  border-color: color-mix(in srgb, var(--color-accent-secondary) 48%, transparent);
+  color: var(--color-accent-secondary-strong);
+}
+#view-dice .dice-utilities .action-row small,
+#view-dice .combat-scenarios-disclosure small,
+#view-dice .scenario-copy small,
+#view-dice .combat-scenarios-body > p { display: none; }
+.combat-scenarios-disclosure > summary { min-height: 54px; }
+.scenario-button { min-height: 58px; }
+
+/* Journal: one continuous page, not a stack of cards --------------------- */
+#view-more { gap: 0; }
+#view-more .journal-section {
+  min-width: 0;
+  padding: var(--panel-pad) 2px;
+  border: 0;
+  border-bottom: 1px solid var(--color-border-subtle);
+  border-radius: 0;
+  display: grid;
+  gap: var(--panel-gap);
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+#view-more .journal-section:first-child { padding-top: var(--space-2); }
+#view-more .journal-section > p.muted { display: none; }
+#view-more .journal-section .section-heading h2 { font-size: 1.2rem; }
+.journal-entry-row,
+.history-item,
+.session-event { border-bottom-color: var(--color-border-subtle); }
+.notes-preview {
+  display: block;
+  overflow: visible;
+  -webkit-line-clamp: unset;
+  -webkit-box-orient: initial;
+  overflow-wrap: anywhere;
+}
+.journal-disclosure > summary,
+.history-disclosure > summary { min-height: 48px; }
+.journal-disclosure > summary span {
+  display: none;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+}
+.journal-disclosure > summary::after,
+.history-disclosure > summary::after {
+  content: "+";
+  color: var(--color-ink-muted);
+  font-size: 1.1rem;
+}
+.journal-disclosure[open] > summary::after,
+.history-disclosure[open] > summary::after { content: "−"; }
+.session-log-card > p.muted { display: none; }
+.session-event { grid-template-columns: 62px minmax(0, 1fr); }
+.session-archive-button { white-space: normal; }
+
+/* No truncation: wrap rather than clip ----------------------------------- */
+.brand-title,
+.nav-btn > span:last-child,
+.combat-main-copy strong,
+.combat-weapon-copy strong,
+.inventory-row-title strong,
+.journal-disclosure > summary span,
+.session-archive-button strong,
+.section-heading *,
+.section-head *,
+.btn,
+.action-row strong,
+.action-row small {
+  max-width: 100%;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+html[style*="font-size"] .nav-btn > span:last-child {
+  width: auto;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+}
+
+@media (max-width: 359px) {
+  .state-values { gap: var(--space-2); }
+  .state-secondary { padding-left: var(--space-3); }
+  .inventory-row-main { padding-inline: 0; }
+}
+
+@media (max-height: 700px) {
+  #view-character .game-actions,
+  #view-character .combat-launcher { margin-inline: 0; }
+  .character-state { padding: 0; }
+  .combat-launcher { padding: var(--panel-pad); }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .card,
+  .panel,
+  .state-values,
+  .attribute-row,
+  .combat-launcher,
+  .inventory-overview,
+  .dice-result,
+  .sheet,
+  .empty-state {
+    background-color: var(--color-surface-raised);
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+  #view-more .journal-section { background: var(--color-surface-raised); }
+}

@@ -8,7 +8,8 @@ const designStylePaths = [
   'styles/shell.css',
   'styles/components.css',
   'styles/screens.css',
-  'styles/dice.css'
+  'styles/dice.css',
+  'styles/atmosphere.css'
 ];
 
 const [index, core, bootstrap, worker, directEditing, characterRedesign, renderHooks, diceMotion, diceRenderer, appStyles, ...designStyles] = await Promise.all([
@@ -116,6 +117,7 @@ test('Wędrowny Dziennik jest jedynym statycznym systemem CSS', async () => {
   assert.match(designSource, /:root\[data-theme="light"\]/);
   assert.match(designSource, /@media \(forced-colors: active\)/);
   assert.match(designSource, /@media \(prefers-reduced-motion: reduce\)/);
+  assert.match(designSource, /The forest illustration is the visual anchor/);
   assert.doesNotMatch(designSource, /--character-(gold|rose|olive|glass)/);
   assert.doesNotMatch(directEditing, /direct-save-shortcut/);
 });

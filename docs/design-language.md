@@ -1,368 +1,195 @@
 # Wędrowny Dziennik — język wizualny aplikacji
 
-Ten dokument jest kontraktem projektowym aplikacji Cairn 2e Mobile Character Sheet. Nowe widoki i komponenty muszą korzystać z opisanych tu tokenów, hierarchii i wzorców. Wyjątki wymagają uzasadnienia w opisie PR-a.
+Ten dokument jest kontraktem projektowym Cairn 2e Mobile Character Sheet. Nowe widoki i komponenty muszą zachowywać opisane niżej zasady. Wyjątek wymaga uzasadnienia w PR-ze i screenshotu pokazującego jego wpływ na cały ekran.
 
 ## 1. Kierunek
 
-Interfejs ma przypominać narzędzie używane podczas wyprawy: terenowy dziennik, kartę postaci i zestaw prostych przyborów gracza. Nie imituje dosłownie papieru i nie korzysta z ciężkiego skeuomorfizmu.
+**Ilustracja lasu jest głównym nośnikiem klimatu. Interfejs ma być cichą, przezroczystą warstwą organizującą grę.**
 
-Charakter budują:
+UI nie powinno budować osobnego świata wizualnego ponad tłem. Jego zadaniem jest zapewnić hierarchię, czytelność i wygodną obsługę jedną ręką.
 
-- lokalna ilustracja lasu jako atmosfera poza treścią;
-- ciepłe powierzchnie papieru i ciemnego atramentu;
-- terenowa zieleń, mosiądz i kontrolowany kolor zagrożenia;
-- serifowe tytuły i wartości oraz systemowy sans dla działań i treści;
-- cienkie linie, ograniczone ornamenty i lekko organiczne znaki;
-- wyraźna hierarchia informacji przydatnej podczas gry.
+### Charakter budują
 
-Nie budują go:
+- lokalna ilustracja widoczna przez większość ekranu;
+- subtelne, transparentne powierzchnie;
+- neutralny atrament i tylko trzy istniejące akcenty: oliwka, złoto i róż zagrożenia;
+- serif dla nazw i wartości, systemowy sans dla działań i treści;
+- cienkie separatory zamiast wielu kart;
+- mała ilość tekstu widocznego jednocześnie;
+- konsekwentne wyrównania i powtarzalny rytm.
 
-- wszechobecny blur i glassmorphism;
-- purpurowy glow;
-- duża liczba dekoracyjnych kart;
-- ręcznie wpisane kolory w komponentach;
-- ozdobniki konkurujące z wartościami mechanicznymi.
+### Charakteru nie budują
 
-## 2. Zasady projektowe
+- pełne czarne, kremowe lub papierowe płyty zasłaniające ilustrację;
+- osobna karta dla każdej sekcji albo wiersza;
+- dodatkowe kolory dla ekranów, statystyk lub rodzajów kości;
+- gradienty i glow konkurujące z tłem;
+- opis pomocniczy powtarzający nazwę kontrolki;
+- lokalne korekty marginesów i paddingów;
+- `ellipsis`, line-clamp albo zmniejszanie fontu, aby ukryć problem layoutu.
 
-### Gra przed atmosferą
+## 2. Zasady nadrzędne
 
-OCHR, obrażenia, broń, miejsca, stany i wynik rzutu muszą być rozpoznawalne szybciej niż ornament lub ilustracja.
+### Tło prowadzi
 
-### Powierzchnia wynika z funkcji
+Veil zapewnia kontrast, ale nie może zamienić ilustracji w niewidoczną dekorację. Powierzchnia treści jest transparentna domyślnie. Mocniejsze krycie jest zarezerwowane dla sheetów, toastów, formularzy i trybu reduced transparency.
 
-- strona grupuje duże obszary;
-- panel grupuje jedno zadanie;
-- list row reprezentuje rekord;
-- action row reprezentuje nawigację lub działanie;
-- raised surface jest zarezerwowane dla sheetów, wyników i wyjątkowo ważnych paneli.
+### Minimum treści
 
-### Jedna główna akcja
+Na ekranie pozostaje tylko tekst potrzebny do:
 
-W obrębie strony, sekcji lub sheeta może istnieć jedna dominująca akcja. Pozostałe są secondary albo ghost. Destructive action jest oddzielona wizualnie i przestrzennie.
+1. rozpoznania stanu;
+2. podjęcia decyzji;
+3. wykonania działania.
 
-### Styl nie może zależeć od tła
+Instrukcje, szczegóły i rzadkie operacje trafiają do sheeta lub disclosure. Mikrocopy nie może powtarzać oczywistej funkcji ikony, etykiety albo przycisku.
 
-Tekst nigdy nie korzysta bezpośrednio ze szczegółowej ilustracji jako jedynego tła. Każda istotna treść ma stabilną powierzchnię lub odpowiednio mocny veil.
+### Jedna siatka
 
-### Light i dark są równorzędne
+Główne widoki korzystają z jednego poziomego guttera `--side`. Panele używają `--panel-pad`. Sekcje na tym samym poziomie muszą zaczynać się i kończyć na tych samych krawędziach.
 
-Oba motywy używają tych samych ról semantycznych. Komponent nie może zawierać hardkodowanego koloru przeznaczonego wyłącznie dla jednego motywu.
+Nie wprowadzamy lokalnego `margin-inline` tylko po to, aby wizualnie „dopasować” pojedynczą sekcję.
 
-### Dostępność jest częścią komponentu
+### Tekst zawija się, nigdy nie znika
 
-Wzorzec bez focus state, disabled state, odpowiedniego targetu, reflow tekstu i forced-colors nie jest ukończony.
+Nazwy postaci, przedmiotów, broni, przycisków i sekcji:
+
+- mogą zwiększyć wysokość elementu;
+- korzystają z `overflow-wrap`;
+- nie używają `text-overflow: ellipsis`;
+- nie używają line-clamp;
+- nie są zmniejszane przy powiększeniu tekstu.
+
+Szczególnie ważne selektory są chronione przez test `tests/text-reflow.spec.js` na viewportcie 320×568 w dark i light mode.
+
+### Kolor ma znaczenie
+
+- oliwka: orientacja, stan dodatni i spokojna akcja;
+- złoto: aktywny wybór i najważniejsza akcja;
+- róż: obrażenia, błąd i operacja destrukcyjna;
+- neutralny atrament: cała pozostała informacja.
+
+Kolor nie może być jedynym nośnikiem stanu. Nie dodajemy koloru tylko dla urozmaicenia ekranu.
+
+### Jedna dominująca akcja
+
+W obrębie strony, sekcji lub sheeta istnieje najwyżej jedna akcja primary. Pozostałe są default, quiet albo ghost. Akcja destrukcyjna jest oddzielona i nazywa rezultat.
 
 ## 3. Tokeny
 
-Tokeny znajdują się w `styles/tokens.css`. Komponenty korzystają wyłącznie z nazw ról.
-
-### Kolor
+Tokeny znajdują się w `styles/tokens.css`. Komponenty korzystają z ról semantycznych, nie nazw pigmentów ani ekranów.
 
 Najważniejsze role:
 
-- `--color-canvas` — otoczenie aplikacji i ilustracja;
-- `--color-surface-page` — podstawowa powierzchnia treści;
-- `--color-surface-raised` — sheet, dialog, wynik;
-- `--color-surface-interactive` — przycisk i wybrana opcja;
-- `--color-ink-primary` — tekst główny;
-- `--color-ink-secondary` — tekst wspierający;
-- `--color-ink-muted` — metadane;
-- `--color-border` i `--color-border-strong` — linie podziału;
-- `--color-accent-primary` — terenowa zieleń, status dodatni i orientacja;
-- `--color-accent-secondary` — mosiądz, primary action i aktywny stan;
-- `--color-state-danger` — obrażenia, błędy i operacje destrukcyjne;
-- `--color-focus` — widoczny focus.
+- `--color-surface-page-translucent` — podstawowe szkło nad ilustracją;
+- `--color-surface-raised` — sheet, toast i tryb ograniczonej przezroczystości;
+- `--color-surface-interactive` — delikatny stan kontrolki;
+- `--color-ink-primary`, `secondary`, `muted` — hierarchia tekstu;
+- `--color-border-subtle`, `border`, `border-strong` — separacja;
+- `--color-accent-primary` — oliwka;
+- `--color-accent-secondary` — złoto;
+- `--color-state-danger` — róż zagrożenia;
+- `--side` — wspólny gutter strony;
+- `--panel-pad` — wspólny padding panelu;
+- `--panel-gap` — podstawowy odstęp wewnątrz kompozycji.
 
-Nie należy dodawać tokenów nazwanych pigmentem lub ekranem, takich jak `--character-gold` albo `--inventory-purple`.
+Nie tworzymy tokenów typu `--character-gold`, `--inventory-purple` ani `--dice-blue`.
 
-### Typografia
+## 4. Powierzchnie
 
-- `--font-display` — tytuły strony, sekcji i duże wartości;
-- `--font-ui` — tekst, przyciski, formularze i metadane.
+### Canvas
 
-Skala:
+Ilustracja i lekki veil. Nie dodajemy osobnego pełnego tła widoku.
 
-| Token | Funkcja |
-|---|---|
-| `--type-meta` | czas, tag, licznik, pomocnicza etykieta |
-| `--type-supporting` | opis i supporting text |
-| `--type-body` | treść i pola formularzy |
-| `--type-emphasis` | wyróżniona treść |
-| `--type-section` | tytuł sekcji |
-| `--type-page` | tytuł strony lub postaci |
-| `--type-resource` | dominujący zasób |
+### Glass surface
 
-Tekst ważny dla decyzji nie powinien być mniejszy niż `--type-supporting`. Nie zmniejszamy tekstu przy zoomie — zmieniamy układ.
+Stosowana dla zwartego bloku wymagającego stabilnego kontrastu: stan Postaci, overview Ekwipunku, wynik Kości i kontrolki Walki. Blur ma być niewielki. Powierzchnia nie może całkowicie ukrywać ilustracji.
 
-### Spacing
+### Continuous page
 
-Jedyna skala:
+Długie treści, listy i Dziennik korzystają z separatorów oraz wspólnych krawędzi zamiast stosu kart.
 
-- `--space-1`: 4 px;
-- `--space-2`: 8 px;
-- `--space-3`: 12 px;
-- `--space-4`: 16 px;
-- `--space-5`: 24 px;
-- `--space-6`: 32 px;
-- `--space-7`: 48 px.
+### Raised surface
 
-Nowa wartość wymaga dowodu, że istniejąca skala nie obsługuje przypadku.
-
-### Promienie
-
-- `--radius-sm`: pola i małe kontrolki;
-- `--radius-md`: przyciski, wiersze i raporty;
-- `--radius-lg`: duże panele i sheety;
-- `--radius-pill`: badge, status i segmented control.
-
-Organiczne, nieregularne promienie są zarezerwowane dla awatara oraz ornamentu empty state.
-
-### Cienie
-
-- `--shadow-raised` — panel nad tłem strony;
-- `--shadow-floating` — sheet i toast.
-
-Lista, pole formularza, badge i zwykły przycisk nie otrzymują własnego cienia.
-
-### Motion
-
-- `--motion-fast`: nacisk, hover i prosty selection;
-- `--motion-base`: toast, disclosure i przejście widoku;
-- `--motion-slow`: sheet i większa zmiana warstwy;
-- animacja kości ma własny czas wynikający z fizycznego ruchu.
-
-Każdy ruch musi mieć tryb reduced motion. Efekt nie może być jedynym nośnikiem informacji.
-
-## 4. Ikony i ilustracje
-
-Ikony:
-
-- lokalne SVG;
-- `currentColor`;
-- domyślnie line icons o podobnym stroke width;
-- zawsze mają dostępny tekst albo `aria-label` na kontrolce;
-- nie mieszamy ikon liniowych, emoji i znaków tekstowych w jednym zestawie działań.
-
-Ilustracja:
-
-- las jest atmosferą canvasu;
-- nie zastępuje empty state, ikony ani etykiety;
-- nie może obniżać kontrastu treści;
-- w forced colors jest całkowicie wyłączona;
-- nowe ilustracje muszą być lokalne i działać offline.
+Wyłącznie sheet, toast, dialog, raport importu i sytuacja wymagająca mocniejszego odcięcia od tła.
 
 ## 5. Komponenty
 
-### App header
+### Header i tab bar
 
-Funkcja: orientacja i globalne akcje.
+- transparentne chrome;
+- cienka krawędź;
+- niewielki blur;
+- aktywna zakładka używa złota i krótkiego wskaźnika, nie pełnego kolorowego kafla;
+- etykiety mogą się zawijać i pozostają czytelne przy powiększeniu tekstu.
 
-- kicker `Cairn 2e`;
-- tytuł aktywnego widoku;
-- maksymalnie dwie akcje ikonowe;
-- identyczna geometria we wszystkich widokach.
+### Character state
 
-Nie ukrywamy globalnych akcji zależnie od ekranu bez powodu funkcjonalnego.
+Tożsamość leży bezpośrednio na ilustracji. Wartości mechaniczne otrzymują jedną spójną powierzchnię. SIŁ, ZRE i WOL używają tego samego koloru orientacyjnego; nie tworzą osobnej palety.
 
-### Dolna nawigacja
+### Inventory
 
-Funkcja: przełączanie czterech głównych widoków.
+Overview jest jednym transparentnym panelem. Lista przedmiotów jest ciągłą listą bez kart wokół grup i rekordów. Wiersz pokazuje nazwę, najważniejsze metadane, status noszenia oraz najwyżej jedną szybką akcję.
 
-- target co najmniej 46 px;
-- ikona i tekst;
-- aktywny stan: kolor, delikatna powierzchnia i wskaźnik;
-- padding głównej treści zawsze uwzględnia nav oraz safe area.
+### Dice
 
-Nie umieszczamy działań kontekstowych w tab barze.
+Wynik może mieć transparentny panel dla stabilności animacji. Szybkie kości są neutralne; złoto wskazuje ostatnio używaną. Rodzaj kości nie otrzymuje osobnego koloru.
 
-### Page header i section header
+### Journal
 
-Page header zawiera jeden `h1`, opis i opcjonalnie jedną główną akcję. Section header zawiera `h2` i opcjonalną akcję niższego rzędu.
+Dziennik jest ciągłą stroną z separatorami. Nie tworzymy osobnej karty dla Sesji, notatki, wpisów, dossier i disclosure. Opisy puste lub oczywiste są ukryte; dane użytkownika nie są przycinane.
 
-Nie opakowujemy nagłówka w dodatkową kartę bez zawartości.
+### Sheet i formularz
 
-### Stat block
-
-Funkcja: pokazuje bieżący stan mechaniczny.
-
-- duża wartość;
-- krótka etykieta;
-- wartość maksymalna lub opis;
-- jednoznaczny affordance, gdy jest interaktywny.
-
-Wartości mechaniczne nie opierają się wyłącznie na kolorze.
-
-### Resource meter
-
-Zawsze ma równoległą wartość tekstową. Kolor informuje o rodzaju zasobu, ale nie jest jedyną informacją.
-
-### Card i surface
-
-Card grupuje powiązaną treść. Nie używamy osobnej karty dla każdego wiersza listy. Raised surface jest rzadsze niż page surface.
-
-### List row
-
-- tytuł;
-- supporting text lub metadane;
-- opcjonalny trailing status lub jedna szybka akcja;
-- pełny row jest klikalny albo ma osobną akcję — obie możliwości wymagają wyraźnego rozróżnienia.
-
-### Action row
-
-- ikona;
-- czasownik lub nazwa działania;
-- opis rezultatu;
-- trailing value albo chevron.
-
-Nie używamy action row jako bloku czysto informacyjnego.
+Sheet ma mocniejsze, ale nadal transparentne tło. Header, body i footer korzystają z `--panel-pad`. Label pozostaje widoczny. Help pojawia się tylko wtedy, gdy wyjaśnia format, konsekwencję albo sposób naprawy błędu.
 
 ### Button
 
-- primary: jedna najważniejsza akcja;
-- secondary/default: alternatywa;
-- ghost: zamknięcie, drobna edycja, nawigacja;
-- destructive: usunięcie, reset lub nieodwracalna operacja.
+- primary: subtelna złota powierzchnia i obrys;
+- default: neutralne szkło;
+- quiet: prawie transparentny;
+- ghost: brak powierzchni;
+- danger: subtelny róż zagrożenia.
 
-Nie umieszczamy dwóch primary actions obok siebie.
-
-### Formularze
-
-- pola są grupowane według zadania, nie typu danych;
-- label jest zawsze widoczny;
-- help opisuje format lub konsekwencję;
-- błąd wskazuje pole oraz sposób naprawy;
-- zapis znajduje się w sticky footerze sheeta;
-- długie formularze używają logicznych sekcji.
-
-Nie używamy placeholdera jako jedynej etykiety.
-
-### Segmented control
-
-Do 2–4 wzajemnie wykluczających się opcji, np. stan noszenia albo tryb ataku. Stan wybrany musi być czytelny bez koloru.
-
-### Tag, badge i status
-
-- tag: cecha rekordu;
-- badge: liczba lub krótka metadana;
-- status: bieżący stan wymagający uwagi.
-
-Nie stosujemy ich zamiennie.
-
-### Toast
-
-- krótki komunikat;
-- wariant info, success, warning albo error;
-- semantyka live region zależna od pilności;
-- opcjonalna akcja Undo.
-
-Toast nie zastępuje błędu przypisanego do pola.
-
-### Empty state
-
-- mały lokalny ornament;
-- jedno zdanie wyjaśnienia;
-- jedna konkretna akcja.
-
-Nie używamy samego szarego tekstu „Brak danych”, gdy użytkownik może od razu coś zrobić.
-
-### Bottom sheet
-
-Do krótkich zadań, edycji i kontekstowych wyborów.
-
-- stały nagłówek;
-- scrollowalne body;
-- sticky footer;
-- focus trafia na tytuł;
-- Escape zamyka;
-- focus wraca do wywołującej kontrolki.
-
-### Confirm dialog
-
-Tylko decyzja binarna. Treść opisuje rezultat i odwracalność. Akcja destrukcyjna ma nazwę skutku, np. „Usuń punkt”, a nie samo „OK”.
-
-### Import report
-
-Kolejność:
-
-1. podsumowanie pliku;
-2. elementy zaimportowane;
-3. ostrzeżenia;
-4. praca ręczna;
-5. błędy.
-
-Import jest niedostępny przy błędach. Ostrzeżenie i błąd mają ikonę lub etykietę, nie tylko kolor.
-
-### Backup i checkpoint row
-
-Pokazuje nazwę postaci, przyczynę, czas i wersję schematu. Odtworzenie jest secondary, pobranie ghost/default, usunięcie destructive.
-
-### Dice result
-
-Wynik jest najważniejszy, kontekst drugi, powtórzenie trzecie. Canvas jest dekoracyjny; tekstowy wynik pozostaje w drzewie dostępności. Kość nie może zajmować większości małego viewportu.
-
-### Combat action
-
-Pokazuje broń, formułę i jedną główną akcję rzutu. Enhanced, impaired i blast są statusami mechanicznymi, nie dekoracją.
-
-### Inventory slot i item
-
-Slot meter zawsze ma tekst `x/10`. Inventory item jest zwartym list row. Sposób noszenia, miejsca, użycia i obrażenia są metadanymi. Szybka akcja jest najwyżej jedna.
+Primary nie może wyglądać jak pełny, ciężki blok dominujący nad ilustracją.
 
 ## 6. Dostępność
 
 Minimalny kontrakt:
 
-- czytelny focus visible;
+- focus visible;
 - target przeważnie co najmniej 46×46 px;
-- reflow przy 200% bez poziomego scrolla i bez zmniejszania tekstu;
-- kolejność DOM zgodna z kolejnością wizualną;
-- informacja nie zależy wyłącznie od koloru;
-- reduced motion i ręczny override;
+- reflow przy 200% bez poziomego scrolla;
+- brak uciętych etykiet;
+- informacja niezależna od samego koloru;
+- reduced motion;
+- reduced transparency z mocniejszymi powierzchniami;
 - forced colors bez ilustracji;
-- light i dark z wystarczającym kontrastem;
-- semantyczne `button`, `label`, `details`, `time`, nagłówki i live regions;
-- błędy formularzy są zrozumiałe i kierują fokus na pole.
+- semantyczne nagłówki, przyciski, etykiety, `details`, `time` i live regions;
+- canvas kości jest dekoracyjny i nie przechwytuje hit-testów.
 
 ## 7. Odpowiedzialność plików
 
-- `app.css` — jedyny entrypoint ładowany przez HTML; zawiera wyłącznie uporządkowane `@import`;
-- `tokens.css` — role semantyczne i warianty motywu;
-- `foundations.css` — reset, typografia, focus, motion, forced colors;
-- `shell.css` — app shell, header, main, bottom nav i safe areas;
-- `components.css` — buttons, rows, forms, cards, overlays i feedback;
-- `screens.css` — kompozycje głównych widoków i reflow;
-- `dice.css` — wyłącznie prezentacja fizycznych kości.
+- `app.css` — jedyny entrypoint, wyłącznie uporządkowane `@import`;
+- `tokens.css` — role semantyczne i motywy;
+- `foundations.css` — reset, typografia, focus, motion i forced colors;
+- `shell.css` — ilustracja, header, main, tab bar i safe areas;
+- `components.css` — bazowe komponenty i zachowanie;
+- `screens.css` — strukturalne kompozycje widoków;
+- `dice.css` — renderer fizycznych kości;
+- `atmosphere.css` — transparentność, wspólny rytm, minimalna gęstość i końcowy kontrakt wizualny.
 
-Reguły CSS nie mogą być tworzone, kopiowane ani wstrzykiwane przez JavaScript. `app.css` pozostaje import-only i nie przyjmuje selektorów. Nie dodajemy plików typu `overrides`, `fixes`, `temporary` ani `redesign-2`.
+CSS jest statyczny. JavaScript nie tworzy elementów `<style>`, nie używa `insertRule()` i nie dostarcza lokalnych reguł spacingu.
 
-## 8. Dodawanie nowego widoku
+## 8. Checklist przed PR-em
 
-1. Zdefiniuj hierarchię: najważniejsza informacja, pierwsza akcja, dane wspierające i operacje destrukcyjne.
-2. Użyj istniejących tokenów oraz komponentów.
-3. Dodaj wyłącznie kompozycję do `screens.css`.
-4. Sprawdź 320×568 i 390×844.
-5. Sprawdź dark, light, 200% text, reduced motion i forced colors.
-6. Dodaj screenshot do zestawu review.
-7. Udokumentuj nowy wzorzec tylko wtedy, gdy jest rzeczywiście wielokrotnego użytku.
-
-## 9. Właściwe i niewłaściwe użycie
-
-### Właściwe
-
-- jeden panel stanu postaci i osobny panel walki;
-- lista przedmiotów rozdzielona liniami;
-- primary action w footerze sheeta;
-- danger section w ustawieniach;
-- dark i light korzystające z tych samych ról;
-- reflow komponentu do jednej kolumny przy powiększeniu tekstu.
-
-### Niewłaściwe
-
-- osobna szklana karta dla każdego wpisu;
-- hardkodowany `rgba()` zależny od dark mode w komponencie;
-- niewidoczny interaktywny skrót;
-- dynamiczne `insertRule()`;
-- zmniejszanie fontu, aby zachować layout;
-- dwie równoległe skale spacingu lub tokenów;
-- ważna akcja dostępna wyłącznie przez gest.
+1. Czy ilustracja pozostaje widoczna i prowadzi klimat?
+2. Czy można usunąć jakiś tekst bez utraty decyzji albo działania?
+3. Czy wszystkie główne krawędzie są wyrównane do `--side` albo `--panel-pad`?
+4. Czy nazwy i etykiety zawijają się bez ucięcia?
+5. Czy ekran używa wyłącznie neutralnego atramentu, oliwki, złota i różu zagrożenia?
+6. Czy lista nie została zamieniona w stos kart?
+7. Czy light i dark zachowują tę samą hierarchię?
+8. Czy 320×568, 390×744 i 390×844 działają bez poziomego scrolla?
+9. Czy reduced motion, reduced transparency i forced colors pozostają kompletne?
+10. Czy screenshot całego ekranu wygląda spokojniej niż pojedynczy komponent oglądany w izolacji?
