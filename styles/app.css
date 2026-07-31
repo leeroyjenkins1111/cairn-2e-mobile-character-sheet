@@ -1,0 +1,10 @@
+/*
+ * Wędrowny Dziennik — jedyny entrypoint CSS aplikacji.
+ * Ten plik wyłącznie deklaruje kolejność statycznych modułów design systemu.
+ */
+@import url("./tokens.css?v=0.30.1");
+@import url("./foundations.css?v=0.30.1");
+@import url("./shell.css?v=0.30.1");
+@import url("./components.css?v=0.30.1");
+@import url("./screens.css?v=0.30.1");
+@import url("./dice.css?v=0.30.1");
