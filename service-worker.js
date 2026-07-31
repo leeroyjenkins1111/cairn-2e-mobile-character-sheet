@@ -10,6 +10,7 @@ const APP_SHELL = [
   './styles/screens.css?v=0.30.1',
   './styles/dice.css?v=0.30.1',
   './styles/atmosphere.css?v=0.30.1',
+  './styles/combat.css?v=0.30.1',
   './scripts/app-config.js?v=0.30.1',
   './scripts/inventory-domain.js?v=0.30.1',
   './scripts/app-core.js?v=0.30.1',
