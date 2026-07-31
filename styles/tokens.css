@@ -1,45 +1,45 @@
 /*
  * Wędrowny Dziennik — semantic design tokens.
- * Components consume roles, never pigment names.
+ * The illustration carries the atmosphere. UI surfaces remain quiet glass.
  */
 :root {
   color-scheme: dark;
 
-  --color-canvas: #0d0d0a;
-  --color-canvas-deep: #080806;
-  --color-surface-page: #1b1a15;
-  --color-surface-page-translucent: rgba(27, 26, 21, .93);
-  --color-surface-raised: #27251e;
-  --color-surface-interactive: #302d24;
-  --color-surface-soft: #222119;
-  --color-surface-sunken: #13130f;
+  --color-canvas: #0d0912;
+  --color-canvas-deep: #08050d;
+  --color-surface-page: rgba(18, 11, 28, .16);
+  --color-surface-page-translucent: rgba(18, 11, 28, .22);
+  --color-surface-raised: rgba(18, 11, 28, .70);
+  --color-surface-interactive: rgba(241, 225, 231, .075);
+  --color-surface-soft: rgba(18, 11, 28, .12);
+  --color-surface-sunken: rgba(8, 5, 15, .28);
 
-  --color-ink-primary: #f3ebdd;
-  --color-ink-secondary: #c5bbaa;
-  --color-ink-muted: #998f7e;
-  --color-ink-inverse: #211e16;
+  --color-ink-primary: #f3ece6;
+  --color-ink-secondary: rgba(243, 236, 230, .76);
+  --color-ink-muted: rgba(243, 236, 230, .56);
+  --color-ink-inverse: #100a18;
 
-  --color-border: #494538;
-  --color-border-strong: #716a58;
-  --color-border-subtle: rgba(243, 235, 221, .12);
+  --color-border: rgba(241, 225, 231, .22);
+  --color-border-strong: rgba(241, 225, 231, .34);
+  --color-border-subtle: rgba(241, 225, 231, .12);
 
-  --color-accent-primary: #a6b27b;
-  --color-accent-primary-strong: #c0ca91;
-  --color-accent-secondary: #d5b86b;
-  --color-accent-secondary-strong: #ead083;
-  --color-state-positive: #9eb986;
-  --color-state-warning: #d5b86b;
-  --color-state-danger: #e2877d;
-  --color-state-danger-surface: #432724;
-  --color-focus: #f2d37e;
-  --color-overlay: rgba(4, 4, 3, .72);
+  --color-accent-primary: #a4ad80;
+  --color-accent-primary-strong: #b8c08f;
+  --color-accent-secondary: #dfbd68;
+  --color-accent-secondary-strong: #ebcf83;
+  --color-state-positive: #a4ad80;
+  --color-state-warning: #dfbd68;
+  --color-state-danger: #e78492;
+  --color-state-danger-surface: rgba(231, 132, 146, .10);
+  --color-focus: #dfbd68;
+  --color-overlay: rgba(5, 3, 9, .62);
 
-  --art-veil-top: rgba(10, 10, 8, .46);
-  --art-veil-mid: rgba(12, 12, 9, .62);
-  --art-veil-bottom: rgba(8, 8, 6, .84);
-  --chrome-surface: rgba(17, 17, 13, .91);
-  --paper-fiber: rgba(243, 235, 221, .018);
-  --type-shadow: 0 1px 2px rgba(0, 0, 0, .55);
+  --art-veil-top: rgba(13, 7, 19, .18);
+  --art-veil-mid: rgba(17, 8, 23, .12);
+  --art-veil-bottom: rgba(8, 5, 15, .34);
+  --chrome-surface: rgba(11, 7, 18, .48);
+  --paper-fiber: transparent;
+  --type-shadow: 0 1px 2px rgba(0, 0, 0, .62);
 
   --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
   --font-display: ui-serif, Georgia, Cambria, "Times New Roman", serif;
@@ -48,13 +48,13 @@
   --type-supporting: .875rem;
   --type-body: 1rem;
   --type-emphasis: 1.125rem;
-  --type-section: 1.375rem;
-  --type-page: clamp(1.75rem, 7vw, 2.15rem);
-  --type-resource: clamp(3.1rem, 15vw, 4.35rem);
+  --type-section: 1.28rem;
+  --type-page: clamp(1.7rem, 7vw, 2.08rem);
+  --type-resource: clamp(3rem, 14vw, 4.1rem);
 
   --leading-tight: 1.08;
   --leading-ui: 1.25;
-  --leading-body: 1.5;
+  --leading-body: 1.45;
 
   --space-1: 4px;
   --space-2: 8px;
@@ -64,14 +64,14 @@
   --space-6: 32px;
   --space-7: 48px;
 
-  --radius-sm: 6px;
-  --radius-md: 12px;
+  --radius-sm: 8px;
+  --radius-md: 13px;
   --radius-lg: 18px;
   --radius-pill: 999px;
 
   --border-thin: 1px;
-  --shadow-raised: 0 14px 36px rgba(0, 0, 0, .26);
-  --shadow-floating: 0 22px 60px rgba(0, 0, 0, .38);
+  --shadow-raised: 0 8px 24px rgba(0, 0, 0, .12);
+  --shadow-floating: 0 20px 56px rgba(0, 0, 0, .34);
 
   --motion-fast: 120ms;
   --motion-base: 180ms;
@@ -79,9 +79,11 @@
   --ease-ui: cubic-bezier(.2, .72, .28, 1);
 
   --content-width: 520px;
-  --side: clamp(14px, 4vw, 20px);
-  --header-height: 58px;
-  --tab-height: 68px;
+  --side: clamp(14px, 4vw, 18px);
+  --panel-pad: 14px;
+  --panel-gap: 10px;
+  --header-height: 54px;
+  --tab-height: 66px;
   --touch-min: 46px;
   --visual-viewport-height: 100dvh;
   --visual-viewport-offset-top: 0px;
@@ -103,41 +105,40 @@
 :root[data-theme="light"] {
   color-scheme: light;
 
-  --color-canvas: #d9d0bf;
-  --color-canvas-deep: #c8bdab;
-  --color-surface-page: #f3ebdd;
-  --color-surface-page-translucent: rgba(243, 235, 221, .95);
-  --color-surface-raised: #fff8e9;
-  --color-surface-interactive: #e9dfc9;
-  --color-surface-soft: #e4dac6;
-  --color-surface-sunken: #d6cbb7;
+  --color-canvas: #cfc7c2;
+  --color-canvas-deep: #bdb4b0;
+  --color-surface-page: rgba(250, 246, 241, .30);
+  --color-surface-page-translucent: rgba(250, 246, 241, .42);
+  --color-surface-raised: rgba(250, 246, 241, .88);
+  --color-surface-interactive: rgba(52, 39, 55, .07);
+  --color-surface-soft: rgba(250, 246, 241, .24);
+  --color-surface-sunken: rgba(250, 246, 241, .48);
 
-  --color-ink-primary: #25231d;
-  --color-ink-secondary: #5e584b;
-  --color-ink-muted: #6d6555;
-  --color-ink-inverse: #fff8e9;
+  --color-ink-primary: #2b222c;
+  --color-ink-secondary: rgba(43, 34, 44, .76);
+  --color-ink-muted: rgba(43, 34, 44, .58);
+  --color-ink-inverse: #fffaf4;
 
-  --color-border: #c2b7a2;
-  --color-border-strong: #8b816f;
-  --color-border-subtle: rgba(37, 35, 29, .13);
+  --color-border: rgba(43, 34, 44, .20);
+  --color-border-strong: rgba(43, 34, 44, .34);
+  --color-border-subtle: rgba(43, 34, 44, .12);
 
-  --color-accent-primary: #536847;
-  --color-accent-primary-strong: #3f5638;
-  --color-accent-secondary: #7a5a1d;
-  --color-accent-secondary-strong: #614513;
-  --color-state-positive: #49633f;
-  --color-state-warning: #7a5a1d;
-  --color-state-danger: #953f36;
-  --color-state-danger-surface: #f2d6cf;
-  --color-focus: #5b4419;
-  --color-overlay: rgba(29, 25, 18, .48);
+  --color-accent-primary: #596247;
+  --color-accent-primary-strong: #434b35;
+  --color-accent-secondary: #7b6128;
+  --color-accent-secondary-strong: #5f491d;
+  --color-state-positive: #596247;
+  --color-state-warning: #7b6128;
+  --color-state-danger: #9e4957;
+  --color-state-danger-surface: rgba(158, 73, 87, .10);
+  --color-focus: #5f491d;
+  --color-overlay: rgba(24, 17, 25, .42);
 
-  --art-veil-top: rgba(217, 208, 191, .63);
-  --art-veil-mid: rgba(231, 222, 205, .79);
-  --art-veil-bottom: rgba(235, 226, 210, .94);
-  --chrome-surface: rgba(243, 235, 221, .94);
-  --paper-fiber: rgba(37, 35, 29, .025);
-  --type-shadow: 0 1px 0 rgba(255, 255, 255, .55);
-  --shadow-raised: 0 14px 34px rgba(58, 48, 35, .15);
-  --shadow-floating: 0 22px 56px rgba(58, 48, 35, .24);
+  --art-veil-top: rgba(239, 234, 229, .30);
+  --art-veil-mid: rgba(239, 234, 229, .38);
+  --art-veil-bottom: rgba(239, 234, 229, .58);
+  --chrome-surface: rgba(250, 246, 241, .54);
+  --type-shadow: 0 1px 0 rgba(255, 255, 255, .58);
+  --shadow-raised: 0 8px 22px rgba(43, 34, 44, .10);
+  --shadow-floating: 0 20px 52px rgba(43, 34, 44, .22);
 }
