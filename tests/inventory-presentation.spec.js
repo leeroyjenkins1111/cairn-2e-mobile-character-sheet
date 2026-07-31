@@ -13,9 +13,11 @@ async function loadDemoInventory(page) {
 async function addDemoFatigue(page, note = 'Wyczerpująca podróż') {
   const inventory = page.locator('#view-inventory');
   await inventory.locator('[data-inventory-stat="fatigue"]').click();
-  await expect(page.getByRole('heading', { name: 'Dodaj zmęczenie' })).toBeVisible();
+  const addFatigueHeading = page.getByRole('heading', { name: 'Dodaj zmęczenie' });
+  await expect(addFatigueHeading).toBeVisible();
   await page.getByLabel('Powód lub notatka (opcjonalnie)').fill(note);
   await page.getByRole('button', { name: 'Dodaj zmęczenie', exact: true }).click();
+  await expect(addFatigueHeading).not.toBeVisible();
   await expect(inventory.locator('[data-inventory-status="fatigue"]')).toBeVisible();
 }
 
