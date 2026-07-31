@@ -396,8 +396,8 @@ textarea { min-height: 108px; }
 .scenario-button { min-height: 58px; }
 
 /* Journal: one continuous page, not a stack of cards --------------------- */
-#view-journal { gap: 0; }
-#view-journal .journal-section {
+#view-more { gap: 0; }
+#view-more .journal-section {
   min-width: 0;
   padding: var(--panel-pad) 2px;
   border: 0;
@@ -410,9 +410,9 @@ textarea { min-height: 108px; }
   backdrop-filter: none;
   -webkit-backdrop-filter: none;
 }
-#view-journal .journal-section:first-child { padding-top: var(--space-2); }
-#view-journal .journal-section > p.muted { display: none; }
-#view-journal .journal-section .section-heading h2 { font-size: 1.2rem; }
+#view-more .journal-section:first-child { padding-top: var(--space-2); }
+#view-more .journal-section > p.muted { display: none; }
+#view-more .journal-section .section-heading h2 { font-size: 1.2rem; }
 .journal-entry-row,
 .history-item,
 .session-event { border-bottom-color: var(--color-border-subtle); }
@@ -497,5 +497,5 @@ html[style*="font-size"] .nav-btn > span:last-child {
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
   }
-  #view-journal .journal-section { background: var(--color-surface-raised); }
+  #view-more .journal-section { background: var(--color-surface-raised); }
 }
