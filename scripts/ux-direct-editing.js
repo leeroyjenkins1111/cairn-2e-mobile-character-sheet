@@ -76,16 +76,6 @@ function enhanceCharacterStatEditing() {
   const wilGlyph = wil?.querySelector('.attribute-glyph');
   if (wilGlyph && !wilGlyph.querySelector('.mind-icon')) wilGlyph.replaceChildren(mindIcon());
 
-  if (!attributeRow.querySelector('[data-save-shortcut="str"]')) {
-    attributeRow.append(createEl('button', {
-      type: 'button',
-      className: 'direct-save-shortcut',
-      dataset: { saveShortcut: 'str' },
-      attrs: { 'aria-label': `Przygotuj rzut obronny ${ATTRS.str.full}, aktualna wartość ${state.stats.str.current}` },
-      onclick: () => openSavePreparationSheet('str')
-    }, [createEl('span', { text: 'Rzut obronny SIŁ' })]));
-  }
-
   const secondary = [...root.querySelectorAll('.state-secondary .secondary-stat')];
   const armorStat = secondary.find(item => item.textContent.includes('Pancerz'));
   const slotsStat = secondary.find(item => item.textContent.includes('Miejsca'));
