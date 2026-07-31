@@ -50,6 +50,7 @@ test.describe('czytelność listy ekwipunku', () => {
     await expect(fatigueStatus.locator('.inventory-row')).toHaveCount(0);
     await expect(fatigueStatus.locator('.inventory-fatigue-entry')).toHaveCount(1);
     await expect(inventory.locator('.inventory-list')).not.toContainText('Zmęczenie');
+    await expect(page.locator('#toast')).not.toHaveClass(/show/, { timeout: 5000 });
 
     await page.screenshot({
       path: 'ui-review-screenshots/02a-inventory-fatigue-status-dark-390x844.png',
