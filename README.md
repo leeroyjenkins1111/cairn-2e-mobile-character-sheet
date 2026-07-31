@@ -6,22 +6,19 @@ Szybki, dotykowy companion jednej lokalnej postaci do Cairn 2e. Aplikacja dział
 
 https://leeroyjenkins1111.github.io/cairn-2e-mobile-character-sheet/
 
-## Aktualny interfejs
+## Interfejs — Wędrowny Dziennik
 
-Interfejs został strukturalnie przebudowany pod krótkie użycie na telefonie przy stole:
+Cała aplikacja korzysta z jednego języka wizualnego inspirowanego fizycznym dziennikiem podróżnika:
 
-- **Postać** pokazuje jeden panel bieżącego stanu z dominującą OCHR, pancerzem, miejscami i dotykowymi rzutami SIŁ/ZRE/WOL;
-- ekran **Postać** usuwa powtarzalne opisy z launchera walki, wyróżnia SIŁ/ZRE/WOL własnymi znakami i zastępuje złote CTA subtelnym, matowym wierszem obrażeń;
-- ekran **Postać** używa autorskiej, sylwetkowej grafiki lasu, wyprawowej pieczęci i ikon inspirowanych fizycznym dziennikiem; dekoracja pozostaje subtelna i nie zastępuje informacji ani dostępnych nazw;
-- opisowe dopiski bez znaczenia w rozgrywce zostały usunięte, a skrócone etykiety zachowują mechanicznie istotne informacje;
-- otwarty panel stanu grupuje statystyki odstępami zamiast ramek, a obramowane powierzchnie pozostają zarezerwowane dla działań;
-- ekran **Postać** skaluje pionowy rytm do wysokości telefonu, dzięki czemu stan, walka i najczęstsze akcje mieszczą się nad tab barem bez przewijania na typowych viewportach iPhone’a;
-- **Ekwipunek** używa kompaktowego podsumowania, dziesięciu wizualnych miejsc i pełnych dotykowych wierszy z maksymalnie jedną szybką akcją;
-- **Kości** działają jak konsola z dużym ostatnim wynikiem, rail-em szybkich kości, lekkim powtórzeniem i historią;
-- wyniki rzutów otrzymały animację obracanej bryły 3D z wartością ujawnianą po zatrzymaniu oraz zsynchronizowane tyknięcia haptyczne na wspieranych urządzeniach;
-- **Dziennik** zaczyna się od sesji i szybkiej notatki, a dossier oraz rzadsze korekty znajdują się niżej;
-- top bar pokazuje bieżący widok, a dolny pasek działa jak stały mobilny tab bar z obsługą safe area;
-- wszystkie widoki korzystają z lokalnej ilustracji lasu jako stałego tła; zależne od motywu warstwy kontrastowe utrzymują czytelność tekstu, a forced colors całkowicie wyłącza grafikę.
+- ilustracja lasu tworzy atmosferę canvasu, ale nie jest jedynym nośnikiem charakteru;
+- treść korzysta z czytelnych powierzchni papieru i atramentu zamiast nakładających się warstw glassmorphismu;
+- kolor ma role semantyczne: terenowa zieleń orientuje, mosiądz wyróżnia główną akcję, a czerwień sygnalizuje zagrożenie i destrukcję;
+- serif jest używany dla tytułów i wartości, systemowy sans dla działań, opisów i formularzy;
+- Postać, Ekwipunek, Kości, Dziennik, onboarding, ustawienia, import, backupy oraz wszystkie sheety korzystają z tych samych komponentów i rytmu;
+- dark i light mode są równorzędnymi realizacjami tego samego systemu;
+- forced colors wyłącza ilustrację, reduced motion usuwa ruch, a powiększenie tekstu przeorganizowuje layout bez zmniejszania treści.
+
+Pełny kontrakt systemu znajduje się w [`docs/design-language.md`](docs/design-language.md).
 
 ## Najważniejsze funkcje
 
@@ -41,27 +38,38 @@ Interfejs został strukturalnie przebudowany pod krótkie użycie na telefonie p
 
 Dane są zapisywane wyłącznie w `localStorage` tej przeglądarki i urządzenia. Wyczyszczenie danych przeglądarki usuwa kartę, dlatego regularnie używaj **Pobierz pełną kopię**.
 
-Aplikacja używa `schemaVersion: 3`. Aktualny układ interfejsu nie zmienia formatu importu, backupu ani punktów odzyskiwania i nie wymaga migracji danych. Zapisy ze `schemaVersion: 2` są nadal migrowane automatycznie, a starsze eksporty pozostają obsługiwane.
+Aplikacja używa `schemaVersion: 3`. Refaktor języka wizualnego nie zmienia formatu importu, backupu ani punktów odzyskiwania i nie wymaga migracji danych. Zapisy ze `schemaVersion: 2` są nadal migrowane automatycznie, a starsze eksporty pozostają obsługiwane.
 
 ## Struktura aplikacji
 
-- `index.html` — semantyczny shell, cztery widoki, tab bar, bottom sheet i jawna kolejność assetów runtime;
+### Runtime
+
+- `index.html` — semantyczny shell, cztery widoki, tab bar, bottom sheet i jawna kolejność assetów;
 - `scripts/app-config.js` — konfiguracja i wersja aplikacji;
 - `scripts/app-core.js` — model danych, logika Cairn, persystencja, import/eksport i bazowe renderowanie;
 - `scripts/app-bootstrap.js` — wiązanie zdarzeń i funkcja inicjalizacji;
 - `scripts/app-entry.js` — końcowy punkt wejścia uruchamiany po rejestracji rozszerzeń;
 - `scripts/inventory-domain.js` — czysty, niezależny od DOM model podsumowania ekwipunku;
 - `scripts/render-hooks.js`, `scripts/inventory-view.js`, `scripts/character-redesign.js` i pozostałe pliki runtime — jawnie rejestrowane renderery, hooki oraz rozszerzenia interfejsu;
-- `styles/app.css` — bazowy layout i system wizualny;
-- `styles/character-redesign.css` i `styles/screen-unification.css` — warstwy stylów ekranów;
-- `styles/dice-runtime.css` — prezentacja fizycznych kości i ich układu ruchu;
-- `styles/runtime-overrides.css` — małe, przekrojowe korekty runtime, które nie mają jeszcze własnej warstwy;
-- `service-worker.js` — jawny cache lokalnych plików do pracy offline;
-- `scripts/prepare-site.mjs` — budowa katalogu `_site` używanego zarówno przez Pages, jak i Playwright;
-- `tests/unit/` — testy czystej logiki oraz kontraktów źródłowych;
-- `tests/*.spec.js` — regresja funkcjonalna, dostępnościowa, persystencji i screenshoty do review.
+- `service-worker.js` — jawny cache lokalnych plików do pracy offline.
 
-Runtime nie używa frameworka, bundlera, zewnętrznych fontów ani zależności sieciowych. Kolejność skryptów w `index.html` jest kontraktem: konfiguracja i core są ładowane przed rejestrami rozszerzeń, a `app-entry.js` inicjalizuje aplikację jako ostatni asset.
+### CSS
+
+- `styles/tokens.css` — jeden zestaw tokenów semantycznych i oba motywy;
+- `styles/foundations.css` — reset, typografia, focus, motion, contrast i forced colors;
+- `styles/shell.css` — shell, header, dolna nawigacja, safe area i kontener;
+- `styles/components.css` — przyciski, wiersze, formularze, powierzchnie, sheety i feedback;
+- `styles/screens.css` — kompozycje Postaci, Ekwipunku, Kości, Dziennika i reflow;
+- `styles/dice.css` — wyłącznie prezentacja fizycznych kości.
+
+Runtime nie tworzy elementów `<style>`, nie wywołuje `insertRule()` i nie posiada warstwy `runtime-overrides.css`. Nie używa frameworka, bundlera, zewnętrznych fontów ani zależności sieciowych.
+
+### Build i testy
+
+- `scripts/prepare-site.mjs` — budowa katalogu `_site` używanego przez Pages i Playwright;
+- `scripts/check-production-runtime.mjs` — kontrola kompletnego, statycznego systemu CSS oraz runtime;
+- `tests/unit/` — testy czystej logiki i kontraktów źródłowych;
+- `tests/*.spec.js` — regresja funkcjonalna, dostępnościowa, persystencji i screenshoty do review.
 
 ## Uruchomienie lokalne
 
@@ -85,7 +93,7 @@ npm run check:production
 npm test
 ```
 
-`check:production` buduje dokładnie ten sam katalog `_site`, który trafia do GitHub Pages, i sprawdza obecność wymaganych modułów, stylów oraz wpisów Service Workera. Testy Playwright obejmują również pełny reload zapisu i cykl backup → modyfikacja → import → checkpoint.
+`check:production` buduje dokładnie ten sam katalog `_site`, który trafia do GitHub Pages, sprawdza komplet sześciu statycznych warstw CSS, oba motywy, wsparcie dostępności oraz brak starych override’ów i runtime CSS injection.
 
 CI publikuje diagnostykę Playwright i wizualny zestaw review jako artefakty workflow.
 
