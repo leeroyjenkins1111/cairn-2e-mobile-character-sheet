@@ -18,6 +18,7 @@ const siteFiles = [
   'styles/dice.css',
   'styles/atmosphere.css',
   'styles/combat.css',
+  'styles/inventory.css',
   'scripts/app-core.js',
   'scripts/app-bootstrap.js',
   'scripts/app-entry.js',
