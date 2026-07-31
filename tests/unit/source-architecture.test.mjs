@@ -2,7 +2,16 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { access, readFile } from 'node:fs/promises';
 
-const [index, core, bootstrap, worker, directEditing, characterRedesign, renderHooks, diceMotion, diceRenderer] = await Promise.all([
+const designStylePaths = [
+  'styles/tokens.css',
+  'styles/foundations.css',
+  'styles/shell.css',
+  'styles/components.css',
+  'styles/screens.css',
+  'styles/dice.css'
+];
+
+const [index, core, bootstrap, worker, directEditing, characterRedesign, renderHooks, diceMotion, diceRenderer, ...designStyles] = await Promise.all([
   readFile('index.html', 'utf8'),
   readFile('scripts/app-core.js', 'utf8'),
   readFile('scripts/app-bootstrap.js', 'utf8'),
@@ -11,10 +20,12 @@ const [index, core, bootstrap, worker, directEditing, characterRedesign, renderH
   readFile('scripts/character-redesign.js', 'utf8'),
   readFile('scripts/render-hooks.js', 'utf8'),
   readFile('scripts/dice-motion.js', 'utf8'),
-  readFile('scripts/dice-renderer.js', 'utf8')
+  readFile('scripts/dice-renderer.js', 'utf8'),
+  ...designStylePaths.map(path => readFile(path, 'utf8'))
 ]);
 
 const sourceRuntime = `${core}\n${bootstrap}`;
+const designSource = designStyles.join('\n');
 
 test('repozytorium przechowuje fizyczny core i bootstrap', async () => {
   await assert.doesNotReject(() => access('scripts/app-core.js'));
@@ -49,7 +60,6 @@ test('widok ekwipunku nie jest ponownie opakowywany przez direct editing', () =>
   assert.doesNotMatch(directEditing, /renderInventoryViewBase|renderInventoryViewWithDirectActions|enhanceInventoryActions/);
 });
 
-
 test('runtime inicjalizuje się przez końcowy entrypoint', async () => {
   const entry = await readFile('scripts/app-entry.js', 'utf8');
   assert.doesNotMatch(bootstrap, /initialize\(\);\s*$/);
@@ -73,4 +83,31 @@ test('renderery używają jawnych rejestrów zamiast globalnych nadpisań', () =
 test('runtime nie tworzy ani nie wstrzykuje arkuszy CSS', () => {
   const runtime = [core, bootstrap, directEditing, characterRedesign, renderHooks, diceMotion, diceRenderer].join('\n');
   assert.doesNotMatch(runtime, /insertRule|document\.createElement\(['"]style['"]\)|style\.textContent/);
+});
+
+test('Wędrowny Dziennik jest jedynym statycznym systemem CSS', async () => {
+  for (const path of designStylePaths) {
+    await assert.doesNotReject(() => access(path));
+    assert.match(index, new RegExp(path.replace('.', '\\.') + '\\?v='));
+    assert.match(worker, new RegExp(path.replace('.', '\\.') + '\\?v='));
+  }
+  for (const legacyPath of [
+    'styles/app.css',
+    'styles/character-redesign.css',
+    'styles/screen-unification.css',
+    'styles/runtime-overrides.css',
+    'styles/dice-runtime.css',
+    'scripts/typography-system.js',
+    'scripts/inventory-spacing.js'
+  ]) {
+    await assert.rejects(() => access(legacyPath));
+    assert.doesNotMatch(index, new RegExp(legacyPath.replace('.', '\\.')));
+    assert.doesNotMatch(worker, new RegExp(legacyPath.replace('.', '\\.')));
+  }
+  assert.match(designSource, /--color-surface-page/);
+  assert.match(designSource, /:root\[data-theme="light"\]/);
+  assert.match(designSource, /@media \(forced-colors: active\)/);
+  assert.match(designSource, /@media \(prefers-reduced-motion: reduce\)/);
+  assert.doesNotMatch(designSource, /--character-(gold|rose|olive|glass)/);
+  assert.doesNotMatch(directEditing, /direct-save-shortcut/);
 });
