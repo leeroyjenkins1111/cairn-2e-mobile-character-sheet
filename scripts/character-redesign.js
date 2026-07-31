@@ -58,7 +58,22 @@
       { attrs: { d: 'M7 12V7a1.5 1.5 0 0 1 3 0v3-4a1.5 1.5 0 0 1 3 0v4-3a1.5 1.5 0 0 1 3 0v3-2a1.5 1.5 0 0 1 3 0v5c0 4-2 6-6 6h-1c-3 0-5-2-6-4l-2-4a1.6 1.6 0 0 1 2.8-1.5z' } }
     ],
     weapon: [
-      { attrs: { d: 'm4 4 16 16M20 4 4 20M7 4 4 7M17 4l3 3M4 17l3 3M17 20l3-3' } }
+      { attrs: { d: 'm5 4 14 14M19 4 5 18' } },
+      { attrs: { d: 'M4 3.5 7.5 5 5 7.5zM20 3.5 16.5 5 19 7.5zM4 20.5l3.5-1.5L5 16.5zM20 20.5 16.5 19l2.5-2.5z' } }
+    ]
+  };
+
+  const COMBAT_ICONS = {
+    turnOrder: [
+      { attrs: { d: 'M7 7h9l-2.5-2.5M17 17H8l2.5 2.5' } },
+      { attrs: { d: 'M17 7a5 5 0 0 1 0 10M7 17A5 5 0 0 1 7 7' } }
+    ],
+    chevron: [
+      { attrs: { d: 'm9 6 6 6-6 6' } }
+    ],
+    damage: [
+      { attrs: { d: 'M12 3 19 6v5c0 4.7-2.8 8-7 10-4.2-2-7-5.3-7-10V6z' } },
+      { attrs: { d: 'm13.5 5.5-3 5.5h3l-3 6.5' } }
     ]
   };
 
@@ -84,83 +99,86 @@
     return makeWeaponSvg(WEAPON_ICONS[weaponIconType(ready[0])]);
   }
 
+  function weaponSummary(ready, panicked) {
+    if (!ready.length) {
+      return { current: 'Bez broni', notation: 'k4' };
+    }
+    if (ready.length > 1) {
+      return { current: `${ready.length} ${weaponCountLabel(ready.length)} w rękach`, notation: '' };
+    }
+    const weapon = ready[0];
+    const notation = displayDamageNotation(formatDamageFormula(weapon.damageFormula)) || 'k4';
+    return { current: weapon.name, notation: panicked ? 'k4' : notation };
+  }
+
+  function combatSectionTitle() {
+    return createEl('div', { className: 'section-title' }, [
+      makeWeaponSvg(WEAPON_ICONS.weapon),
+      createEl('h2', { id: 'combat-launcher-title', text: 'Walka' })
+    ]);
+  }
+
   function renderCombatLauncherRedesigned() {
     const ready = heldWeaponItems();
     const panicked = state.conditions.panicked;
+    const summary = weaponSummary(ready, panicked);
     const section = createEl('section', {
       className: 'combat-launcher',
       attrs: { 'aria-labelledby': 'combat-launcher-title' }
     });
 
     section.append(createEl('div', { className: 'section-heading' }, [
-      characterSectionTitle('combat-launcher-title', 'Walka', 'weapon'),
-      createEl('div', { className: 'header-actions combat-heading-actions' }, [
-        panicked ? createEl('span', { className: 'combat-status', text: 'Osłabione' }) : null,
-        createEl('button', {
-          type: 'button',
-          className: 'btn btn-icon btn-ghost combat-options-button',
-          attrs: { 'aria-label': 'Więcej opcji walki', title: 'Więcej opcji walki' },
-          onclick: openCombatSheet
-        }, [uiIcon('more')])
-      ])
-    ]));
-
-    let title = 'Bez broni';
-    let meta = 'Atak podstawowy';
-    let actionText = 'Rzuć k4';
-    let action = () => performUnarmedAttack();
-    let actionAria = 'Rzuć k4 obrażeń za atak bez broni';
-
-    if (ready.length === 1) {
-      const weapon = ready[0];
-      title = weapon.name;
-      meta = [weapon.damageFormula?.blast ? 'podmuch' : '', ...safeArray(weapon.traits).slice(0, 2)].filter(Boolean).join(' · ') || 'Broń przygotowana';
-      const notation = displayDamageNotation(formatDamageFormula(weapon.damageFormula)) || 'k4';
-      actionText = `Rzuć ${panicked ? 'k4' : notation}`;
-      action = () => runItemAttack(weapon);
-      actionAria = `Rzuć obrażenia przygotowaną bronią: ${weapon.name}`;
-    } else if (ready.length > 1) {
-      title = `${ready.length} ${weaponCountLabel(ready.length)} w rękach`;
-      meta = 'Wybierz broń do ataku';
-      actionText = 'Wybierz';
-      action = openCombatSheet;
-      actionAria = 'Wybierz przygotowaną broń do ataku';
-    }
-
-    section.append(createEl('div', { className: 'combat-main-row combat-weapon-row' }, [
-      createEl('div', { className: 'combat-main-copy combat-weapon-copy' }, [
-        contextualWeaponIcon(ready),
-        createEl('span', {}, [createEl('strong', { text: title }), createEl('small', { text: meta })])
-      ]),
-      createEl('button', {
-        type: 'button',
-        className: 'btn combat-weapon-action combat-roll-action',
-        attrs: { 'aria-label': actionAria },
-        onclick: action
-      }, [uiIcon('roll'), createEl('span', { text: actionText })])
+      combatSectionTitle(),
+      panicked ? createEl('span', { className: 'combat-status', text: 'Osłabione' }) : null
     ]));
 
     section.append(createEl('button', {
       type: 'button',
-      className: 'btn btn-ghost combat-utility-action combat-order-action',
-      attrs: { 'aria-label': 'Ustal kolejność — wykonaj test ZRE' },
+      className: 'combat-panel-row combat-weapon-choice',
+      attrs: {
+        'aria-label': `Wybierz broń. Aktualnie: ${summary.current}${summary.notation ? `. Obrażenia: ${summary.notation}` : ''}`
+      },
+      onclick: openCombatSheet
+    }, [
+      contextualWeaponIcon(ready),
+      createEl('span', { className: 'combat-panel-copy' }, [
+        createEl('strong', { text: 'Wybierz broń' }),
+        createEl('small', { text: summary.current })
+      ]),
+      summary.notation ? createEl('span', { className: 'combat-panel-value', text: summary.notation }) : null,
+      makeWeaponSvg(COMBAT_ICONS.chevron)
+    ]));
+
+    section.append(createEl('button', {
+      type: 'button',
+      className: 'combat-panel-row combat-turn-row',
+      attrs: { 'aria-label': `Ustal kolejność tur — wykonaj test ZRE ${state.stats.dex.current}` },
       onclick: () => performFirstRoundDexSave()
     }, [
-      uiIcon('round'),
-      createEl('span', { className: 'combat-order-copy' }, [createEl('strong', { text: 'Ustal kolejność' })]),
-      createEl('span', { className: 'combat-order-badge', text: 'ZRE' })
+      makeWeaponSvg(COMBAT_ICONS.turnOrder),
+      createEl('span', { className: 'combat-panel-copy' }, [
+        createEl('strong', { text: 'Ustal kolejność tur' })
+      ]),
+      createEl('span', { className: 'combat-turn-value', text: `ZRE ${state.stats.dex.current}` })
     ]));
 
     return section;
-  };
+  }
 
   globalThis.CairnRuntime.registerRenderer('combatLauncher', renderCombatLauncherRedesigned);
 
   function enhanceCharacterCopy() {
-    const damageTitle = document.querySelector('#view-character .damage-primary-action strong');
+    const damageAction = document.querySelector('#view-character .damage-primary-action');
+    if (!damageAction) return;
+
+    damageAction.setAttribute('aria-label', 'Otrzymaj obrażenia');
+    const damageTitle = damageAction.querySelector('strong');
     if (damageTitle) damageTitle.textContent = 'Otrzymaj obrażenia';
-    const damageDescription = document.querySelector('#view-character .damage-primary-action small');
+    const damageDescription = damageAction.querySelector('small');
     if (damageDescription) damageDescription.textContent = 'Pancerz → Ochrona → SIŁ';
+
+    const damageIcon = damageAction.querySelector('svg');
+    if (damageIcon) damageIcon.replaceWith(makeWeaponSvg(COMBAT_ICONS.damage));
   }
 
   globalThis.CairnRenderHooks.addCharacterHook(enhanceCharacterCopy);
