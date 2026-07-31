@@ -18,6 +18,7 @@ async function addDemoFatigue(page, note = 'Wyczerpująca podróż') {
   await page.getByLabel('Powód lub notatka (opcjonalnie)').fill(note);
   await page.getByRole('button', { name: 'Dodaj zmęczenie', exact: true }).click();
   await expect(addFatigueHeading).not.toBeVisible();
+  await page.waitForTimeout(500);
   await expect(inventory.locator('[data-inventory-status="fatigue"]')).toBeVisible();
 }
 
