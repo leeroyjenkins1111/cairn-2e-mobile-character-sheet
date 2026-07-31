@@ -17,6 +17,7 @@ const siteFiles = [
   'styles/screens.css',
   'styles/dice.css',
   'styles/atmosphere.css',
+  'styles/combat.css',
   'scripts/app-core.js',
   'scripts/app-bootstrap.js',
   'scripts/app-entry.js',
