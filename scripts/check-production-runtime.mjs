@@ -1,19 +1,29 @@
 import { readFile } from 'node:fs/promises';
 
-const [index, core, bootstrap, worker, inventoryDomain, diceStyles] = await Promise.all([
+const designStylePaths = [
+  'styles/tokens.css',
+  'styles/foundations.css',
+  'styles/shell.css',
+  'styles/components.css',
+  'styles/screens.css',
+  'styles/dice.css'
+];
+
+const [index, core, bootstrap, worker, inventoryDomain, ...designStyles] = await Promise.all([
   readFile('_site/index.html', 'utf8'),
   readFile('_site/scripts/app-core.js', 'utf8'),
   readFile('_site/scripts/app-bootstrap.js', 'utf8'),
   readFile('_site/service-worker.js', 'utf8'),
   readFile('_site/scripts/inventory-domain.js', 'utf8'),
-  readFile('_site/styles/dice-runtime.css', 'utf8')
+  ...designStylePaths.map(path => readFile(`_site/${path}`, 'utf8'))
 ]);
 
 const productionSource = `${core}\n${bootstrap}`;
+const styleSource = designStyles.join('\n');
 const assertions = [
   [index.includes('scripts/app-core.js?v='), 'index loads app-core.js'],
   [index.includes('scripts/app-bootstrap.js?v='), 'index loads app-bootstrap.js'],
-  [!index.includes('scripts/app.js?v='), 'index no longer loads monolithic app.js'],
+  [!index.includes('scripts/app.js?v='), 'index does not load monolithic app.js'],
   [worker.includes('scripts/app-core.js?v='), 'service worker caches app-core.js'],
   [worker.includes('scripts/app-bootstrap.js?v='), 'service worker caches app-bootstrap.js'],
   [index.includes('scripts/app-entry.js?v='), 'index loads app-entry.js'],
@@ -21,9 +31,20 @@ const assertions = [
   [index.includes('scripts/inventory-domain.js?v='), 'index loads inventory-domain.js'],
   [worker.includes('scripts/inventory-domain.js?v='), 'service worker caches inventory-domain.js'],
   [inventoryDomain.includes('createInventoryOverviewModel'), 'inventory domain is present in production'],
-  [index.includes('styles/dice-runtime.css?v='), 'index loads dice-runtime.css'],
-  [worker.includes('styles/dice-runtime.css?v='), 'service worker caches dice-runtime.css'],
-  [diceStyles.includes('.animated-dice-result'), 'dice runtime styles are present in production'],
+  ...designStylePaths.flatMap(path => [
+    [index.includes(`${path}?v=`), `index loads ${path}`],
+    [worker.includes(`${path}?v=`), `service worker caches ${path}`]
+  ]),
+  [styleSource.includes('--color-surface-page'), 'semantic surface tokens are present'],
+  [styleSource.includes(':root[data-theme="light"]'), 'light theme tokens are present'],
+  [styleSource.includes('@media (forced-colors: active)'), 'forced-colors support is present'],
+  [styleSource.includes('@media (prefers-reduced-motion: reduce)'), 'reduced-motion support is present'],
+  [styleSource.includes('.animated-dice-result'), 'dice presentation is present'],
+  [!index.includes('character-redesign.css'), 'legacy character CSS is not loaded'],
+  [!index.includes('screen-unification.css'), 'legacy screen unification CSS is not loaded'],
+  [!index.includes('runtime-overrides.css'), 'legacy override CSS is not loaded'],
+  [!index.includes('typography-system.js'), 'runtime typography injection is removed'],
+  [!index.includes('inventory-spacing.js'), 'runtime inventory spacing injection is removed'],
   [!bootstrap.trimEnd().endsWith('initialize();'), 'bootstrap does not initialize itself'],
   [!productionSource.includes('function runDeveloperTests'), 'developer test runner excluded'],
   [!productionSource.includes('runTests: runDeveloperTests'), 'developer API hook excluded'],
@@ -42,4 +63,4 @@ if (failures.length) {
   process.exit(1);
 }
 
-console.log('Production runtime contains the required split modules and excludes developer-only hooks.');
+console.log('Production runtime contains the static Wędrowny Dziennik design system and excludes legacy override layers.');
