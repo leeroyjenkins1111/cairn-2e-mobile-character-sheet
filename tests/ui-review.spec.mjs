@@ -27,6 +27,7 @@ test('capture structural UI review screenshots', async ({ page, browserName }) =
   await page.setViewportSize({ width: 390, height: 844 });
   await page.evaluate(() => globalThis.CairnSheetDev.performFirstRoundDexSave(1));
   await expect(page.locator('#sheetTitle')).toHaveText('Pierwsza runda walki');
+  await expect(page.locator('#sheet .animated-dice-result')).toHaveClass(/settled/);
   await shot(page, '01b-combat-flow-dark-390x844');
   await page.getByRole('button', { name: 'Zamknij panel' }).click();
   await page.getByRole('button', { name: 'Ekwipunek', exact: true }).click();
