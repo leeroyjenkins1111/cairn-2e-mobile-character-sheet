@@ -9,6 +9,29 @@
   text-align: center;
 }
 .animated-dice-result { overflow: visible; }
+.result-die-scene {
+  position: relative;
+  width: 152px;
+  height: 158px;
+  display: grid;
+  place-items: center;
+}
+.result-die-object {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+}
+.result-die-shadow {
+  position: absolute;
+  right: 23px;
+  bottom: 11px;
+  left: 23px;
+  height: 12px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, .32);
+  filter: blur(7px);
+}
 .result-die-scene.die-motion-stage,
 .dual-dice-stage {
   position: relative;
