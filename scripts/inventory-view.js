@@ -14,8 +14,7 @@
       onclick: onClick
     }, [
       createEl('strong', { text: value }),
-      createEl('span', { text: label }),
-      createEl('small', { text: 'Edytuj' })
+      createEl('span', { text: label })
     ]);
   }
 
@@ -53,9 +52,9 @@
         createEl('button', {
           type: 'button',
           className: 'btn btn-primary inventory-add-item-button',
-          attrs: { 'aria-label': 'Dodaj przedmiot do ekwipunku' },
+          attrs: { 'aria-label': 'Dodaj przedmiot do ekwipunku', title: 'Dodaj przedmiot' },
           onclick: () => openItemSheet()
-        }, [uiIcon('plus'), createEl('span', { text: 'Dodaj przedmiot' })])
+        }, [uiIcon('plus'), createEl('span', { className: 'sr-only', text: 'Dodaj przedmiot' })])
       ])
     ]));
 
@@ -65,10 +64,6 @@
       inventoryStatButton('gold', overviewModel.stats.gold.value, overviewModel.stats.gold.label, openGoldSheet, `Złoto: ${overviewModel.stats.gold.value}. Zmień ilość złota.`)
     ]));
     overview.append(renderSlotMeter(usage));
-    overview.append(createEl('p', {
-      className: 'inventory-legend',
-      text: 'Drobiazg 0 · zwykły 1 · nieporęczny 2 · zmęczenie 1'
-    }));
     root.append(overview);
 
     const listCard = createEl('section', {
