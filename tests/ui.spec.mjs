@@ -85,7 +85,7 @@ test('character sections align and visible copy is not clipped', async ({ page }
   const presentation = await page.evaluate(() => {
     const selectors = ['.identity-row', '.state-values', '.combat-launcher', '.game-actions'];
     const leftEdges = selectors.map(selector => Math.round(document.querySelector(selector).getBoundingClientRect().left * 10) / 10);
-    const candidates = Array.from(document.querySelectorAll('.combat-weapon-copy strong, .combat-weapon-copy span, .compact-action span, .damage-primary-action span'))
+    const candidates = Array.from(document.querySelectorAll('.combat-panel-copy strong, .combat-panel-copy small, .combat-panel-value, .combat-turn-value, .compact-action span, .damage-primary-action span'))
       .filter(element => {
         const style = getComputedStyle(element);
         const rect = element.getBoundingClientRect();
@@ -113,9 +113,11 @@ test('failed save routes the Warden consequence without inventing an outcome', a
   await expect(page.getByRole('button', { name: /Zmień stan/ })).toBeVisible();
 });
 
-test('prepared weapon rolls damage and links to history', async ({ page }) => {
+test('prepared weapon rolls damage through weapon choice and links to history', async ({ page }) => {
   await loadDemo(page);
-  await page.getByRole('button', { name: /Rzuć obrażenia przygotowaną bronią/ }).click();
+  await page.locator('.combat-launcher').getByRole('button', { name: /Wybierz broń/ }).click();
+  await expect(page.locator('#sheetTitle')).toHaveText('Walka');
+  await page.locator('#sheet').getByRole('button', { name: /Krótki łuk/ }).first().click();
   await expect(page.locator('#sheetTitle')).toHaveText('Obrażenia broni');
   await expect(page.locator('#sheet .dice-result strong')).toHaveText(/^[1-9]\d*$/);
   await page.getByRole('button', { name: 'Historia', exact: true }).click();
