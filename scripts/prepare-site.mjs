@@ -9,6 +9,7 @@ const siteFiles = [
   'manifest.webmanifest',
   'service-worker.js',
   'icon.svg',
+  'styles/app.css',
   'styles/tokens.css',
   'styles/foundations.css',
   'styles/shell.css',
