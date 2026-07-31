@@ -1,0 +1,227 @@
+/* Inventory list hierarchy: distinct carry sections, quieter rows and unclipped names. */
+#view-inventory .inventory-list {
+  gap: var(--space-2);
+}
+
+#view-inventory .inventory-list > .section-heading {
+  min-height: 38px;
+  padding-inline: 2px;
+}
+
+#view-inventory .inventory-list > .section-heading h2 {
+  font-size: 1.42rem;
+}
+
+.inventory-groups {
+  gap: var(--space-3);
+}
+
+.inventory-group {
+  --inventory-group-accent: var(--color-ink-muted);
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--color-surface-page-translucent) 92%, transparent);
+}
+
+.inventory-group::before {
+  content: "";
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 2px;
+  background: var(--inventory-group-accent);
+  opacity: .72;
+  pointer-events: none;
+}
+
+.inventory-group[data-inventory-group="held"],
+.inventory-group[data-inventory-group="worn"] {
+  --inventory-group-accent: var(--color-accent-primary);
+}
+
+.inventory-group[data-inventory-group="held"] {
+  background: color-mix(in srgb, var(--color-surface-page-translucent) 94%, var(--color-accent-primary) 6%);
+}
+
+.inventory-group[data-inventory-group="fatigue"] {
+  --inventory-group-accent: var(--color-state-danger);
+  background: color-mix(in srgb, var(--color-surface-page-translucent) 95%, var(--color-state-danger) 5%);
+}
+
+.inventory-group[data-inventory-group="spent"] {
+  opacity: .78;
+}
+
+.inventory-group > summary {
+  min-height: 56px;
+  padding: 11px var(--space-4);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--space-3);
+  background: color-mix(in srgb, var(--color-surface-interactive) 38%, transparent);
+}
+
+.inventory-group > summary:hover,
+.inventory-group > summary:active {
+  background: color-mix(in srgb, var(--color-surface-interactive) 68%, transparent);
+}
+
+.inventory-group > summary::after {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-right: 1.5px solid currentColor;
+  border-bottom: 1.5px solid currentColor;
+  color: var(--color-ink-muted);
+  font-size: 0;
+  transform: rotate(-45deg);
+  transition: transform var(--motion-fast) var(--ease-ui);
+}
+
+.inventory-group[open] > summary::after {
+  content: "";
+  transform: rotate(45deg);
+}
+
+.inventory-group-title {
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+
+.inventory-group-title strong {
+  min-width: 0;
+  color: var(--color-ink-primary);
+  font: 650 1.08rem/1.15 var(--font-display);
+  overflow-wrap: anywhere;
+}
+
+.inventory-group-title .inventory-group-meta {
+  flex: 0 1 auto;
+  color: var(--color-ink-muted);
+  font-size: var(--type-meta);
+  line-height: 1.2;
+  text-align: right;
+  overflow-wrap: anywhere;
+}
+
+.inventory-group-list {
+  border-top: 1px solid var(--color-border-subtle);
+  background: color-mix(in srgb, var(--color-surface-page) 20%, transparent);
+}
+
+.inventory-row {
+  min-height: 68px;
+  border-bottom: 1px solid var(--color-border-subtle);
+  grid-template-columns: minmax(0, 1fr) auto;
+  background: transparent;
+}
+
+.inventory-row:last-child {
+  border-bottom: 0;
+}
+
+.inventory-row-main {
+  min-height: 68px;
+  padding: 11px var(--space-4);
+  align-content: center;
+  gap: 6px;
+}
+
+.inventory-row-main:hover,
+.inventory-row-main:active {
+  background: color-mix(in srgb, var(--color-surface-interactive) 55%, transparent);
+}
+
+.inventory-row-title {
+  justify-content: flex-start;
+}
+
+.inventory-row-title strong {
+  overflow: visible;
+  font-size: 1rem;
+  line-height: 1.2;
+  text-overflow: clip;
+  white-space: normal;
+  overflow-wrap: anywhere;
+}
+
+.carry-status {
+  display: none;
+}
+
+.inventory-row-facts {
+  gap: 3px 7px;
+  color: var(--color-ink-secondary);
+  font-size: .72rem;
+  line-height: 1.3;
+}
+
+.inventory-row-facts > span + span::before {
+  margin-right: 7px;
+}
+
+.inventory-trailing-action {
+  width: 68px;
+  min-width: 68px;
+  max-width: 68px;
+  min-height: 48px;
+  align-self: center;
+  margin: 9px 10px 9px 0;
+  padding-inline: 7px;
+  border-radius: var(--radius-md);
+  font-size: .76rem;
+}
+
+.inventory-row-spent {
+  opacity: .66;
+}
+
+@media (max-width: 359px) {
+  .inventory-group > summary {
+    padding-inline: var(--space-3);
+    gap: var(--space-2);
+  }
+
+  .inventory-group-title {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .inventory-group-title .inventory-group-meta {
+    text-align: left;
+  }
+
+  .inventory-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .inventory-row-main {
+    padding-inline: var(--space-3);
+  }
+
+  .inventory-trailing-action {
+    width: 58px;
+    min-width: 58px;
+    max-width: 58px;
+    margin-right: 8px;
+  }
+}
+
+@media (forced-colors: active) {
+  .inventory-group,
+  .inventory-group-list,
+  .inventory-row {
+    border-color: CanvasText;
+  }
+
+  .inventory-group::before {
+    background: Highlight;
+  }
+}
