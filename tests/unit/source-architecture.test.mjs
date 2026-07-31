@@ -11,7 +11,7 @@ const designStylePaths = [
   'styles/dice.css'
 ];
 
-const [index, core, bootstrap, worker, directEditing, characterRedesign, renderHooks, diceMotion, diceRenderer, ...designStyles] = await Promise.all([
+const [index, core, bootstrap, worker, directEditing, characterRedesign, renderHooks, diceMotion, diceRenderer, appStyles, ...designStyles] = await Promise.all([
   readFile('index.html', 'utf8'),
   readFile('scripts/app-core.js', 'utf8'),
   readFile('scripts/app-bootstrap.js', 'utf8'),
@@ -21,6 +21,7 @@ const [index, core, bootstrap, worker, directEditing, characterRedesign, renderH
   readFile('scripts/render-hooks.js', 'utf8'),
   readFile('scripts/dice-motion.js', 'utf8'),
   readFile('scripts/dice-renderer.js', 'utf8'),
+  readFile('styles/app.css', 'utf8'),
   ...designStylePaths.map(path => readFile(path, 'utf8'))
 ]);
 
@@ -86,13 +87,19 @@ test('runtime nie tworzy ani nie wstrzykuje arkuszy CSS', () => {
 });
 
 test('Wędrowny Dziennik jest jedynym statycznym systemem CSS', async () => {
+  await assert.doesNotReject(() => access('styles/app.css'));
+  assert.match(index, /href="\.\/styles\/app\.css"/);
+  assert.match(worker, /'\.\/styles\/app\.css'/);
+  assert.doesNotMatch(appStyles, /{/);
+
   for (const path of designStylePaths) {
+    const filename = path.split('/').pop();
     await assert.doesNotReject(() => access(path));
-    assert.match(index, new RegExp(path.replace('.', '\\.') + '\\?v='));
+    assert.match(appStyles, new RegExp(`\\./${filename.replace('.', '\\.')}\\?v=`));
     assert.match(worker, new RegExp(path.replace('.', '\\.') + '\\?v='));
   }
+
   for (const legacyPath of [
-    'styles/app.css',
     'styles/character-redesign.css',
     'styles/screen-unification.css',
     'styles/runtime-overrides.css',
@@ -104,6 +111,7 @@ test('Wędrowny Dziennik jest jedynym statycznym systemem CSS', async () => {
     assert.doesNotMatch(index, new RegExp(legacyPath.replace('.', '\\.')));
     assert.doesNotMatch(worker, new RegExp(legacyPath.replace('.', '\\.')));
   }
+
   assert.match(designSource, /--color-surface-page/);
   assert.match(designSource, /:root\[data-theme="light"\]/);
   assert.match(designSource, /@media \(forced-colors: active\)/);
