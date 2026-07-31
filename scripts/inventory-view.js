@@ -26,8 +26,9 @@
 
   function fatigueSlotLabel(count) {
     const value = Math.max(0, Number(count) || 0);
-    const noun = value === 1 ? 'miejsce' : value >= 2 && value <= 4 ? 'miejsca' : 'miejsc';
-    return `${value} ${noun} zajęte przez zmęczenie`;
+    if (value === 1) return '1 miejsce zajęte przez zmęczenie';
+    if (value >= 2 && value <= 4) return `${value} miejsca zajęte przez zmęczenie`;
+    return `${value} miejsc zajętych przez zmęczenie`;
   }
 
   function renderInventoryItemRow(item) {
