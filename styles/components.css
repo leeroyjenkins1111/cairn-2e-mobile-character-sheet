@@ -410,12 +410,12 @@ input[type="checkbox"] {
 /* Character action components align with the inset state surface. */
 #view-character .game-actions,
 #view-character .combat-launcher {
-  margin-inline: var(--space-4);
+  margin-inline: calc(var(--space-4) + 1px);
 }
 
 @media (max-height: 700px) {
   #view-character .game-actions,
   #view-character .combat-launcher {
-    margin-inline: var(--space-3);
+    margin-inline: calc(var(--space-3) + 1px);
   }
 }
