@@ -326,6 +326,7 @@ Minimalny kontrakt:
 
 ## 7. Odpowiedzialność plików
 
+- `app.css` — jedyny entrypoint ładowany przez HTML; zawiera wyłącznie uporządkowane `@import`;
 - `tokens.css` — role semantyczne i warianty motywu;
 - `foundations.css` — reset, typografia, focus, motion, forced colors;
 - `shell.css` — app shell, header, main, bottom nav i safe areas;
@@ -333,7 +334,7 @@ Minimalny kontrakt:
 - `screens.css` — kompozycje głównych widoków i reflow;
 - `dice.css` — wyłącznie prezentacja fizycznych kości.
 
-CSS nie może być tworzony, kopiowany ani wstrzykiwany przez JavaScript. Nie dodajemy plików typu `overrides`, `fixes`, `temporary` ani `redesign-2`.
+Reguły CSS nie mogą być tworzone, kopiowane ani wstrzykiwane przez JavaScript. `app.css` pozostaje import-only i nie przyjmuje selektorów. Nie dodajemy plików typu `overrides`, `fixes`, `temporary` ani `redesign-2`.
 
 ## 8. Dodawanie nowego widoku
 
