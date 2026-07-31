@@ -55,6 +55,7 @@ Aplikacja używa `schemaVersion: 3`. Refaktor języka wizualnego nie zmienia for
 
 ### CSS
 
+- `styles/app.css` — jedyny entrypoint ładowany przez HTML; zawiera wyłącznie uporządkowane `@import` poniższych modułów;
 - `styles/tokens.css` — jeden zestaw tokenów semantycznych i oba motywy;
 - `styles/foundations.css` — reset, typografia, focus, motion, contrast i forced colors;
 - `styles/shell.css` — shell, header, dolna nawigacja, safe area i kontener;
@@ -67,7 +68,7 @@ Runtime nie tworzy elementów `<style>`, nie wywołuje `insertRule()` i nie posi
 ### Build i testy
 
 - `scripts/prepare-site.mjs` — budowa katalogu `_site` używanego przez Pages i Playwright;
-- `scripts/check-production-runtime.mjs` — kontrola kompletnego, statycznego systemu CSS oraz runtime;
+- `scripts/check-production-runtime.mjs` — kontrola manifestu, kompletu modułów oraz runtime;
 - `tests/unit/` — testy czystej logiki i kontraktów źródłowych;
 - `tests/*.spec.js` — regresja funkcjonalna, dostępnościowa, persystencji i screenshoty do review.
 
@@ -93,7 +94,7 @@ npm run check:production
 npm test
 ```
 
-`check:production` buduje dokładnie ten sam katalog `_site`, który trafia do GitHub Pages, sprawdza komplet sześciu statycznych warstw CSS, oba motywy, wsparcie dostępności oraz brak starych override’ów i runtime CSS injection.
+`check:production` buduje dokładnie ten sam katalog `_site`, który trafia do GitHub Pages. Sprawdza pojedynczy import-only entrypoint, komplet sześciu statycznych modułów CSS, oba motywy, wsparcie dostępności oraz brak starych override’ów i runtime CSS injection.
 
 CI publikuje diagnostykę Playwright i wizualny zestaw review jako artefakty workflow.
 
