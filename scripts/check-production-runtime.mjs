@@ -6,7 +6,8 @@ const designStylePaths = [
   'styles/shell.css',
   'styles/components.css',
   'styles/screens.css',
-  'styles/dice.css'
+  'styles/dice.css',
+  'styles/atmosphere.css'
 ];
 
 const [index, core, bootstrap, worker, inventoryDomain, appStyles, ...designStyles] = await Promise.all([
@@ -47,6 +48,7 @@ const assertions = [
   [styleSource.includes('@media (forced-colors: active)'), 'forced-colors support is present'],
   [styleSource.includes('@media (prefers-reduced-motion: reduce)'), 'reduced-motion support is present'],
   [styleSource.includes('.animated-dice-result'), 'dice presentation is present'],
+  [styleSource.includes('The forest illustration is the visual anchor'), 'atmosphere contract is present'],
   [!index.includes('character-redesign.css'), 'legacy character CSS is not loaded'],
   [!index.includes('screen-unification.css'), 'legacy screen unification CSS is not loaded'],
   [!index.includes('runtime-overrides.css'), 'legacy override CSS is not loaded'],
