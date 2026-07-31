@@ -18,6 +18,7 @@ test.describe('panel walki na ekranie postaci', () => {
     await expect(combat.locator('.combat-panel-row')).toHaveCount(2);
     await expect(combat.getByRole('button', { name: /Wybierz broń/ })).toBeVisible();
     await expect(combat.getByRole('button', { name: /Ustal kolejność tur/ })).toBeVisible();
+    await expect(combat.locator('.combat-turn-value')).toBeHidden();
     await expect(combat.getByRole('button', { name: 'Odwrót', exact: true })).toHaveCount(0);
     await expect(combat.locator('.damage-primary-action')).toHaveCount(0);
   });
