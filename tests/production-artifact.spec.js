@@ -51,7 +51,7 @@ test.describe('production artifact contract', () => {
       const entry = [...document.styleSheets].find(sheet => new URL(sheet.href).pathname === '/styles/app.css');
       return [...(entry?.cssRules || [])]
         .filter(rule => rule.type === CSSRule.IMPORT_RULE)
-        .map(rule => new URL(rule.href).pathname);
+        .map(rule => new URL(rule.href, entry.href).pathname);
     });
     expect(imports).toEqual(DESIGN_MODULES);
   });
