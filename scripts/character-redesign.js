@@ -74,6 +74,9 @@
     damage: [
       { attrs: { d: 'M12 3 19 6v5c0 4.7-2.8 8-7 10-4.2-2-7-5.3-7-10V6z' } },
       { attrs: { d: 'm13.5 5.5-3 5.5h3l-3 6.5' } }
+    ],
+    retreat: [
+      { attrs: { d: 'M4 12h12M12 7l5 5-5 5M19 4h2v16h-2' } }
     ]
   };
 
@@ -118,6 +121,107 @@
     ]);
   }
 
+  function attackNotation(item, mode) {
+    if (mode === 'impaired') return 'k4';
+    if (mode === 'enhanced') return 'k12';
+    if (!item) return 'k4';
+    return displayDamageNotation(formatDamageFormula(item.damageFormula)) || 'k4';
+  }
+
+  function runUnarmedAttack(mode) {
+    closeSheet();
+    requestAnimationFrame(() => {
+      if (mode === 'normal') {
+        performUnarmedAttack();
+        return;
+      }
+      const sides = mode === 'enhanced' ? 12 : 4;
+      const label = mode === 'enhanced' ? 'Atak wzmocniony bez broni' : 'Atak osłabiony bez broni';
+      performRoll({ count: 1, sides }, label);
+    });
+  }
+
+  function openWeaponPickerRedesigned() {
+    const weapons = weaponItems()
+      .filter(item => item.carryState !== 'spent')
+      .sort((left, right) => Number(right.carryState === 'held') - Number(left.carryState === 'held'));
+    let mode = state.conditions.panicked ? 'impaired' : 'normal';
+    const body = createEl('div', { className: 'weapon-picker' });
+    const modeButtons = [];
+    const weaponValues = [];
+
+    const modeGroup = createEl('div', {
+      className: 'weapon-modifier-group',
+      attrs: { role: 'radiogroup', 'aria-label': 'Modyfikator rzutu' }
+    });
+
+    const modes = [
+      ['normal', 'Normalny', 'kość broni'],
+      ['impaired', 'Osłabiony', 'k4'],
+      ['enhanced', 'Wzmocniony', 'k12']
+    ];
+
+    const refresh = () => {
+      for (const entry of modeButtons) {
+        const selected = entry.mode === mode;
+        entry.button.setAttribute('aria-checked', String(selected));
+        entry.button.classList.toggle('is-selected', selected);
+      }
+      for (const entry of weaponValues) entry.value.textContent = attackNotation(entry.item, mode);
+    };
+
+    for (const [modeId, label, notation] of modes) {
+      const option = createEl('button', {
+        type: 'button',
+        className: 'weapon-modifier-option',
+        attrs: { role: 'radio', 'aria-checked': 'false', 'aria-label': `${label}${notation ? ` · ${notation}` : ''}` },
+        onclick: () => {
+          mode = modeId;
+          refresh();
+        }
+      }, [
+        createEl('strong', { text: label }),
+        createEl('small', { text: notation })
+      ]);
+      modeButtons.push({ mode: modeId, button: option });
+      modeGroup.append(option);
+    }
+
+    const list = createEl('div', { className: 'weapon-picker-list', attrs: { 'aria-label': 'Broń' } });
+
+    const appendWeapon = item => {
+      const name = item ? item.name : 'Bez broni';
+      const value = createEl('span', { className: 'weapon-picker-value' });
+      const row = createEl('button', {
+        type: 'button',
+        className: 'weapon-picker-row',
+        attrs: { 'aria-label': name },
+        onclick: () => {
+          if (item) runCombatWeapon(item, mode);
+          else runUnarmedAttack(mode);
+        }
+      }, [
+        makeWeaponSvg(WEAPON_ICONS[item ? weaponIconType(item) : 'hand']),
+        createEl('strong', { text: name }),
+        value
+      ]);
+      weaponValues.push({ item, value });
+      list.append(row);
+    };
+
+    for (const weapon of weapons) appendWeapon(weapon);
+    appendWeapon(null);
+
+    body.append(
+      createEl('span', { className: 'weapon-picker-label', text: 'Modyfikator' }),
+      modeGroup,
+      list
+    );
+    refresh();
+
+    openSheet({ title: 'Walka', body });
+  }
+
   function renderCombatLauncherRedesigned() {
     const ready = heldWeaponItems();
     const panicked = state.conditions.panicked;
@@ -138,7 +242,7 @@
       attrs: {
         'aria-label': `Wybierz broń. Aktualnie: ${summary.current}${summary.notation ? `. Obrażenia: ${summary.notation}` : ''}`
       },
-      onclick: openCombatSheet
+      onclick: openWeaponPickerRedesigned
     }, [
       contextualWeaponIcon(ready),
       createEl('span', { className: 'combat-panel-copy' }, [
@@ -169,16 +273,30 @@
 
   function enhanceCharacterCopy() {
     const damageAction = document.querySelector('#view-character .damage-primary-action');
-    if (!damageAction) return;
+    if (damageAction) {
+      damageAction.setAttribute('aria-label', 'Otrzymaj obrażenia');
+      const damageTitle = damageAction.querySelector('strong');
+      if (damageTitle) damageTitle.textContent = 'Otrzymaj obrażenia';
+      const damageDescription = damageAction.querySelector('small');
+      if (damageDescription) damageDescription.textContent = 'Pancerz → Ochrona → SIŁ';
 
-    damageAction.setAttribute('aria-label', 'Otrzymaj obrażenia');
-    const damageTitle = damageAction.querySelector('strong');
-    if (damageTitle) damageTitle.textContent = 'Otrzymaj obrażenia';
-    const damageDescription = damageAction.querySelector('small');
-    if (damageDescription) damageDescription.textContent = 'Pancerz → Ochrona → SIŁ';
+      const damageIcon = damageAction.querySelector('svg');
+      if (damageIcon) damageIcon.replaceWith(makeWeaponSvg(COMBAT_ICONS.damage));
+    }
 
-    const damageIcon = damageAction.querySelector('svg');
-    if (damageIcon) damageIcon.replaceWith(makeWeaponSvg(COMBAT_ICONS.damage));
+    const secondaryActions = document.querySelector('#view-character .secondary-action-grid');
+    if (!secondaryActions || secondaryActions.querySelector('.retreat-action')) return;
+
+    secondaryActions.classList.add('secondary-action-grid--four');
+    secondaryActions.append(createEl('button', {
+      type: 'button',
+      className: 'btn btn-quiet compact-action retreat-action',
+      attrs: { 'aria-label': 'Odwrót' },
+      onclick: openRetreatSheet
+    }, [
+      makeWeaponSvg(COMBAT_ICONS.retreat),
+      createEl('span', { text: 'Odwrót' })
+    ]));
   }
 
   globalThis.CairnRenderHooks.addCharacterHook(enhanceCharacterCopy);
