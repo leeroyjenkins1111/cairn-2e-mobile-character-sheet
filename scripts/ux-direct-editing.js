@@ -58,33 +58,12 @@ function enhanceCharacterStatEditing() {
   const root = document.querySelector('#view-character');
   const attributeRow = root?.querySelector('.attribute-row');
   if (!attributeRow) return;
-  attributeRow.setAttribute('aria-label', 'Atrybuty postaci. Kliknij, aby edytować.');
 
-  for (const attrKey of ['str', 'dex', 'wil']) {
-    const control = attributeRow.querySelector(`.attribute-${attrKey}`);
-    if (!control || control.dataset.directEditReady === 'true') continue;
-    control.dataset.directEditReady = 'true';
-    control.setAttribute('aria-label', `Edytuj ${ATTRS[attrKey].full}. Aktualna wartość ${state.stats[attrKey].current}, maksymalna ${state.stats[attrKey].max}.`);
-    control.addEventListener('click', event => {
-      event.preventDefault();
-      event.stopImmediatePropagation();
-      openAttributeEditSheet(attrKey);
-    }, true);
-  }
-
+  // Atrybuty pozostają najczęstszą akcją sesyjną: przygotowują jawny rzut obronny.
+  // Edycja wartości jest dostępna w Dzienniku → Edytuj statystyki.
   const wil = attributeRow.querySelector('.attribute-wil');
   const wilGlyph = wil?.querySelector('.attribute-glyph');
   if (wilGlyph && !wilGlyph.querySelector('.mind-icon')) wilGlyph.replaceChildren(mindIcon());
-
-  if (!attributeRow.querySelector('[data-save-shortcut="str"]')) {
-    attributeRow.append(createEl('button', {
-      type: 'button',
-      className: 'direct-save-shortcut',
-      dataset: { saveShortcut: 'str' },
-      attrs: { 'aria-label': `Przygotuj rzut obronny ${ATTRS.str.full}, aktualna wartość ${state.stats.str.current}` },
-      onclick: () => openSavePreparationSheet('str')
-    }, [createEl('span', { text: 'Rzut obronny SIŁ' })]));
-  }
 
   const secondary = [...root.querySelectorAll('.state-secondary .secondary-stat')];
   const armorStat = secondary.find(item => item.textContent.includes('Pancerz'));

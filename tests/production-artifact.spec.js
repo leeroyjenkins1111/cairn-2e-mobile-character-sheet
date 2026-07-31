@@ -1,5 +1,14 @@
 import { test, expect } from '@playwright/test';
 
+const DESIGN_MODULES = [
+  '/styles/tokens.css',
+  '/styles/foundations.css',
+  '/styles/shell.css',
+  '/styles/components.css',
+  '/styles/screens.css',
+  '/styles/dice.css'
+];
+
 test.describe('production artifact contract', () => {
   test('serves the generated split runtime instead of source app.js', async ({ page }) => {
     await page.goto('/');
@@ -30,18 +39,20 @@ test.describe('production artifact contract', () => {
     });
   });
 
-  test('loads the production-only static style layers', async ({ page }) => {
+  test('loads one CSS entrypoint with the complete static design system', async ({ page }) => {
     await page.goto('/');
 
     const stylesheets = await page.locator('link[rel="stylesheet"]').evaluateAll(elements =>
       elements.map(element => new URL(element.href).pathname)
     );
+    expect(stylesheets).toEqual(['/styles/app.css']);
 
-    expect(stylesheets).toEqual(expect.arrayContaining([
-      '/styles/app.css',
-      '/styles/character-redesign.css',
-      '/styles/screen-unification.css',
-      '/styles/runtime-overrides.css'
-    ]));
+    const imports = await page.evaluate(() => {
+      const entry = [...document.styleSheets].find(sheet => new URL(sheet.href).pathname === '/styles/app.css');
+      return [...(entry?.cssRules || [])]
+        .filter(rule => rule.type === CSSRule.IMPORT_RULE)
+        .map(rule => new URL(rule.href, entry.href).pathname);
+    });
+    expect(imports).toEqual(DESIGN_MODULES);
   });
 });
