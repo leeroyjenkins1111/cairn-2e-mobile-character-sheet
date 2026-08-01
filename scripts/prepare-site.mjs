@@ -19,6 +19,7 @@ const siteFiles = [
   'styles/atmosphere.css',
   'styles/combat.css',
   'styles/inventory.css',
+  'styles/journal.css',
   'scripts/app-core.js',
   'scripts/app-bootstrap.js',
   'scripts/app-entry.js',
@@ -31,6 +32,7 @@ const siteFiles = [
   'scripts/inventory-view.js',
   'scripts/ux-direct-editing.js',
   'scripts/character-redesign.js',
+  'scripts/journal-redesign.js',
   'assets/forest-background.jpg'
 ];
 
