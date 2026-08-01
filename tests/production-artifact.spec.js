@@ -9,7 +9,8 @@ const DESIGN_MODULES = [
   '/styles/dice.css',
   '/styles/atmosphere.css',
   '/styles/combat.css',
-  '/styles/inventory.css'
+  '/styles/inventory.css',
+  '/styles/journal.css'
 ];
 
 test.describe('production artifact contract', () => {
@@ -22,6 +23,7 @@ test.describe('production artifact contract', () => {
 
     expect(scripts).toContain('/scripts/app-core.js');
     expect(scripts).toContain('/scripts/app-bootstrap.js');
+    expect(scripts).toContain('/scripts/journal-redesign.js');
     expect(scripts).not.toContain('/scripts/app.js');
   });
 
