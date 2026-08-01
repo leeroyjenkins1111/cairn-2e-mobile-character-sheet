@@ -85,7 +85,7 @@
     const sessionLog = normalizeSessionLog(state.sessionLog);
     const active = sessionLog.active;
     const section = createEl('section', {
-      className: `journal-section journal-quick-entry${active ? ' is-active' : ''}`,
+      className: `journal-section quick-note journal-quick-entry${active ? ' is-active' : ''}`,
       attrs: { 'aria-labelledby': 'journal-quick-entry-title' }
     });
 
@@ -102,8 +102,7 @@
 
     if (!active) {
       section.append(createEl('div', { className: 'journal-quick-entry-empty' }, [
-        createEl('p', { text: 'Rozpocznij sesję, aby zapisywać tropy, osoby, miejsca, decyzje i zdobyte przedmioty w jednej chronologii.' }),
-        button('Rozpocznij sesję', openStartSessionSheet, 'btn btn-primary')
+        createEl('p', { text: 'Rozpocznij sesję w panelu powyżej, aby zapisywać tropy, osoby, miejsca, decyzje i zdobyte przedmioty w jednej chronologii.' })
       ]));
       return section;
     }
@@ -261,22 +260,27 @@
     return section;
   }
 
+  function renderCharacterToolsCard() {
+    const section = createEl('section', { className: 'journal-section journal-character-tools' });
+    section.append(sectionHead('Karta postaci'));
+    section.append(createEl('div', { className: 'character-data-actions' }, [
+      button('Edytuj statystyki', openEditStatsSheet, 'btn'),
+      button('Obrażenia atrybutu', openDirectDamageSheet, 'btn')
+    ]));
+    return section;
+  }
+
   function renderJournalTools() {
     const tools = createEl('details', { className: 'journal-section journal-tools' });
     tools.append(createEl('summary', {}, [
       createEl('span', {}, [
-        createEl('strong', { text: 'Narzędzia i historia zmian' }),
-        createEl('small', { text: 'Edycja statystyk, obrażenia atrybutów i historia techniczna karty.' })
+        createEl('strong', { text: 'Historia zmian' }),
+        createEl('small', { text: 'Techniczny zapis zmian karty, cofanie i czyszczenie historii.' })
       ]),
       createEl('span', { className: 'tag', text: safeArray(state.changeHistory).length })
     ]));
 
     const content = createEl('div', { className: 'journal-tools-content' });
-    content.append(createEl('div', { className: 'character-data-actions' }, [
-      button('Edytuj statystyki', openEditStatsSheet, 'btn'),
-      button('Obrażenia atrybutu', openDirectDamageSheet, 'btn')
-    ]));
-
     const history = createEl('div', { className: 'journal-technical-history' });
     history.append(createEl('div', { className: 'button-row' }, [
       button('Cofnij ostatnią', undoLastChange, 'btn btn-quiet', {
@@ -326,6 +330,7 @@
       renderCharacterNotesCard(),
       renderItemStoriesCard(),
       renderScarsCard(),
+      renderCharacterToolsCard(),
       renderJournalTools()
     );
   }
