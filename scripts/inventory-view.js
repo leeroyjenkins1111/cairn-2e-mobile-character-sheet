@@ -20,12 +20,15 @@
 
   function inventoryGroupCountLabel(group) {
     const count = Math.max(0, Number(group.count) || 0);
-    if (group.id === 'fatigue') {
-      const noun = count === 1 ? 'wpis' : count >= 2 && count <= 4 ? 'wpisy' : 'wpisów';
-      return `${count} ${noun}`;
-    }
     const noun = count === 1 ? 'przedmiot' : count >= 2 && count <= 4 ? 'przedmioty' : 'przedmiotów';
     return `${count} ${noun}`;
+  }
+
+  function fatigueSlotLabel(count) {
+    const value = Math.max(0, Number(count) || 0);
+    if (value === 1) return '1 miejsce zajęte przez zmęczenie';
+    if (value >= 2 && value <= 4) return `${value} miejsca zajęte przez zmęczenie`;
+    return `${value} miejsc zajętych przez zmęczenie`;
   }
 
   function renderInventoryItemRow(item) {
@@ -90,11 +93,61 @@
     ]));
 
     const list = createEl('div', { className: 'inventory-group-list' });
-    for (const entry of group.entries) {
-      list.append(entry.kind === 'fatigue' ? renderFatigueCard(entry.entry) : renderInventoryItemRow(entry.entry));
-    }
+    for (const entry of group.entries) list.append(renderInventoryItemRow(entry.entry));
     details.append(list);
     return details;
+  }
+
+  function renderFatigueStatus() {
+    const entries = safeArray(state.inventory?.fatigue);
+    if (!entries.length) return null;
+
+    const section = createEl('section', {
+      className: 'inventory-fatigue-status',
+      dataset: { inventoryStatus: 'fatigue' },
+      attrs: { 'aria-labelledby': 'inventory-fatigue-title' }
+    });
+
+    section.append(createEl('div', { className: 'inventory-fatigue-head' }, [
+      createEl('span', { className: 'inventory-fatigue-icon', attrs: { 'aria-hidden': 'true' } }, [uiIcon('fatigue')]),
+      createEl('div', { className: 'inventory-fatigue-copy' }, [
+        createEl('span', { className: 'section-kicker', text: 'Status postaci' }),
+        createEl('h2', { id: 'inventory-fatigue-title', text: 'Zmęczenie' }),
+        createEl('p', { text: fatigueSlotLabel(entries.length) })
+      ]),
+      createEl('strong', {
+        className: 'inventory-fatigue-count',
+        text: entries.length,
+        attrs: { 'aria-label': `Aktywne zmęczenie: ${entries.length}` }
+      })
+    ]));
+
+    const list = createEl('div', {
+      className: 'inventory-fatigue-list',
+      attrs: { 'aria-label': 'Aktywne poziomy zmęczenia' }
+    });
+
+    entries.forEach((fatigue, index) => {
+      const note = trimText(fatigue.note);
+      list.append(createEl('button', {
+        type: 'button',
+        className: 'inventory-fatigue-entry',
+        dataset: { fatigueId: fatigue.id },
+        attrs: {
+          'aria-label': `Zmęczenie ${index + 1}: ${note || 'bez notatki'}. Zajmuje jedno miejsce. Otwórz usuwanie po regeneracji.`
+        },
+        onclick: () => openRemoveFatigueSheet(fatigue.id)
+      }, [
+        createEl('span', { className: 'inventory-fatigue-marker', text: index + 1 }),
+        createEl('span', { className: 'inventory-fatigue-entry-copy' }, [
+          createEl('strong', { text: note || `Zmęczenie ${index + 1}` }),
+          createEl('span', { text: '1 miejsce · usuń po regeneracji' })
+        ])
+      ]));
+    });
+
+    section.append(list);
+    return section;
   }
 
   function renderConsolidatedInventoryView() {
@@ -145,6 +198,9 @@
     overview.append(renderSlotMeter(usage));
     root.append(overview);
 
+    const fatigueStatus = renderFatigueStatus();
+    if (fatigueStatus) root.append(fatigueStatus);
+
     const listCard = createEl('section', {
       className: 'inventory-list',
       attrs: { 'aria-labelledby': 'inventory-list-title' }
@@ -154,7 +210,7 @@
     ]));
 
     const groups = createEl('div', { className: 'inventory-groups' });
-    const grouped = groupInventoryEntries();
+    const grouped = groupInventoryEntries().filter(group => group.id !== 'fatigue');
     if (!grouped.length) groups.append(createEl('p', { className: 'muted small', text: 'Brak przedmiotów.' }));
     for (const group of grouped) groups.append(renderInventoryGroupSection(group));
     listCard.append(groups);
