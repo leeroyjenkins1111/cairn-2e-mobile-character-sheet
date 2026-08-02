@@ -20,6 +20,7 @@ const siteFiles = [
   'styles/combat.css',
   'styles/inventory.css',
   'styles/journal.css',
+  'styles/journal-framing.css',
   'scripts/app-core.js',
   'scripts/app-bootstrap.js',
   'scripts/app-entry.js',
