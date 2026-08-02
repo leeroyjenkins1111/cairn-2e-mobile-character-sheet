@@ -28,7 +28,7 @@ async function startSessionAndAddClue(page) {
 }
 
 test.describe('wizualne grupowanie dziennika', () => {
-  test('wydziela rozdziały i główne sekcje ramkami', async ({ page }) => {
+  test('wydziela rozdziały i główne sekcje ramkami z przestrzenią wewnętrzną', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await loadDemoJournal(page);
 
@@ -39,12 +39,15 @@ test.describe('wizualne grupowanie dziennika', () => {
         return {
           borderWidth: style.borderTopWidth,
           borderStyle: style.borderTopStyle,
-          background: style.backgroundColor
+          background: style.backgroundColor,
+          paddingTop: Number.parseFloat(style.paddingTop),
+          paddingLeft: Number.parseFloat(style.paddingLeft)
         };
       })
     );
     expect(chapterStyles).toHaveLength(2);
     expect(chapterStyles.every(style => style.borderWidth !== '0px' && style.borderStyle !== 'none')).toBe(true);
+    expect(chapterStyles.every(style => style.paddingTop >= 16 && style.paddingLeft >= 24)).toBe(true);
 
     const sectionStyles = await journal.locator(':scope > .journal-section').evaluateAll(elements =>
       elements.map(element => {
@@ -52,12 +55,22 @@ test.describe('wizualne grupowanie dziennika', () => {
         return {
           borderWidth: style.borderTopWidth,
           borderStyle: style.borderTopStyle,
-          background: style.backgroundColor
+          background: style.backgroundColor,
+          paddingTop: Number.parseFloat(style.paddingTop),
+          paddingRight: Number.parseFloat(style.paddingRight),
+          paddingBottom: Number.parseFloat(style.paddingBottom),
+          paddingLeft: Number.parseFloat(style.paddingLeft)
         };
       })
     );
     expect(sectionStyles.length).toBeGreaterThan(6);
     expect(sectionStyles.every(style => style.borderWidth !== '0px' && style.borderStyle !== 'none')).toBe(true);
+    expect(sectionStyles.every(style =>
+      style.paddingTop >= 24
+      && style.paddingRight >= 24
+      && style.paddingBottom >= 24
+      && style.paddingLeft >= 24
+    )).toBe(true);
   });
 
   test('wydziela historie przedmiotów i wpisy kroniki jako osobne rekordy', async ({ page }) => {
@@ -69,6 +82,7 @@ test.describe('wizualne grupowanie dziennika', () => {
     await expect(itemStory).toBeVisible();
     await expect(itemStory).toHaveCSS('border-top-width', '1px');
     await expect(itemStory).toHaveCSS('border-top-style', 'solid');
+    await expect(itemStory.locator('summary')).toHaveCSS('padding-top', '16px');
 
     await startSessionAndAddClue(page);
 
@@ -77,13 +91,31 @@ test.describe('wizualne grupowanie dziennika', () => {
     await expect(chronicleEntry).toContainText('Znaki prowadzą do starej wieży.');
     await expect(chronicleEntry).toHaveCSS('border-top-width', '1px');
     await expect(chronicleEntry).toHaveCSS('border-top-style', 'solid');
+    await expect(chronicleEntry).toHaveCSS('padding-top', '16px');
   });
 
-  test('zachowuje ramki bez poziomego overflow na 320 px', async ({ page }) => {
+  test('zachowuje breathing room i brak poziomego overflow na 320 px', async ({ page }) => {
     await page.setViewportSize({ width: 320, height: 568 });
     await loadDemoJournal(page);
 
     const journal = page.locator('#view-more');
+    const compactSpacing = await journal.evaluate(element => {
+      const section = element.querySelector(':scope > .journal-section');
+      const chapter = element.querySelector(':scope > .journal-chapter-heading');
+      const innerRecord = element.querySelector('.journal-item-story > summary');
+      const sectionStyle = getComputedStyle(section);
+      const chapterStyle = getComputedStyle(chapter);
+      const recordStyle = getComputedStyle(innerRecord);
+      return {
+        sectionPadding: Number.parseFloat(sectionStyle.paddingTop),
+        chapterPadding: Number.parseFloat(chapterStyle.paddingTop),
+        recordPadding: Number.parseFloat(recordStyle.paddingTop)
+      };
+    });
+    expect(compactSpacing.sectionPadding).toBeGreaterThanOrEqual(16);
+    expect(compactSpacing.chapterPadding).toBeGreaterThanOrEqual(16);
+    expect(compactSpacing.recordPadding).toBeGreaterThanOrEqual(12);
+
     const overflowing = await journal.locator('.journal-chapter-heading, .journal-section, .journal-item-story, .journal-disclosure').evaluateAll(elements =>
       elements.filter(element => element.scrollWidth > element.clientWidth + 1).length
     );
