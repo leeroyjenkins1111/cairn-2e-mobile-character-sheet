@@ -13,6 +13,7 @@ const APP_SHELL = [
   './styles/combat.css?v=0.30.1',
   './styles/inventory.css?v=0.30.1',
   './styles/journal.css?v=0.30.1',
+  './styles/journal-framing.css?v=0.30.1',
   './scripts/app-config.js?v=0.30.1',
   './scripts/inventory-domain.js?v=0.30.1',
   './scripts/app-core.js?v=0.30.1',
