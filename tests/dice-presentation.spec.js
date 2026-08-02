@@ -56,7 +56,7 @@ test.describe('redesign ekranu Kości', () => {
     await expect(buttons).toHaveCount(7);
 
     for (const sides of [4, 6, 8, 10, 12, 20, 100]) {
-      await expect(page.getByRole('button', { name: `Rzuć kością k${sides}` })).toBeVisible();
+      await expect(page.getByRole('button', { name: `Rzuć kością k${sides}`, exact: true })).toBeVisible();
     }
 
     const layout = await rail.evaluate(element => {
@@ -69,7 +69,7 @@ test.describe('redesign ekranu Kości', () => {
     });
     expect(layout).toEqual({ display: 'grid', columns: 4, overflows: false });
 
-    await page.getByRole('button', { name: 'Rzuć kością k100' }).click();
+    await page.getByRole('button', { name: 'Rzuć kością k100', exact: true }).click();
     await expect(page.locator('#diceResult .result-die-object[data-sides="100"]')).toBeVisible();
   });
 
