@@ -10,7 +10,8 @@ const DESIGN_MODULES = [
   '/styles/atmosphere.css',
   '/styles/combat.css',
   '/styles/inventory.css',
-  '/styles/journal.css'
+  '/styles/journal.css',
+  '/styles/journal-framing.css'
 ];
 
 test.describe('production artifact contract', () => {
