@@ -9,6 +9,7 @@ const APP_SHELL = [
   './styles/components.css?v=0.30.1',
   './styles/screens.css?v=0.30.1',
   './styles/dice.css?v=0.30.1',
+  './styles/dice-screen.css?v=0.30.1',
   './styles/atmosphere.css?v=0.30.1',
   './styles/combat.css?v=0.30.1',
   './styles/inventory.css?v=0.30.1',
