@@ -28,7 +28,7 @@ async function startSessionAndAddClue(page) {
 }
 
 test.describe('wizualne grupowanie dziennika', () => {
-  test('wydziela rozdziały i główne sekcje ramkami z przestrzenią wewnętrzną', async ({ page }) => {
+  test('wydziela rozdziały i główne sekcje kompaktowymi ramkami', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await loadDemoJournal(page);
 
@@ -39,7 +39,6 @@ test.describe('wizualne grupowanie dziennika', () => {
         return {
           borderWidth: style.borderTopWidth,
           borderStyle: style.borderTopStyle,
-          background: style.backgroundColor,
           paddingTop: Number.parseFloat(style.paddingTop),
           paddingLeft: Number.parseFloat(style.paddingLeft)
         };
@@ -47,7 +46,12 @@ test.describe('wizualne grupowanie dziennika', () => {
     );
     expect(chapterStyles).toHaveLength(2);
     expect(chapterStyles.every(style => style.borderWidth !== '0px' && style.borderStyle !== 'none')).toBe(true);
-    expect(chapterStyles.every(style => style.paddingTop >= 16 && style.paddingLeft >= 24)).toBe(true);
+    expect(chapterStyles.every(style =>
+      style.paddingTop >= 14
+      && style.paddingTop <= 18
+      && style.paddingLeft >= 18
+      && style.paddingLeft <= 24
+    )).toBe(true);
 
     const sectionStyles = await journal.locator(':scope > .journal-section').evaluateAll(elements =>
       elements.map(element => {
@@ -55,7 +59,6 @@ test.describe('wizualne grupowanie dziennika', () => {
         return {
           borderWidth: style.borderTopWidth,
           borderStyle: style.borderTopStyle,
-          background: style.backgroundColor,
           paddingTop: Number.parseFloat(style.paddingTop),
           paddingRight: Number.parseFloat(style.paddingRight),
           paddingBottom: Number.parseFloat(style.paddingBottom),
@@ -66,11 +69,42 @@ test.describe('wizualne grupowanie dziennika', () => {
     expect(sectionStyles.length).toBeGreaterThan(6);
     expect(sectionStyles.every(style => style.borderWidth !== '0px' && style.borderStyle !== 'none')).toBe(true);
     expect(sectionStyles.every(style =>
-      style.paddingTop >= 24
-      && style.paddingRight >= 24
-      && style.paddingBottom >= 24
-      && style.paddingLeft >= 24
+      style.paddingTop >= 18
+      && style.paddingTop <= 20
+      && style.paddingRight >= 18
+      && style.paddingRight <= 20
+      && style.paddingBottom >= 18
+      && style.paddingBottom <= 20
+      && style.paddingLeft >= 18
+      && style.paddingLeft <= 20
     )).toBe(true);
+  });
+
+  test('używa jednego separatora pod tytułem sekcji', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await loadDemoJournal(page);
+
+    const separators = await page.locator('#view-more > .journal-section > .section-heading').evaluateAll(headings =>
+      headings
+        .filter(heading => heading.nextElementSibling)
+        .map(heading => {
+          const firstContent = heading.nextElementSibling;
+          const headingStyle = getComputedStyle(heading);
+          const contentStyle = getComputedStyle(firstContent);
+          const headingBox = heading.getBoundingClientRect();
+          const contentBox = firstContent.getBoundingClientRect();
+          return {
+            headingBorderBottom: Number.parseFloat(headingStyle.borderBottomWidth),
+            contentBorderTop: Number.parseFloat(contentStyle.borderTopWidth),
+            verticalGap: contentBox.top - headingBox.bottom
+          };
+        })
+    );
+
+    expect(separators.length).toBeGreaterThan(5);
+    expect(separators.every(separator => separator.headingBorderBottom === 1)).toBe(true);
+    expect(separators.every(separator => separator.contentBorderTop === 0)).toBe(true);
+    expect(separators.every(separator => separator.verticalGap >= 10)).toBe(true);
   });
 
   test('wydziela historie przedmiotów i wpisy kroniki jako osobne rekordy', async ({ page }) => {
@@ -82,7 +116,7 @@ test.describe('wizualne grupowanie dziennika', () => {
     await expect(itemStory).toBeVisible();
     await expect(itemStory).toHaveCSS('border-top-width', '1px');
     await expect(itemStory).toHaveCSS('border-top-style', 'solid');
-    await expect(itemStory.locator('summary')).toHaveCSS('padding-top', '16px');
+    await expect(itemStory.locator('summary')).toHaveCSS('padding-top', '14px');
 
     await startSessionAndAddClue(page);
 
@@ -91,10 +125,10 @@ test.describe('wizualne grupowanie dziennika', () => {
     await expect(chronicleEntry).toContainText('Znaki prowadzą do starej wieży.');
     await expect(chronicleEntry).toHaveCSS('border-top-width', '1px');
     await expect(chronicleEntry).toHaveCSS('border-top-style', 'solid');
-    await expect(chronicleEntry).toHaveCSS('padding-top', '16px');
+    await expect(chronicleEntry).toHaveCSS('padding-top', '14px');
   });
 
-  test('zachowuje breathing room i brak poziomego overflow na 320 px', async ({ page }) => {
+  test('zachowuje kompaktowy spacing i brak poziomego overflow na 320 px', async ({ page }) => {
     await page.setViewportSize({ width: 320, height: 568 });
     await loadDemoJournal(page);
 
@@ -112,9 +146,12 @@ test.describe('wizualne grupowanie dziennika', () => {
         recordPadding: Number.parseFloat(recordStyle.paddingTop)
       };
     });
-    expect(compactSpacing.sectionPadding).toBeGreaterThanOrEqual(16);
-    expect(compactSpacing.chapterPadding).toBeGreaterThanOrEqual(16);
+    expect(compactSpacing.sectionPadding).toBeGreaterThanOrEqual(14);
+    expect(compactSpacing.sectionPadding).toBeLessThanOrEqual(16);
+    expect(compactSpacing.chapterPadding).toBeGreaterThanOrEqual(14);
+    expect(compactSpacing.chapterPadding).toBeLessThanOrEqual(16);
     expect(compactSpacing.recordPadding).toBeGreaterThanOrEqual(12);
+    expect(compactSpacing.recordPadding).toBeLessThanOrEqual(14);
 
     const overflowing = await journal.locator('.journal-chapter-heading, .journal-section, .journal-item-story, .journal-disclosure').evaluateAll(elements =>
       elements.filter(element => element.scrollWidth > element.clientWidth + 1).length
