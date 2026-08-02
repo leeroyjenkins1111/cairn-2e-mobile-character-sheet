@@ -91,12 +91,11 @@ test.describe('wizualne grupowanie dziennika', () => {
           const firstContent = heading.nextElementSibling;
           const headingStyle = getComputedStyle(heading);
           const contentStyle = getComputedStyle(firstContent);
-          const headingBox = heading.getBoundingClientRect();
-          const contentBox = firstContent.getBoundingClientRect();
+          const sectionStyle = getComputedStyle(heading.parentElement);
           return {
             headingBorderBottom: Number.parseFloat(headingStyle.borderBottomWidth),
             contentBorderTop: Number.parseFloat(contentStyle.borderTopWidth),
-            verticalGap: contentBox.top - headingBox.bottom
+            sectionGap: Number.parseFloat(sectionStyle.rowGap || sectionStyle.gap)
           };
         })
     );
@@ -106,7 +105,7 @@ test.describe('wizualne grupowanie dziennika', () => {
     expect(separators.length).toBeGreaterThanOrEqual(3);
     expect(separators.every(separator => separator.headingBorderBottom === 1)).toBe(true);
     expect(separators.every(separator => separator.contentBorderTop === 0)).toBe(true);
-    expect(separators.every(separator => separator.verticalGap >= 10)).toBe(true);
+    expect(separators.every(separator => separator.sectionGap >= 10)).toBe(true);
   });
 
   test('wydziela historie przedmiotów i wpisy kroniki jako osobne rekordy', async ({ page }) => {
