@@ -11,7 +11,7 @@ async function loadDemoDice(page) {
 }
 
 test.describe('redesign ekranu Kości', () => {
-  test('wydziela cztery zadaniowe moduły i centralny wynik', async ({ page }) => {
+  test('buduje centralny stół i kompaktowe moduły pomocnicze', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await loadDemoDice(page);
 
@@ -26,19 +26,16 @@ test.describe('redesign ekranu Kości', () => {
         radius: Number.parseFloat(style.borderTopLeftRadius)
       };
     }));
-
     expect(cardStyles.every(style => style.borderWidth === '1px' && style.borderStyle === 'solid')).toBe(true);
     expect(cardStyles.every(style => style.radius >= 13)).toBe(true);
 
-    const supportingCardPadding = await page
-      .locator('#view-dice > .quick-dice, #view-dice > .dice-utilities, #view-dice > .combat-scenarios')
-      .evaluateAll(elements => elements.map(element => Number.parseFloat(getComputedStyle(element).paddingLeft)));
-    expect(supportingCardPadding.every(padding => padding >= 18)).toBe(true);
-
-    const stagePadding = await page.locator('#view-dice .dice-experience-stage').evaluate(element =>
+    const resultSlotPadding = await page.locator('#view-dice .dice-stage-result-slot').evaluate(element =>
       Number.parseFloat(getComputedStyle(element).paddingLeft)
     );
-    expect(stagePadding).toBeGreaterThanOrEqual(18);
+    expect(resultSlotPadding).toBeGreaterThanOrEqual(18);
+
+    await expect(page.locator('#view-dice .dice-stage-actions')).toHaveCount(0);
+    await expect(page.getByRole('button', { name: /Rzuć ponownie|Gotowe/ })).toHaveCount(0);
 
     const resultLayout = await page.locator('#diceResult .animated-dice-result').evaluate(element => {
       const style = getComputedStyle(element);
@@ -51,14 +48,9 @@ test.describe('redesign ekranu Kości', () => {
     expect(resultLayout.columns).toBe(1);
     expect(resultLayout.textAlign).toBe('center');
     expect(resultLayout.justifyItems).toBe('center');
-
-    const utilityLabel = await page.locator('#view-dice > .dice-utilities').evaluate(element =>
-      getComputedStyle(element, '::before').content.replaceAll('"', '')
-    );
-    expect(utilityLabel).toBe('Inne rzuty');
   });
 
-  test('pokazuje wszystkie szybkie kości bez poziomego przewijania', async ({ page }) => {
+  test('pokazuje siedem szybkich kości w jednym kompaktowym rzędzie', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await loadDemoDice(page);
 
@@ -75,28 +67,57 @@ test.describe('redesign ekranu Kości', () => {
       return {
         display: style.display,
         columns: style.gridTemplateColumns.split(' ').filter(Boolean).length,
-        overflows: element.scrollWidth > element.clientWidth + 1
+        overflows: element.scrollWidth > element.clientWidth + 1,
+        height: element.getBoundingClientRect().height
       };
     });
-    expect(layout).toEqual({ display: 'grid', columns: 4, overflows: false });
-
-    await page.getByRole('button', { name: 'Rzuć kością k100', exact: true }).click();
-    await expect(page.locator('#diceResult .result-die-object[data-sides="100"]')).toBeVisible();
+    expect(layout.display).toBe('grid');
+    expect(layout.columns).toBe(7);
+    expect(layout.overflows).toBe(false);
+    expect(layout.height).toBeLessThan(76);
   });
 
-  test('zachowuje siatkę i brak overflow na 320 px', async ({ page }) => {
+  test('ujawnia cyfrę dopiero po zakończeniu animacji renderera', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await loadDemoDice(page);
+
+    const value = page.locator('.dice-stage-value');
+    await page.getByRole('button', { name: 'Rzuć kością k20', exact: true }).click();
+    await expect(page.locator('#view-dice')).toHaveAttribute('data-dice-phase', 'rolling');
+    await expect(value).toHaveText('');
+    await expect(page.locator('#diceResult')).toHaveAttribute('aria-busy', 'false', { timeout: 2500 });
+    await expect(page.locator('#view-dice')).toHaveAttribute('data-dice-phase', 'revealed', { timeout: 1000 });
+    await expect(value).not.toHaveText('');
+  });
+
+  test('rozdziela dwie kości procentowe bez wzajemnego zasłaniania', async ({ page }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await loadDemoDice(page);
+    await page.getByRole('button', { name: 'Rzuć kością k100', exact: true }).click();
+
+    const dice = page.locator('#diceResult .result-die-object[data-sides="100"] .percentile-die');
+    await expect(dice).toHaveCount(2);
+    const boxes = await dice.evaluateAll(elements => elements.map(element => {
+      const box = element.getBoundingClientRect();
+      return { left: box.left, right: box.right, width: box.width };
+    }));
+    const overlap = Math.max(0, Math.min(boxes[0].right, boxes[1].right) - Math.max(boxes[0].left, boxes[1].left));
+    expect(overlap).toBeLessThan(Math.min(boxes[0].width, boxes[1].width) * .12);
+  });
+
+  test('zachowuje jeden rząd i brak overflow na 320 px', async ({ page }) => {
     await page.setViewportSize({ width: 320, height: 568 });
     await loadDemoDice(page);
 
     const compact = await page.locator('#view-dice').evaluate(element => {
-      const stage = element.querySelector('.dice-experience-stage');
+      const slot = element.querySelector('.dice-stage-result-slot');
       const rail = element.querySelector('.dice-rail');
       const result = element.querySelector('.animated-dice-result');
-      const stageStyle = getComputedStyle(stage);
+      const slotStyle = getComputedStyle(slot);
       const railStyle = getComputedStyle(rail);
       const resultStyle = getComputedStyle(result);
       return {
-        stagePadding: Number.parseFloat(stageStyle.paddingLeft),
+        slotPadding: Number.parseFloat(slotStyle.paddingLeft),
         railColumns: railStyle.gridTemplateColumns.split(' ').filter(Boolean).length,
         resultColumns: resultStyle.gridTemplateColumns.split(' ').filter(Boolean).length,
         localOverflow: element.scrollWidth > element.clientWidth + 1,
@@ -104,8 +125,8 @@ test.describe('redesign ekranu Kości', () => {
       };
     });
 
-    expect(compact.stagePadding).toBeGreaterThanOrEqual(14);
-    expect(compact.railColumns).toBe(4);
+    expect(compact.slotPadding).toBeGreaterThanOrEqual(14);
+    expect(compact.railColumns).toBe(7);
     expect(compact.resultColumns).toBe(1);
     expect(compact.localOverflow).toBe(false);
     expect(compact.railOverflow).toBe(false);
