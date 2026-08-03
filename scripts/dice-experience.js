@@ -6,7 +6,6 @@
   let selectedButton = null;
   let selectedSides = 20;
   let animationToken = 0;
-  let pressTimer = 0;
 
   function diceView() { return document.querySelector('#view-dice'); }
   function consoleNode() { return diceView()?.querySelector('.dice-console'); }
@@ -65,7 +64,7 @@
     if (stage) {
       stage.querySelector('.dice-stage-kicker').textContent = 'Przygotowany rzut';
       stage.querySelector('.dice-stage-title').textContent = `Kość k${selectedSides}`;
-      stage.querySelector('.dice-stage-detail').textContent = 'Rzuć, gdy będziesz gotowy.';
+      stage.querySelector('.dice-stage-detail').textContent = 'Dotknij kości lub użyj przycisku Rzuć.';
       stage.dataset.outcome = 'neutral';
     }
     setPhase(PHASES.ARMED);
@@ -131,18 +130,10 @@
     view.querySelectorAll('.die-button').forEach(button => {
       if (button.dataset.experienceBound) return;
       button.dataset.experienceBound = 'true';
-      button.addEventListener('click', event => {
+      button.addEventListener('click', () => {
         if (bypass.has(button)) { bypass.delete(button); return; }
-        event.preventDefault();
-        event.stopImmediatePropagation();
-        if (selectedButton === button && view.dataset.dicePhase === PHASES.ARMED) executeSelected();
-        else markSelected(button);
-      }, true);
-      button.addEventListener('pointerdown', () => {
-        window.clearTimeout(pressTimer);
-        pressTimer = window.setTimeout(() => { markSelected(button); executeSelected(); }, 520);
+        markSelected(button);
       });
-      ['pointerup', 'pointercancel', 'pointerleave'].forEach(type => button.addEventListener(type, () => window.clearTimeout(pressTimer)));
     });
   }
 
