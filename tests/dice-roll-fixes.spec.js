@@ -35,7 +35,7 @@ test.describe('poprawki rzutu kośćmi', () => {
 
     await page.getByRole('button', { name: 'Rzut własny' }).click();
     await page.getByLabel('Liczba kości').fill('2');
-    await page.getByLabel('Kość').selectOption('6');
+    await page.getByLabel('Kość', { exact: true }).selectOption('6');
     await page.getByLabel('Modyfikator').fill('1');
     await page.getByRole('button', { name: 'Rzuć', exact: true }).click();
 
@@ -130,7 +130,7 @@ test.describe('poprawki rzutu kośćmi', () => {
     await loadDemoDice(page, 320, 568);
     await page.getByRole('button', { name: 'Rzut własny' }).click();
     await page.getByLabel('Liczba kości').fill('4');
-    await page.getByLabel('Kość').selectOption('100');
+    await page.getByLabel('Kość', { exact: true }).selectOption('100');
     await page.getByLabel('Modyfikator').fill('10');
     await page.getByRole('button', { name: 'Rzuć', exact: true }).click();
     await expect(page.locator('#diceResult .aggregate-dice-result')).toBeVisible();
