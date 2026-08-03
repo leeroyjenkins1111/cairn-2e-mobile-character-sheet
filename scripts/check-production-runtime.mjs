@@ -7,21 +7,24 @@ const designStylePaths = [
   'styles/components.css',
   'styles/screens.css',
   'styles/dice.css',
+  'styles/dice-screen.css',
+  'styles/dice-roll-fixes.css',
   'styles/atmosphere.css',
   'styles/combat.css'
 ];
 
-const [index, core, bootstrap, worker, inventoryDomain, appStyles, ...designStyles] = await Promise.all([
+const [index, core, bootstrap, worker, inventoryDomain, diceRollFixes, appStyles, ...designStyles] = await Promise.all([
   readFile('_site/index.html', 'utf8'),
   readFile('_site/scripts/app-core.js', 'utf8'),
   readFile('_site/scripts/app-bootstrap.js', 'utf8'),
   readFile('_site/service-worker.js', 'utf8'),
   readFile('_site/scripts/inventory-domain.js', 'utf8'),
+  readFile('_site/scripts/dice-roll-fixes.js', 'utf8'),
   readFile('_site/styles/app.css', 'utf8'),
   ...designStylePaths.map(path => readFile(`_site/${path}`, 'utf8'))
 ]);
 
-const productionSource = `${core}\n${bootstrap}`;
+const productionSource = `${core}\n${bootstrap}\n${diceRollFixes}`;
 const styleSource = designStyles.join('\n');
 const assertions = [
   [index.includes('scripts/app-core.js?v='), 'index loads app-core.js'],
@@ -33,7 +36,12 @@ const assertions = [
   [worker.includes('scripts/app-entry.js?v='), 'service worker caches app-entry.js'],
   [index.includes('scripts/inventory-domain.js?v='), 'index loads inventory-domain.js'],
   [worker.includes('scripts/inventory-domain.js?v='), 'service worker caches inventory-domain.js'],
+  [index.includes('scripts/dice-roll-fixes.js?v='), 'index loads dice-roll-fixes.js'],
+  [worker.includes('scripts/dice-roll-fixes.js?v='), 'service worker caches dice-roll-fixes.js'],
+  [index.indexOf('scripts/dice-roll-fixes.js?v=') < index.indexOf('scripts/app-entry.js?v='), 'dice fixes load before app entry'],
   [inventoryDomain.includes('createInventoryOverviewModel'), 'inventory domain is present in production'],
+  [diceRollFixes.includes('normalizeRollConfigStrict'), 'strict dice validation is present in production'],
+  [diceRollFixes.includes('winningDamageVisual'), 'winning die selection is present in production'],
   [index.includes('href="./styles/app.css"'), 'index loads the single CSS entrypoint'],
   [worker.includes("'./styles/app.css'"), 'service worker caches the CSS entrypoint'],
   ...designStylePaths.flatMap(path => {
@@ -49,6 +57,7 @@ const assertions = [
   [styleSource.includes('@media (forced-colors: active)'), 'forced-colors support is present'],
   [styleSource.includes('@media (prefers-reduced-motion: reduce)'), 'reduced-motion support is present'],
   [styleSource.includes('.animated-dice-result'), 'dice presentation is present'],
+  [styleSource.includes('.aggregate-dice-result'), 'aggregate dice result is present'],
   [styleSource.includes('The forest illustration is the visual anchor'), 'atmosphere contract is present'],
   [styleSource.includes('.combat-panel-row'), 'focused combat panel layout is present'],
   [!index.includes('character-redesign.css'), 'legacy character CSS is not loaded'],
@@ -75,4 +84,4 @@ if (failures.length) {
   process.exit(1);
 }
 
-console.log('Production runtime contains the static Wędrowny Dziennik design system and excludes legacy override layers.');
+console.log('Production runtime contains the static Wędrowny Dziennik design system and validated dice fixes.');
