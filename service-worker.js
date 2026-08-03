@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cairn-mobile-sheet-v0.30.1';
+const CACHE_NAME = 'cairn-mobile-sheet-v0.30.1-dice-experience';
 const APP_SHELL = [
   './',
   './index.html',
@@ -11,6 +11,7 @@ const APP_SHELL = [
   './styles/dice.css?v=0.30.1',
   './styles/dice-screen.css?v=0.30.1',
   './styles/dice-roll-fixes.css?v=0.30.1',
+  './styles/dice-experience.css?v=0.30.1',
   './styles/atmosphere.css?v=0.30.1',
   './styles/combat.css?v=0.30.1',
   './styles/inventory.css?v=0.30.1',
@@ -28,6 +29,7 @@ const APP_SHELL = [
   './scripts/character-redesign.js?v=0.30.1',
   './scripts/dice-renderer.js?v=0.30.1',
   './scripts/dice-roll-fixes.js?v=0.30.1',
+  './scripts/dice-experience.js?v=0.30.1',
   './scripts/journal-redesign.js?v=0.30.1',
   './scripts/app-entry.js?v=0.30.1',
   './assets/forest-background.jpg',
