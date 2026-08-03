@@ -1,0 +1,285 @@
+/* Dice screen composition: compact result console, complete quick grid and framed utilities. */
+
+#view-dice {
+  gap: var(--space-4);
+}
+
+#view-dice > .dice-console,
+#view-dice > .quick-dice,
+#view-dice > .dice-utilities,
+#view-dice > .combat-scenarios {
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: color-mix(in srgb, var(--color-surface-page-translucent) 92%, var(--color-surface-soft));
+  box-shadow: var(--shadow-raised);
+}
+
+#view-dice > .dice-console,
+#view-dice > .quick-dice {
+  gap: 14px;
+}
+
+#view-dice .section-heading {
+  min-width: 0;
+  min-height: 38px;
+  align-items: center;
+}
+
+#view-dice .section-heading h1,
+#view-dice .section-heading h2 {
+  overflow-wrap: anywhere;
+}
+
+#view-dice .dice-console > .section-heading,
+#view-dice .quick-dice > .section-heading {
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--color-border-subtle);
+}
+
+#view-dice .dice-console > .section-heading .btn {
+  min-height: 42px;
+  padding-inline: var(--space-3);
+}
+
+#view-dice .dice-result {
+  min-height: 178px;
+  padding: var(--space-3) 14px;
+  border-color: var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--color-surface-soft) 82%, transparent);
+  box-shadow: none;
+}
+
+#view-dice .dice-result:hover:not(:disabled),
+#view-dice .dice-result:active:not(:disabled) {
+  border-color: var(--color-border-strong);
+  background: color-mix(in srgb, var(--color-surface-interactive) 72%, var(--color-surface-soft));
+}
+
+#view-dice .dice-result:disabled {
+  opacity: 1;
+  cursor: default;
+}
+
+#view-dice .animated-dice-result {
+  grid-template-columns: minmax(128px, .9fr) minmax(0, 1.1fr);
+  grid-template-rows: auto;
+  align-items: center;
+  justify-items: stretch;
+  gap: var(--space-3);
+  text-align: left;
+}
+
+#view-dice .animated-dice-result .result-die-scene {
+  width: 142px;
+  height: 148px;
+  justify-self: center;
+  transform: scale(.88);
+  transform-origin: center;
+}
+
+#view-dice .result-die-copy {
+  min-width: 0;
+  min-height: 0;
+  color: var(--color-ink-primary);
+  font: 650 clamp(1.18rem, 5vw, 1.46rem)/1.15 var(--font-display);
+  overflow-wrap: anywhere;
+}
+
+#view-dice .dice-result-button > .result-die-context {
+  display: none;
+}
+
+#view-dice .dice-result-actions {
+  min-height: 48px;
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border-subtle);
+}
+
+#view-dice .dice-result-actions .btn {
+  min-height: 42px;
+}
+
+#view-dice .dice-result-actions .section-caption:not(:empty) {
+  padding: 5px 9px;
+  border: 1px solid var(--color-border-subtle);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface-soft);
+  color: var(--color-ink-secondary);
+  font-size: var(--type-meta);
+  font-weight: 720;
+}
+
+#view-dice .dice-rail {
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: var(--space-2);
+  overflow: visible;
+  scroll-snap-type: none;
+}
+
+#view-dice .die-button {
+  width: 100%;
+  min-width: 0;
+  height: 70px;
+  padding: 7px 4px;
+  border-color: var(--color-border-subtle);
+  border-radius: var(--radius-md);
+  background: var(--color-surface-soft);
+}
+
+#view-dice .die-button:hover,
+#view-dice .die-button:active {
+  border-color: var(--color-border);
+  background: var(--color-surface-interactive);
+}
+
+#view-dice .die-button.is-recent {
+  border-color: var(--color-accent-secondary);
+  background: color-mix(in srgb, var(--color-accent-secondary) 8%, var(--color-surface-soft));
+  color: var(--color-accent-secondary-strong);
+}
+
+#view-dice .die-button svg {
+  width: 27px;
+  height: 27px;
+}
+
+#view-dice .die-button span {
+  font-size: .78rem;
+  font-weight: 720;
+}
+
+#view-dice > .dice-utilities {
+  position: relative;
+  gap: 0;
+}
+
+#view-dice > .dice-utilities::before {
+  content: "Inne rzuty";
+  min-height: 38px;
+  padding-bottom: var(--space-3);
+  border-bottom: 1px solid var(--color-border-subtle);
+  display: flex;
+  align-items: center;
+  color: var(--color-ink-primary);
+  font: 650 var(--type-section)/1.15 var(--font-display);
+}
+
+#view-dice .dice-utilities .action-row {
+  min-height: 64px;
+  padding-inline: var(--space-1);
+  border: 0;
+  border-bottom: 1px solid var(--color-border-subtle);
+  border-radius: 0;
+  background: transparent;
+}
+
+#view-dice .dice-utilities .action-row:last-child {
+  border-bottom: 0;
+}
+
+#view-dice .dice-utilities .action-row:hover,
+#view-dice .dice-utilities .action-row:active {
+  background: color-mix(in srgb, var(--color-surface-interactive) 56%, transparent);
+}
+
+#view-dice .dice-utilities .action-row > span:nth-child(2) {
+  min-width: 0;
+}
+
+#view-dice .dice-utilities .action-row strong,
+#view-dice .dice-utilities .action-row small {
+  overflow-wrap: anywhere;
+}
+
+#view-dice > .combat-scenarios {
+  padding-block: 0;
+}
+
+#view-dice .combat-scenarios-disclosure > summary {
+  min-height: 66px;
+}
+
+#view-dice .combat-scenarios-disclosure > summary > span:first-child {
+  gap: 3px;
+}
+
+#view-dice .combat-scenarios-body {
+  padding: 14px 0 18px;
+  border-top-color: var(--color-border-subtle);
+}
+
+#view-dice .scenario-button {
+  border-color: var(--color-border-subtle);
+  background: var(--color-surface-soft);
+}
+
+#view-dice .scenario-button:hover,
+#view-dice .scenario-button:active {
+  border-color: var(--color-border);
+  background: var(--color-surface-interactive);
+}
+
+@media (max-width: 360px) {
+  #view-dice {
+    gap: var(--space-3);
+  }
+
+  #view-dice > .dice-console,
+  #view-dice > .quick-dice,
+  #view-dice > .dice-utilities,
+  #view-dice > .combat-scenarios {
+    padding: 14px;
+  }
+
+  #view-dice > .combat-scenarios {
+    padding-block: 0;
+  }
+
+  #view-dice .dice-result {
+    min-height: 166px;
+    padding-inline: var(--space-2);
+  }
+
+  #view-dice .animated-dice-result {
+    grid-template-columns: minmax(112px, .82fr) minmax(0, 1.18fr);
+    gap: var(--space-2);
+  }
+
+  #view-dice .animated-dice-result .result-die-scene {
+    width: 126px;
+    height: 138px;
+    transform: scale(.80);
+  }
+
+  #view-dice .die-button {
+    height: 66px;
+  }
+}
+
+html[style*="font-size"] #view-dice .animated-dice-result {
+  grid-template-columns: 1fr;
+  justify-items: center;
+  text-align: center;
+}
+
+html[style*="font-size"] #view-dice .dice-rail {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (forced-colors: active) {
+  #view-dice > .dice-console,
+  #view-dice > .quick-dice,
+  #view-dice > .dice-utilities,
+  #view-dice > .combat-scenarios,
+  #view-dice .dice-result,
+  #view-dice .die-button,
+  #view-dice .scenario-button {
+    border-color: CanvasText;
+  }
+}

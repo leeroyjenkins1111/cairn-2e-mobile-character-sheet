@@ -7,6 +7,7 @@ const DESIGN_MODULES = [
   '/styles/components.css',
   '/styles/screens.css',
   '/styles/dice.css',
+  '/styles/dice-screen.css',
   '/styles/atmosphere.css',
   '/styles/combat.css',
   '/styles/inventory.css',
