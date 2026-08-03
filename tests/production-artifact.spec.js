@@ -8,6 +8,7 @@ const DESIGN_MODULES = [
   '/styles/screens.css',
   '/styles/dice.css',
   '/styles/dice-screen.css',
+  '/styles/dice-roll-fixes.css',
   '/styles/atmosphere.css',
   '/styles/combat.css',
   '/styles/inventory.css',
@@ -25,6 +26,8 @@ test.describe('production artifact contract', () => {
 
     expect(scripts).toContain('/scripts/app-core.js');
     expect(scripts).toContain('/scripts/app-bootstrap.js');
+    expect(scripts).toContain('/scripts/dice-roll-fixes.js');
+    expect(scripts.indexOf('/scripts/dice-roll-fixes.js')).toBeLessThan(scripts.indexOf('/scripts/app-entry.js'));
     expect(scripts).toContain('/scripts/journal-redesign.js');
     expect(scripts).not.toContain('/scripts/app.js');
   });
