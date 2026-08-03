@@ -140,22 +140,24 @@
 
 .die-icon .percentile-icon-label {
   fill: currentColor;
-  stroke: none;
+  stroke: var(--color-surface-soft);
+  stroke-width: 1.15px;
+  stroke-linejoin: round;
   font-family: var(--font-ui);
-  font-size: 3.8px;
-  font-weight: 800;
-  letter-spacing: -.18px;
+  font-size: 4.35px;
+  font-weight: 850;
+  letter-spacing: -.2px;
   dominant-baseline: central;
-  paint-order: stroke;
+  paint-order: stroke fill;
 }
 
 .die-icon .percentile-icon-label-tens {
-  font-size: 3.25px;
+  font-size: 3.75px;
 }
 
 #view-dice .die-button svg[data-die="100"] {
-  width: 32px;
-  height: 32px;
+  width: 34px;
+  height: 34px;
 }
 
 @media (max-width: 360px) {
@@ -193,5 +195,10 @@
   .result-total-icon {
     color: CanvasText;
     opacity: .5;
+  }
+
+  .die-icon .percentile-icon-label {
+    fill: CanvasText;
+    stroke: Canvas;
   }
 }
