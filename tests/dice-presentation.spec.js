@@ -23,13 +23,22 @@ test.describe('redesign ekranu Kości', () => {
       return {
         borderWidth: style.borderTopWidth,
         borderStyle: style.borderTopStyle,
-        paddingLeft: Number.parseFloat(style.paddingLeft),
         radius: Number.parseFloat(style.borderTopLeftRadius)
       };
     }));
 
     expect(cardStyles.every(style => style.borderWidth === '1px' && style.borderStyle === 'solid')).toBe(true);
-    expect(cardStyles.every(style => style.paddingLeft >= 18 && style.radius >= 13)).toBe(true);
+    expect(cardStyles.every(style => style.radius >= 13)).toBe(true);
+
+    const supportingCardPadding = await page
+      .locator('#view-dice > .quick-dice, #view-dice > .dice-utilities, #view-dice > .combat-scenarios')
+      .evaluateAll(elements => elements.map(element => Number.parseFloat(getComputedStyle(element).paddingLeft)));
+    expect(supportingCardPadding.every(padding => padding >= 18)).toBe(true);
+
+    const stagePadding = await page.locator('#view-dice .dice-experience-stage').evaluate(element =>
+      Number.parseFloat(getComputedStyle(element).paddingLeft)
+    );
+    expect(stagePadding).toBeGreaterThanOrEqual(18);
 
     const resultLayout = await page.locator('#diceResult .animated-dice-result').evaluate(element => {
       const style = getComputedStyle(element);
@@ -80,14 +89,14 @@ test.describe('redesign ekranu Kości', () => {
     await loadDemoDice(page);
 
     const compact = await page.locator('#view-dice').evaluate(element => {
-      const card = element.querySelector(':scope > .dice-console');
+      const stage = element.querySelector('.dice-experience-stage');
       const rail = element.querySelector('.dice-rail');
       const result = element.querySelector('.animated-dice-result');
-      const cardStyle = getComputedStyle(card);
+      const stageStyle = getComputedStyle(stage);
       const railStyle = getComputedStyle(rail);
       const resultStyle = getComputedStyle(result);
       return {
-        cardPadding: Number.parseFloat(cardStyle.paddingLeft),
+        stagePadding: Number.parseFloat(stageStyle.paddingLeft),
         railColumns: railStyle.gridTemplateColumns.split(' ').filter(Boolean).length,
         resultColumns: resultStyle.gridTemplateColumns.split(' ').filter(Boolean).length,
         localOverflow: element.scrollWidth > element.clientWidth + 1,
@@ -95,7 +104,7 @@ test.describe('redesign ekranu Kości', () => {
       };
     });
 
-    expect(compact.cardPadding).toBeGreaterThanOrEqual(14);
+    expect(compact.stagePadding).toBeGreaterThanOrEqual(14);
     expect(compact.railColumns).toBe(4);
     expect(compact.resultColumns).toBe(1);
     expect(compact.localOverflow).toBe(false);
