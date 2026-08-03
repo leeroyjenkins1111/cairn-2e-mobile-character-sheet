@@ -1,150 +1,167 @@
 'use strict';
 
 (() => {
-  const PHASES = Object.freeze({ IDLE: 'idle', ARMED: 'armed', ANTICIPATION: 'anticipation', THROWING: 'throwing', SETTLING: 'settling', REVEALED: 'revealed' });
-  const bypass = new WeakSet();
-  let selectedButton = null;
+  const PHASES = Object.freeze({ IDLE: 'idle', ROLLING: 'rolling', SETTLING: 'settling', REVEALED: 'revealed' });
+  const FALLBACK_ROLL_MS = 1800;
+  const SETTLE_HOLD_MS = 120;
   let selectedSides = 20;
-  let animationToken = 0;
+  let rollToken = 0;
+  let fallbackTimer = 0;
 
-  function diceView() { return document.querySelector('#view-dice'); }
-  function consoleNode() { return diceView()?.querySelector('.dice-console'); }
+  function viewNode() { return document.querySelector('#view-dice'); }
+  function consoleNode() { return viewNode()?.querySelector('.dice-console'); }
   function resultNode() { return document.querySelector('#diceResult'); }
+  function stageNode() { return viewNode()?.querySelector('.dice-experience-stage'); }
 
   function setPhase(phase) {
-    const view = diceView();
-    const stage = view?.querySelector('.dice-experience-stage');
+    const view = viewNode();
+    const stage = stageNode();
     if (!view || !stage) return;
     view.dataset.dicePhase = phase;
     stage.dataset.phase = phase;
-    stage.setAttribute('aria-busy', String([PHASES.ANTICIPATION, PHASES.THROWING, PHASES.SETTLING].includes(phase)));
-    const rollButton = stage.querySelector('.dice-stage-roll');
-    const doneButton = stage.querySelector('.dice-stage-done');
-    if (rollButton) {
-      rollButton.disabled = !selectedButton || [PHASES.ANTICIPATION, PHASES.THROWING, PHASES.SETTLING].includes(phase);
-      rollButton.textContent = phase === PHASES.REVEALED ? 'Rzuć ponownie' : 'Rzuć';
-    }
-    if (doneButton) doneButton.hidden = phase !== PHASES.REVEALED;
+    stage.setAttribute('aria-busy', String(phase === PHASES.ROLLING || phase === PHASES.SETTLING));
   }
 
   function sidesFor(button) {
-    const value = button?.querySelector('[data-die]')?.dataset.die || button?.getAttribute('aria-label')?.match(/k(\d+)/i)?.[1];
-    const sides = Number(value);
+    const raw = button?.querySelector('[data-die]')?.dataset.die || button?.getAttribute('aria-label')?.match(/k(\d+)/i)?.[1];
+    const sides = Number(raw);
     return Number.isFinite(sides) ? sides : 20;
   }
 
-  function outcomeFromResult(result) {
+  function cleanResultLabel(label = '') {
+    return String(label)
+      .replace(/^.*?:\s*/, '')
+      .replace(/\s*·\s*/g, ' · ')
+      .trim();
+  }
+
+  function resultValue(result) {
+    const direct = result?.querySelector('.result-total-value, .result-die-value')?.textContent?.trim();
+    if (direct && /^[-+]?\d+$/.test(direct)) return direct;
     const label = result?.getAttribute('aria-label') || '';
+    const match = label.match(/(?:^|:\s*)(-?\d+)(?:\s|$|\()/);
+    return match?.[1] || '—';
+  }
+
+  function resultTone(result) {
     const shell = result?.firstElementChild;
     const tone = shell?.dataset.tone || shell?.getAttribute('data-tone') || 'neutral';
-    if (/kość losu/i.test(label)) return { kicker: 'Kość Losu', title: /sprzyja/i.test(label) ? 'Pomyślny obrót' : 'Niepomyślny obrót', tone: /sprzyja/i.test(label) ? 'success' : 'failure' };
-    if (/sukces|udany|zdany/i.test(label) || tone === 'success' || tone === 'positive') return { kicker: 'Próba rozstrzygnięta', title: 'Sukces', tone: 'success' };
-    if (/porażk|nieudany|niezdany/i.test(label) || tone === 'failure' || tone === 'negative' || tone === 'danger') return { kicker: 'Próba rozstrzygnięta', title: 'Porażka', tone: 'failure' };
-    return { kicker: `Rzut k${selectedSides}`, title: 'Wynik rzutu', tone: 'neutral' };
+    const label = result?.getAttribute('aria-label') || '';
+    if (/sukces|udany|zdany|sprzyja/i.test(label) || tone === 'success' || tone === 'positive') return 'success';
+    if (/porażk|nieudany|niezdany|niepomyślny/i.test(label) || ['failure', 'negative', 'danger'].includes(tone)) return 'failure';
+    return 'neutral';
   }
 
-  function updateStageCopy() {
+  function updateResultBand() {
     const result = resultNode();
-    const stage = diceView()?.querySelector('.dice-experience-stage');
-    if (!stage) return;
-    const outcome = outcomeFromResult(result);
-    stage.dataset.outcome = outcome.tone;
-    stage.querySelector('.dice-stage-kicker').textContent = outcome.kicker;
-    stage.querySelector('.dice-stage-title').textContent = outcome.title;
-    const detail = result?.getAttribute('aria-label') || `Wybrano kość k${selectedSides}`;
-    stage.querySelector('.dice-stage-detail').textContent = detail.replace(/^.*?:\s*/, '');
+    const stage = stageNode();
+    if (!result || !stage) return;
+    const value = resultValue(result);
+    const label = cleanResultLabel(result.getAttribute('aria-label')) || `Rzut k${selectedSides}`;
+    stage.dataset.outcome = resultTone(result);
+    stage.querySelector('.dice-stage-value').textContent = value;
+    stage.querySelector('.dice-stage-context').textContent = label;
   }
 
-  function markSelected(button) {
-    diceView()?.querySelectorAll('.die-button.is-selected').forEach(node => node.classList.remove('is-selected'));
-    selectedButton = button;
-    selectedSides = sidesFor(button);
-    button?.classList.add('is-selected');
-    const stage = diceView()?.querySelector('.dice-experience-stage');
-    if (stage) {
-      stage.querySelector('.dice-stage-kicker').textContent = 'Przygotowany rzut';
-      stage.querySelector('.dice-stage-title').textContent = `Kość k${selectedSides}`;
-      stage.querySelector('.dice-stage-detail').textContent = 'Dotknij kości lub użyj przycisku Rzuć.';
-      stage.dataset.outcome = 'neutral';
-    }
-    setPhase(PHASES.ARMED);
-  }
-
-  function executeSelected() {
-    if (!selectedButton?.isConnected) selectedButton = diceView()?.querySelector(`.die-button [data-die="${selectedSides}"]`)?.closest('.die-button');
-    if (!selectedButton) return;
-    bypass.add(selectedButton);
-    setPhase(PHASES.ANTICIPATION);
-    requestAnimationFrame(() => window.setTimeout(() => {
-      setPhase(PHASES.THROWING);
-      selectedButton.click();
-    }, 170));
-  }
-
-  function onResultChanged() {
-    const token = ++animationToken;
-    setPhase(PHASES.THROWING);
-    window.setTimeout(() => token === animationToken && setPhase(PHASES.SETTLING), 690);
+  function revealResult(token) {
+    if (token !== rollToken) return;
+    window.clearTimeout(fallbackTimer);
+    setPhase(PHASES.SETTLING);
     window.setTimeout(() => {
-      if (token !== animationToken) return;
-      updateStageCopy();
+      if (token !== rollToken) return;
+      updateResultBand();
       setPhase(PHASES.REVEALED);
-    }, 1120);
+    }, SETTLE_HOLD_MS);
+  }
+
+  function beginRoll() {
+    const token = ++rollToken;
+    const stage = stageNode();
+    if (!stage) return;
+    window.clearTimeout(fallbackTimer);
+    stage.dataset.outcome = 'neutral';
+    stage.querySelector('.dice-stage-value').textContent = '';
+    stage.querySelector('.dice-stage-context').textContent = `Rzut k${selectedSides}`;
+    setPhase(PHASES.ROLLING);
+    fallbackTimer = window.setTimeout(() => revealResult(token), FALLBACK_ROLL_MS);
+  }
+
+  function onResultMutations(mutations) {
+    const result = resultNode();
+    if (!result) return;
+    const busyMutation = mutations.some(mutation => mutation.type === 'attributes' && mutation.attributeName === 'aria-busy');
+    const contentMutation = mutations.some(mutation => mutation.type === 'childList');
+    const busy = result.getAttribute('aria-busy') === 'true';
+
+    if (contentMutation || (busyMutation && busy)) beginRoll();
+    if (busyMutation && !busy && rollToken) revealResult(rollToken);
+  }
+
+  function dieGlyph(sides) {
+    const common = 'viewBox="0 0 48 48" aria-hidden="true" focusable="false"';
+    const label = sides === 100 ? '00' : String(sides);
+    if (sides === 4) return `<svg ${common}><path d="M24 6 43 40H5Z"/><path d="M24 6v34M5 40l19-13 19 13"/><text x="24" y="31">4</text></svg>`;
+    if (sides === 6) return `<svg ${common}><path d="m10 15 14-8 14 8v18l-14 8-14-8Z"/><path d="m10 15 14 8 14-8M24 23v18"/><text x="24" y="20">6</text></svg>`;
+    if (sides === 8) return `<svg ${common}><path d="M24 5 42 24 24 43 6 24Z"/><path d="M24 5v38M6 24h36"/><text x="24" y="29">8</text></svg>`;
+    if (sides === 10) return `<svg ${common}><path d="M24 4 42 18 36 39 12 39 6 18Z"/><path d="m24 4-7 20 7 15 7-15ZM6 18l11 6M42 18l-11 6"/><text x="24" y="28">10</text></svg>`;
+    if (sides === 12) return `<svg ${common}><path d="m24 4 16 9 4 17-12 14H16L4 30l4-17Z"/><path d="m24 4-8 13 8 10 8-10ZM8 13l8 4M40 13l-8 4M4 30l20-3 20 3M16 44l8-17 8 17"/><text x="24" y="22">12</text></svg>`;
+    if (sides === 20) return `<svg ${common}><path d="M24 3 43 15l-4 22-15 8L9 37 5 15Z"/><path d="M24 3 14 22l10 23 10-23ZM5 15l9 7h20l9-7M9 37l15-15 15 15"/><text x="24" y="20">20</text></svg>`;
+    return `<svg ${common} class="percentile-glyph"><g transform="translate(-4 1)"><path d="M17 7 31 18 27 37H7L3 18Z"/><path d="m17 7-5 15 5 15 5-15ZM3 18l9 4 10-4"/><text x="17" y="27">00</text></g><g transform="translate(19 6)"><path d="M13 5 25 14 22 31H5L1 14Z"/><path d="m13 5-4 13 4 13 4-13ZM1 14l8 4 8-4"/><text x="13" y="23">0</text></g></svg>`;
+  }
+
+  function enhanceQuickDice(view) {
+    view.querySelectorAll('.die-button').forEach(button => {
+      const sides = sidesFor(button);
+      const icon = button.querySelector('[data-die]');
+      if (icon && !icon.dataset.redesigned) {
+        icon.dataset.redesigned = 'true';
+        icon.innerHTML = dieGlyph(sides);
+      }
+      if (button.dataset.experienceBound) return;
+      button.dataset.experienceBound = 'true';
+      button.addEventListener('click', () => {
+        selectedSides = sides;
+        view.querySelectorAll('.die-button.is-selected').forEach(node => node.classList.remove('is-selected'));
+        button.classList.add('is-selected');
+      });
+    });
   }
 
   function createStage(consoleElement) {
     if (consoleElement.querySelector('.dice-experience-stage')) return;
     const result = consoleElement.querySelector('#diceResult');
     if (!result) return;
+
     const stage = document.createElement('section');
     stage.className = 'dice-experience-stage';
     stage.dataset.phase = PHASES.IDLE;
     stage.dataset.outcome = 'neutral';
-    stage.setAttribute('aria-label', 'Scena rzutu kośćmi');
+    stage.setAttribute('aria-label', 'Stół do rzucania kośćmi');
     stage.innerHTML = `
-      <div class="dice-stage-atmosphere" aria-hidden="true"></div>
-      <header class="dice-stage-copy">
-        <span class="dice-stage-kicker">Stół do rzutu</span>
-        <h2 class="dice-stage-title">Wybierz kość</h2>
-        <p class="dice-stage-detail">Przygotuj rzut lub wybierz procedurę.</p>
-      </header>
+      <div class="dice-stage-surface" aria-hidden="true"></div>
       <div class="dice-stage-result-slot"></div>
-      <div class="dice-stage-actions">
-        <button class="btn btn-primary dice-stage-roll" type="button" disabled>Rzuć</button>
-        <button class="btn btn-secondary dice-stage-done" type="button" hidden>Gotowe</button>
-      </div>`;
+      <footer class="dice-stage-result-band" aria-live="polite">
+        <strong class="dice-stage-value" aria-hidden="true">—</strong>
+        <span class="dice-stage-context">Wybierz kość, aby rzucić</span>
+      </footer>`;
     stage.querySelector('.dice-stage-result-slot').append(result);
     consoleElement.insertBefore(stage, consoleElement.querySelector('.dice-result-actions') || null);
-    stage.querySelector('.dice-stage-roll').addEventListener('click', executeSelected);
-    stage.querySelector('.dice-stage-done').addEventListener('click', () => {
-      setPhase(PHASES.IDLE);
-      stage.querySelector('.dice-stage-kicker').textContent = 'Stół do rzutu';
-      stage.querySelector('.dice-stage-title').textContent = 'Wybierz kość';
-      stage.querySelector('.dice-stage-detail').textContent = 'Przygotuj rzut lub wybierz procedurę.';
-      stage.dataset.outcome = 'neutral';
-    });
-    new MutationObserver(onResultChanged).observe(result, { childList: true, subtree: true, attributes: true, attributeFilter: ['aria-label'] });
-  }
 
-  function wireDiceButtons(view) {
-    view.querySelectorAll('.die-button').forEach(button => {
-      if (button.dataset.experienceBound) return;
-      button.dataset.experienceBound = 'true';
-      button.addEventListener('click', () => {
-        if (bypass.has(button)) { bypass.delete(button); return; }
-        markSelected(button);
-      });
+    new MutationObserver(onResultMutations).observe(result, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['aria-label', 'aria-busy']
     });
   }
 
   function enhance() {
-    const view = diceView();
+    const view = viewNode();
     const consoleElement = consoleNode();
     if (!view || !consoleElement) return;
     createStage(consoleElement);
-    wireDiceButtons(view);
-    if (selectedButton && !selectedButton.isConnected) selectedButton = null;
-    setPhase(view.dataset.dicePhase || PHASES.IDLE);
+    enhanceQuickDice(view);
+    if (!view.dataset.dicePhase) setPhase(PHASES.IDLE);
   }
 
   const rootObserver = new MutationObserver(() => requestAnimationFrame(enhance));
