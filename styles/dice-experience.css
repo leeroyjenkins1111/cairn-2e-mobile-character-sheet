@@ -1,132 +1,67 @@
-/* Focused, Cairn-native dice ritual inspired by the dramatic cadence of CRPG rolls. */
-
+/* Dice screen: current Cairn design language with a clearer tabletop hierarchy. */
 #view-dice {
-  --dice-stage-glow: color-mix(in srgb, var(--color-accent-secondary) 34%, transparent);
-  --dice-stage-danger: color-mix(in srgb, #9f4b42 48%, transparent);
+  --dice-stage-accent: color-mix(in srgb, var(--color-accent-secondary) 38%, transparent);
+  --dice-stage-success: color-mix(in srgb, #789461 36%, transparent);
+  --dice-stage-failure: color-mix(in srgb, #a45e55 34%, transparent);
 }
 
 #view-dice > .dice-console {
   padding: 0;
   overflow: hidden;
-  background: color-mix(in srgb, var(--color-surface-page-translucent) 74%, #080906);
+  background: var(--color-surface-raised);
 }
 
 #view-dice .dice-console > .section-heading {
-  padding: 16px 18px 13px;
+  padding: 15px 18px 12px;
   margin: 0;
-  position: relative;
-  z-index: 4;
-  background: color-mix(in srgb, var(--color-surface-raised) 86%, transparent);
-  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--color-border-subtle);
+  background: var(--color-surface-raised);
 }
 
 .dice-experience-stage {
   position: relative;
-  min-height: 390px;
-  padding: 22px 18px 20px;
+  min-height: 344px;
   display: grid;
-  grid-template-rows: auto minmax(210px, 1fr) auto;
-  align-items: center;
+  grid-template-rows: minmax(260px, 1fr) auto;
   isolation: isolate;
   overflow: hidden;
   background:
-    radial-gradient(circle at 50% 48%, var(--dice-stage-glow), transparent 31%),
-    radial-gradient(ellipse at 50% 92%, rgba(0, 0, 0, .58), transparent 56%),
-    linear-gradient(180deg, color-mix(in srgb, #171910 76%, var(--color-surface-raised)), #090a07 92%);
-  box-shadow: inset 0 0 64px rgba(0, 0, 0, .42);
+    radial-gradient(circle at 50% 43%, color-mix(in srgb, var(--color-accent-secondary) 10%, transparent), transparent 48%),
+    linear-gradient(180deg, var(--color-surface-soft), var(--color-surface-raised));
 }
 
-.dice-experience-stage::before,
-.dice-experience-stage::after {
-  content: "";
+.dice-stage-surface {
   position: absolute;
+  inset: 0 0 72px;
+  z-index: -1;
   pointer-events: none;
-}
-
-.dice-experience-stage::before {
-  inset: 0;
-  z-index: -2;
-  opacity: .16;
-  background-image:
-    repeating-linear-gradient(27deg, rgba(255,255,255,.045) 0 1px, transparent 1px 5px),
-    repeating-linear-gradient(117deg, rgba(0,0,0,.08) 0 1px, transparent 1px 7px);
-  mix-blend-mode: soft-light;
-}
-
-.dice-experience-stage::after {
-  z-index: -1;
-  inset: 12% 8% 8%;
-  border: 1px solid color-mix(in srgb, var(--color-accent-secondary) 18%, transparent);
-  border-radius: 48% 52% 46% 54% / 56% 42% 58% 44%;
-  opacity: .34;
-  transform: rotate(-2deg);
-}
-
-.dice-stage-atmosphere {
-  position: absolute;
-  z-index: -1;
-  left: 50%;
-  bottom: 76px;
-  width: min(76vw, 310px);
-  height: 72px;
-  border-radius: 50%;
-  transform: translateX(-50%);
-  background: radial-gradient(ellipse, rgba(0,0,0,.72) 0 18%, rgba(0,0,0,.28) 43%, transparent 72%);
-  filter: blur(4px);
-  transition: transform 240ms ease, opacity 240ms ease, filter 240ms ease;
-}
-
-.dice-stage-copy {
-  position: relative;
-  z-index: 3;
-  max-width: 310px;
-  margin-inline: auto;
-  text-align: center;
-}
-
-.dice-stage-kicker {
-  display: block;
-  margin-bottom: 4px;
-  color: var(--color-accent-secondary-strong);
-  font-size: .69rem;
-  font-weight: 800;
-  letter-spacing: .16em;
-  text-transform: uppercase;
-}
-
-.dice-stage-title {
-  margin: 0;
-  color: var(--color-ink-primary);
-  font: 680 clamp(1.35rem, 6vw, 1.8rem)/1 var(--font-display);
-  letter-spacing: -.025em;
-}
-
-.dice-stage-detail {
-  min-height: 19px;
-  margin: 7px 0 0;
-  color: var(--color-ink-secondary);
-  font-size: var(--type-meta);
-  line-height: 1.35;
+  opacity: .42;
+  background:
+    linear-gradient(115deg, transparent 0 47%, color-mix(in srgb, var(--color-ink-primary) 4%, transparent) 48% 49%, transparent 50%),
+    radial-gradient(ellipse at 50% 78%, color-mix(in srgb, var(--color-ink-primary) 10%, transparent), transparent 55%);
+  background-size: 44px 44px, auto;
 }
 
 .dice-stage-result-slot {
   position: relative;
-  z-index: 2;
-  min-height: 218px;
+  min-height: 260px;
+  padding: 12px 18px 4px;
   display: grid;
   place-items: center;
 }
 
 #view-dice .dice-stage-result-slot .dice-result {
   width: 100%;
-  min-height: 210px;
+  min-height: 244px;
   padding: 0;
   border: 0;
   background: transparent;
   box-shadow: none;
 }
 
-#view-dice .dice-stage-result-slot .animated-dice-result {
+#view-dice .dice-stage-result-slot .animated-dice-result,
+#view-dice .dice-stage-result-slot .dual-dice-result {
+  min-height: 236px;
   grid-template-columns: 1fr;
   grid-template-rows: 1fr;
   place-items: center;
@@ -134,171 +69,236 @@
 }
 
 #view-dice .dice-stage-result-slot .result-die-scene {
-  width: 210px;
-  height: 210px;
-  transform: scale(1.18);
+  width: 214px;
+  height: 224px;
+  transform: none;
   transform-origin: center;
 }
 
-#view-dice .dice-stage-result-slot .result-total-mark {
-  transform: scale(1.12);
+#view-dice .dice-stage-result-slot .result-die-object[data-sides="4"] { width: 154px; height: 154px; }
+#view-dice .dice-stage-result-slot .result-die-object[data-sides="6"] { width: 174px; height: 174px; }
+#view-dice .dice-stage-result-slot .result-die-object[data-sides="8"] { width: 174px; height: 174px; }
+#view-dice .dice-stage-result-slot .result-die-object[data-sides="10"] { width: 180px; height: 180px; }
+#view-dice .dice-stage-result-slot .result-die-object[data-sides="12"] { width: 184px; height: 184px; }
+#view-dice .dice-stage-result-slot .result-die-object[data-sides="20"] { width: 190px; height: 190px; }
+
+/* Percentile dice are two independent, readable objects rather than one overlapping pile. */
+#view-dice .dice-stage-result-slot .result-die-object[data-sides="100"] {
+  width: 252px;
+  height: 176px;
+}
+#view-dice .dice-stage-result-slot .result-die-object[data-sides="100"] .percentile-die {
+  width: 126px;
+  height: 126px;
+  top: 25px;
+}
+#view-dice .dice-stage-result-slot .result-die-object[data-sides="100"] .percentile-die-first {
+  left: 2px;
+  right: auto;
+  transform: rotate(-7deg);
+}
+#view-dice .dice-stage-result-slot .result-die-object[data-sides="100"] .percentile-die-second {
+  right: 2px;
+  left: auto;
+  top: 25px;
+  transform: rotate(7deg);
 }
 
-.dice-stage-actions {
+.dice-stage-result-band {
   position: relative;
-  z-index: 4;
+  min-height: 72px;
+  padding: 10px 18px 12px;
   display: grid;
-  grid-template-columns: minmax(128px, 1fr) minmax(96px, auto);
-  gap: 10px;
-  max-width: 330px;
-  width: 100%;
-  margin-inline: auto;
+  place-items: center;
+  align-content: center;
+  border-top: 1px solid var(--color-border-subtle);
+  background: color-mix(in srgb, var(--color-surface-raised) 94%, var(--color-accent-secondary));
+  text-align: center;
 }
 
-.dice-stage-actions .btn {
-  min-height: 48px;
-  font-weight: 780;
-  letter-spacing: .035em;
+.dice-stage-value {
+  min-height: 39px;
+  color: var(--color-ink-primary);
+  font: 720 clamp(2rem, 9vw, 2.7rem)/.95 var(--font-display);
+  letter-spacing: -.04em;
+  opacity: 0;
+  transform: translateY(4px) scale(.96);
 }
 
-.dice-stage-roll:disabled {
-  opacity: .48;
+.dice-stage-context {
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--color-ink-secondary);
+  font-size: var(--type-meta);
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-#view-dice[data-dice-phase="armed"] .dice-stage-roll {
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--color-accent-secondary) 40%, transparent), 0 8px 24px rgba(0,0,0,.25);
-}
-
-#view-dice[data-dice-phase="anticipation"] .dice-stage-result-slot,
-#view-dice[data-dice-phase="throwing"] .dice-stage-result-slot,
-#view-dice[data-dice-phase="settling"] .dice-stage-result-slot {
-  pointer-events: none;
-}
-
-#view-dice[data-dice-phase="anticipation"] .result-die-object {
-  animation: dice-ritual-anticipation 180ms cubic-bezier(.4,0,.7,1) both;
-}
-
-#view-dice[data-dice-phase="throwing"] .result-die-object {
-  animation: dice-ritual-throw 920ms cubic-bezier(.16,.78,.28,1) both;
-}
-
-#view-dice[data-dice-phase="throwing"] .result-die-shadow {
-  animation: dice-ritual-shadow 920ms ease-out both;
-}
-
-#view-dice[data-dice-phase="settling"] .result-die-object {
-  animation: dice-ritual-settle 260ms cubic-bezier(.18,.88,.28,1.18) both;
-}
-
-#view-dice[data-dice-phase="revealed"] .result-die-object,
-#view-dice[data-dice-phase="revealed"] .result-total-value {
-  animation: dice-ritual-reveal 360ms ease-out both;
-}
-
-#view-dice[data-dice-phase="revealed"] .dice-stage-copy {
-  animation: dice-copy-reveal 320ms ease-out both;
-}
-
-#view-dice[data-dice-phase="revealed"] .dice-stage-done {
-  display: inline-flex;
+#view-dice[data-dice-phase="revealed"] .dice-stage-value {
+  opacity: 1;
+  transform: none;
+  transition: opacity 150ms ease-out, transform 180ms ease-out;
 }
 
 .dice-experience-stage[data-outcome="success"] {
-  --dice-stage-glow: color-mix(in srgb, #8ea977 38%, transparent);
+  --dice-stage-accent: var(--dice-stage-success);
 }
-
 .dice-experience-stage[data-outcome="failure"] {
-  --dice-stage-glow: var(--dice-stage-danger);
+  --dice-stage-accent: var(--dice-stage-failure);
+}
+.dice-experience-stage[data-outcome="success"] .dice-stage-value { color: color-mix(in srgb, var(--color-ink-primary) 62%, #86a56d); }
+.dice-experience-stage[data-outcome="failure"] .dice-stage-value { color: color-mix(in srgb, var(--color-ink-primary) 58%, #b16a61); }
+
+#view-dice[data-dice-phase="rolling"] .result-die-object {
+  animation: dice-table-throw 760ms cubic-bezier(.18,.72,.24,1) both;
+}
+#view-dice[data-dice-phase="rolling"] .result-die-shadow {
+  animation: dice-table-shadow 760ms ease-out both;
+}
+#view-dice[data-dice-phase="settling"] .result-die-object {
+  animation: dice-table-settle 120ms cubic-bezier(.2,.8,.3,1) both;
+}
+#view-dice[data-dice-phase="rolling"] .dice-stage-context {
+  opacity: .62;
 }
 
-.dice-experience-stage[data-outcome="success"] .dice-stage-title { color: #c5d7ad; }
-.dice-experience-stage[data-outcome="failure"] .dice-stage-title { color: #d7a39b; }
+/* Legacy actions are intentionally removed from the interaction model. */
+#view-dice .dice-stage-actions,
+#view-dice .dice-result-actions {
+  display: none !important;
+}
 
-#view-dice[data-dice-phase="anticipation"] > .quick-dice,
-#view-dice[data-dice-phase="throwing"] > .quick-dice,
-#view-dice[data-dice-phase="settling"] > .quick-dice,
-#view-dice[data-dice-phase="anticipation"] > .dice-utilities,
-#view-dice[data-dice-phase="throwing"] > .dice-utilities,
-#view-dice[data-dice-phase="settling"] > .dice-utilities,
-#view-dice[data-dice-phase="anticipation"] > .combat-scenarios,
-#view-dice[data-dice-phase="throwing"] > .combat-scenarios,
-#view-dice[data-dice-phase="settling"] > .combat-scenarios {
-  opacity: .34;
-  filter: saturate(.55);
-  pointer-events: none;
-  transform: scale(.985);
-  transition: opacity 220ms ease, filter 220ms ease, transform 220ms ease;
+/* Compact single-row quick dice tray. */
+#view-dice > .quick-dice {
+  padding: 14px 14px 15px;
+}
+
+#view-dice > .quick-dice .section-heading {
+  margin-bottom: 10px;
+}
+
+#view-dice .dice-rail {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+  overflow: visible;
+}
+
+#view-dice .die-button {
+  min-width: 0;
+  min-height: 62px;
+  padding: 6px 2px 5px;
+  display: grid;
+  grid-template-rows: 34px auto;
+  place-items: center;
+  gap: 2px;
+  border-radius: 11px;
+}
+
+#view-dice .die-button [data-die] {
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+}
+
+#view-dice .die-button [data-die] svg {
+  width: 32px;
+  height: 32px;
+  overflow: visible;
+  fill: color-mix(in srgb, var(--color-surface-soft) 72%, var(--color-accent-secondary));
+  stroke: var(--color-ink-secondary);
+  stroke-width: 1.35;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+#view-dice .die-button [data-die] svg text {
+  fill: var(--color-ink-primary);
+  stroke: none;
+  font: 700 9px var(--font-body);
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
+
+#view-dice .die-button [data-die] .percentile-glyph text { font-size: 7px; }
+
+#view-dice .die-button > :last-child {
+  font-size: .68rem;
+  line-height: 1;
 }
 
 #view-dice .die-button.is-selected {
   border-color: var(--color-accent-secondary);
-  background: color-mix(in srgb, var(--color-accent-secondary) 14%, var(--color-surface-soft));
-  color: var(--color-accent-secondary-strong);
-  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-accent-secondary) 30%, transparent), 0 5px 16px rgba(0,0,0,.16);
-  transform: translateY(-2px);
+  background: color-mix(in srgb, var(--color-accent-secondary) 11%, var(--color-surface-soft));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-accent-secondary) 22%, transparent);
 }
 
-#view-dice .dice-result-actions {
-  margin: 0 18px 16px;
+#view-dice .die-button.is-selected [data-die] svg {
+  stroke: var(--color-accent-secondary-strong);
 }
 
-@keyframes dice-ritual-anticipation {
-  0% { transform: translateY(0) scale(1); }
-  100% { transform: translateY(8px) scale(.92, .88); }
+/* Utilities read as two concise navigation rows, not another large dashboard. */
+#view-dice > .dice-utilities {
+  padding: 14px;
+  gap: 8px;
 }
 
-@keyframes dice-ritual-throw {
-  0% { transform: translate3d(0, 9px, 0) rotate(-8deg) scale(.9); opacity: .78; }
-  26% { transform: translate3d(-34px, -58px, 0) rotate(126deg) scale(1.08); opacity: 1; }
-  53% { transform: translate3d(31px, -21px, 0) rotate(268deg) scale(1.02); }
-  74% { transform: translate3d(-13px, 8px, 0) rotate(402deg) scale(.98); }
-  88% { transform: translate3d(7px, -5px, 0) rotate(448deg) scale(1.01); }
-  100% { transform: translate3d(0, 0, 0) rotate(468deg) scale(1); }
+#view-dice > .dice-utilities .btn,
+#view-dice > .dice-utilities button {
+  min-height: 52px;
 }
 
-@keyframes dice-ritual-shadow {
-  0% { transform: scale(1); opacity: .5; filter: blur(6px); }
-  30% { transform: scale(.48); opacity: .15; filter: blur(10px); }
-  70% { transform: scale(.82); opacity: .32; filter: blur(8px); }
-  100% { transform: scale(1); opacity: .52; filter: blur(6px); }
+@keyframes dice-table-throw {
+  0% { transform: translate3d(0, 5px, 0) rotate(-5deg) scale(.96); }
+  28% { transform: translate3d(-22px, -40px, 0) rotate(118deg) scale(1.04); }
+  56% { transform: translate3d(19px, -12px, 0) rotate(252deg) scale(1.01); }
+  78% { transform: translate3d(-7px, 5px, 0) rotate(350deg) scale(.99); }
+  91% { transform: translate3d(4px, -2px, 0) rotate(388deg) scale(1.005); }
+  100% { transform: translate3d(0, 0, 0) rotate(402deg) scale(1); }
 }
 
-@keyframes dice-ritual-settle {
-  0% { transform: translateY(-4px) rotate(4deg) scale(1.035); }
-  54% { transform: translateY(2px) rotate(-1.5deg) scale(.992); }
-  100% { transform: translateY(0) rotate(0) scale(1); }
+@keyframes dice-table-shadow {
+  0% { transform: scale(1); opacity: .42; filter: blur(6px); }
+  35% { transform: scale(.54); opacity: .13; filter: blur(10px); }
+  76% { transform: scale(.82); opacity: .28; filter: blur(8px); }
+  100% { transform: scale(1); opacity: .44; filter: blur(6px); }
 }
 
-@keyframes dice-ritual-reveal {
-  0% { filter: brightness(.8) saturate(.72); transform: scale(.96); }
-  44% { filter: brightness(1.22) saturate(1.08) drop-shadow(0 0 18px var(--dice-stage-glow)); transform: scale(1.045); }
-  100% { filter: none; transform: scale(1); }
-}
-
-@keyframes dice-copy-reveal {
-  from { opacity: .2; transform: translateY(5px); }
-  to { opacity: 1; transform: translateY(0); }
+@keyframes dice-table-settle {
+  from { transform: translateY(-2px) rotate(2deg) scale(1.018); }
+  to { transform: none; }
 }
 
 @media (max-width: 360px) {
-  .dice-experience-stage { min-height: 360px; padding-inline: 14px; }
-  #view-dice .dice-stage-result-slot .result-die-scene { width: 188px; height: 188px; transform: scale(1.08); }
-  .dice-stage-actions { grid-template-columns: 1fr auto; }
+  .dice-experience-stage { min-height: 322px; grid-template-rows: minmax(242px, 1fr) auto; }
+  .dice-stage-result-slot { min-height: 242px; padding-inline: 14px; }
+  #view-dice .dice-stage-result-slot .result-die-scene { width: 196px; height: 206px; }
+  #view-dice .dice-stage-result-slot .result-die-object[data-sides="20"] { width: 174px; height: 174px; }
+  #view-dice .dice-stage-result-slot .result-die-object[data-sides="100"] { width: 224px; height: 164px; }
+  #view-dice .dice-stage-result-slot .result-die-object[data-sides="100"] .percentile-die { width: 112px; height: 112px; }
+  #view-dice > .quick-dice { padding-inline: 12px; }
+  #view-dice .dice-rail { gap: 4px; }
+  #view-dice .die-button { min-height: 58px; border-radius: 9px; }
+  #view-dice .die-button [data-die] { width: 30px; height: 30px; }
+  #view-dice .die-button [data-die] svg { width: 29px; height: 29px; }
 }
 
 @media (prefers-reduced-motion: reduce) {
   #view-dice .result-die-object,
   #view-dice .result-die-shadow,
-  #view-dice .dice-stage-copy,
-  #view-dice > .quick-dice,
-  #view-dice > .dice-utilities,
-  #view-dice > .combat-scenarios,
-  #view-dice .die-button { animation: none !important; transition: none !important; transform: none !important; }
+  #view-dice .dice-stage-value,
+  #view-dice .die-button {
+    animation: none !important;
+    transition: none !important;
+    transform: none !important;
+  }
 }
 
 @media (forced-colors: active) {
-  .dice-experience-stage { border: 1px solid CanvasText; background: Canvas; }
-  .dice-experience-stage::before, .dice-experience-stage::after, .dice-stage-atmosphere { display: none; }
+  .dice-experience-stage { background: Canvas; }
+  .dice-stage-surface { display: none; }
+  .dice-stage-result-band { border-color: CanvasText; background: Canvas; }
   #view-dice .die-button.is-selected { outline: 3px solid Highlight; }
 }
