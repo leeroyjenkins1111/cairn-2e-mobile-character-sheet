@@ -1,0 +1,205 @@
+/* Dice result cleanup: the die and its value carry the visual result. */
+
+#view-dice .animated-dice-result,
+.sheet .animated-dice-result {
+  grid-template-columns: 1fr;
+  grid-template-rows: 1fr;
+  justify-items: center;
+  align-items: center;
+  gap: 0;
+  text-align: center;
+}
+
+/* Keep semantic result copy for assistive technology without rendering status text. */
+.result-die-copy,
+.result-die-context,
+.result-die-notation,
+#view-dice .dice-result-actions .section-caption {
+  position: absolute !important;
+  width: 1px !important;
+  height: 1px !important;
+  padding: 0 !important;
+  margin: -1px !important;
+  overflow: hidden !important;
+  clip: rect(0, 0, 0, 0) !important;
+  white-space: nowrap !important;
+  border: 0 !important;
+}
+
+#view-dice .dice-result {
+  min-height: 164px;
+  place-items: center;
+}
+
+#view-dice .animated-dice-result .result-die-scene {
+  grid-column: 1;
+  grid-row: 1;
+  width: 154px;
+  height: 154px;
+  justify-self: center;
+  transform: scale(.94);
+}
+
+#view-dice .dice-result-actions {
+  min-height: 46px;
+  justify-content: flex-start;
+}
+
+/* Composite totals do not pretend to be a face of one physical die. */
+.aggregate-dice-result {
+  width: 100%;
+  min-height: 136px;
+}
+
+.result-total-mark {
+  position: relative;
+  width: min(100%, 178px);
+  min-height: 130px;
+  display: grid;
+  place-items: center;
+  isolation: isolate;
+}
+
+.result-total-icon {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--color-ink-muted);
+  opacity: .36;
+  pointer-events: none;
+}
+
+.result-total-icon .die-icon {
+  position: absolute;
+  width: 76px;
+  height: 76px;
+}
+
+.result-total-icon-first {
+  transform: translate(-26px, 7px) rotate(-10deg);
+}
+
+.result-total-icon-second {
+  transform: translate(27px, -8px) rotate(11deg);
+}
+
+.result-total-value {
+  position: relative;
+  z-index: 1;
+  min-width: 72px;
+  padding: 8px 13px;
+  border: 1px solid var(--color-border-strong);
+  border-radius: var(--radius-md);
+  background: color-mix(in srgb, var(--color-surface-raised) 92%, transparent);
+  color: var(--color-ink-primary);
+  box-shadow: var(--shadow-raised);
+  font: 650 clamp(2.45rem, 13vw, 3.8rem)/.9 var(--font-display);
+  letter-spacing: -.055em;
+  text-align: center;
+}
+
+.aggregate-dice-result.rolling .result-total-icon-first {
+  animation: aggregate-die-first 620ms var(--ease-ui);
+}
+
+.aggregate-dice-result.rolling .result-total-icon-second {
+  animation: aggregate-die-second 620ms var(--ease-ui);
+}
+
+.aggregate-dice-result.rolling .result-total-value {
+  opacity: 0;
+}
+
+.aggregate-dice-result.settled .result-total-value {
+  animation: result-copy-in var(--motion-base) ease-out;
+}
+
+@keyframes aggregate-die-first {
+  0% { transform: translate(-42px, -18px) rotate(-82deg) scale(.82); opacity: .18; }
+  58% { transform: translate(-18px, 13px) rotate(18deg) scale(1.04); opacity: .5; }
+  100% { transform: translate(-26px, 7px) rotate(-10deg) scale(1); opacity: .36; }
+}
+
+@keyframes aggregate-die-second {
+  0% { transform: translate(44px, -28px) rotate(96deg) scale(.78); opacity: .16; }
+  62% { transform: translate(19px, 1px) rotate(-16deg) scale(1.06); opacity: .5; }
+  100% { transform: translate(27px, -8px) rotate(11deg) scale(1); opacity: .36; }
+}
+
+/* Consistent polyhedral line icons. */
+.die-icon {
+  overflow: visible;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.35;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.die-icon polygon,
+.die-icon path {
+  vector-effect: non-scaling-stroke;
+}
+
+.die-icon .percentile-icon-die {
+  fill: color-mix(in srgb, currentColor 7%, transparent);
+}
+
+.die-icon .percentile-icon-label {
+  fill: currentColor;
+  stroke: none;
+  font-family: var(--font-ui);
+  font-size: 3.8px;
+  font-weight: 800;
+  letter-spacing: -.18px;
+  dominant-baseline: central;
+  paint-order: stroke;
+}
+
+.die-icon .percentile-icon-label-tens {
+  font-size: 3.25px;
+}
+
+#view-dice .die-button svg[data-die="100"] {
+  width: 32px;
+  height: 32px;
+}
+
+@media (max-width: 360px) {
+  #view-dice .dice-result {
+    min-height: 152px;
+  }
+
+  #view-dice .animated-dice-result .result-die-scene {
+    width: 142px;
+    height: 142px;
+    transform: scale(.88);
+  }
+
+  .aggregate-dice-result,
+  .result-total-mark {
+    min-height: 122px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aggregate-dice-result.rolling .result-total-icon-first,
+  .aggregate-dice-result.rolling .result-total-icon-second,
+  .aggregate-dice-result.settled .result-total-value {
+    animation: none;
+  }
+}
+
+@media (forced-colors: active) {
+  .result-total-value {
+    border-color: CanvasText;
+    background: Canvas;
+    color: CanvasText;
+  }
+
+  .result-total-icon {
+    color: CanvasText;
+    opacity: .5;
+  }
+}
