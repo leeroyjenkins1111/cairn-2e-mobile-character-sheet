@@ -10,20 +10,12 @@
   text-align: center;
 }
 
-/* Keep semantic result copy for assistive technology without rendering status text. */
+/* The result container and live regions retain the accessible announcement. */
 .result-die-copy,
 .result-die-context,
 .result-die-notation,
 #view-dice .dice-result-actions .section-caption {
-  position: absolute !important;
-  width: 1px !important;
-  height: 1px !important;
-  padding: 0 !important;
-  margin: -1px !important;
-  overflow: hidden !important;
-  clip: rect(0, 0, 0, 0) !important;
-  white-space: nowrap !important;
-  border: 0 !important;
+  display: none !important;
 }
 
 #view-dice .dice-result {
