@@ -58,18 +58,19 @@ test.describe('physical dice renderer and motion', () => {
       animateDiceResult(host, 17, 'wynik', 20, 'neutral');
       await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
       const object = host.querySelector('.result-die-object');
+      const notation = host.querySelector('.result-die-notation');
       return {
         hiddenValue: host.querySelector('.result-die-value')?.textContent,
         faceReveal: object?.dataset.faceReveal,
         context: host.querySelector('.result-die-context')?.textContent,
-        notationVisible: getComputedStyle(host.querySelector('.result-die-notation')).display
+        notationState: notation ? getComputedStyle(notation).display : 'absent'
       };
     });
 
     expect(result.hiddenValue).toBe('17');
     expect(result.faceReveal).toBe('1');
     expect(result.context).toBe('Rzut k20');
-    expect(result.notationVisible).toBe('none');
+    expect(['none', 'absent']).toContain(result.notationState);
   });
 
   test('travels to the right wall and rebounds without a stationary spin phase', async ({ page }) => {

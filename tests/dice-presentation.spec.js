@@ -11,7 +11,7 @@ async function loadDemoDice(page) {
 }
 
 test.describe('redesign ekranu Kości', () => {
-  test('wydziela cztery zadaniowe moduły i kompaktowy wynik', async ({ page }) => {
+  test('wydziela cztery zadaniowe moduły i centralny wynik', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await loadDemoDice(page);
 
@@ -35,11 +35,13 @@ test.describe('redesign ekranu Kości', () => {
       const style = getComputedStyle(element);
       return {
         columns: style.gridTemplateColumns.split(' ').filter(Boolean).length,
-        textAlign: style.textAlign
+        textAlign: style.textAlign,
+        justifyItems: style.justifyItems
       };
     });
-    expect(resultLayout.columns).toBe(2);
-    expect(resultLayout.textAlign).toBe('left');
+    expect(resultLayout.columns).toBe(1);
+    expect(resultLayout.textAlign).toBe('center');
+    expect(resultLayout.justifyItems).toBe('center');
 
     const utilityLabel = await page.locator('#view-dice > .dice-utilities').evaluate(element =>
       getComputedStyle(element, '::before').content.replaceAll('"', '')
@@ -95,7 +97,7 @@ test.describe('redesign ekranu Kości', () => {
 
     expect(compact.cardPadding).toBeGreaterThanOrEqual(14);
     expect(compact.railColumns).toBe(4);
-    expect(compact.resultColumns).toBe(2);
+    expect(compact.resultColumns).toBe(1);
     expect(compact.localOverflow).toBe(false);
     expect(compact.railOverflow).toBe(false);
 
