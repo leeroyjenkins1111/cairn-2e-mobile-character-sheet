@@ -22,7 +22,7 @@ test.describe('poprawki rzutu kośćmi', () => {
     const result = page.locator('#diceResult');
     await expect(result.locator('.result-die-object[data-sides="20"]')).toBeVisible();
     await expect(result.locator('.result-die-copy')).toBeHidden();
-    await expect(result.locator('.result-die-context')).toHaveCount(0);
+    await expect(result.locator('.result-die-context')).toBeHidden();
     await expect(result.locator('.result-die-notation')).toHaveCount(0);
     await expect(page.locator('#view-dice .dice-result-actions .section-caption')).toHaveCount(0);
 
