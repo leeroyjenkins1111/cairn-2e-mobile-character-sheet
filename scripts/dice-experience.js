@@ -1,14 +1,7 @@
 'use strict';
 
 (() => {
-  const PHASES = Object.freeze({
-    IDLE: 'idle',
-    ARMED: 'armed',
-    ANTICIPATION: 'anticipation',
-    THROWING: 'throwing',
-    SETTLING: 'settling',
-    REVEALED: 'revealed'
-  });
+  const PHASES = Object.freeze({ IDLE: 'idle', ARMED: 'armed', ANTICIPATION: 'anticipation', THROWING: 'throwing', SETTLING: 'settling', REVEALED: 'revealed' });
   const bypass = new WeakSet();
   let selectedButton = null;
   let selectedSides = 20;
@@ -26,6 +19,13 @@
     view.dataset.dicePhase = phase;
     stage.dataset.phase = phase;
     stage.setAttribute('aria-busy', String([PHASES.ANTICIPATION, PHASES.THROWING, PHASES.SETTLING].includes(phase)));
+    const rollButton = stage.querySelector('.dice-stage-roll');
+    const doneButton = stage.querySelector('.dice-stage-done');
+    if (rollButton) {
+      rollButton.disabled = !selectedButton || [PHASES.ANTICIPATION, PHASES.THROWING, PHASES.SETTLING].includes(phase);
+      rollButton.textContent = phase === PHASES.REVEALED ? 'Rzuć ponownie' : 'Rzuć';
+    }
+    if (doneButton) doneButton.hidden = phase !== PHASES.REVEALED;
   }
 
   function sidesFor(button) {
@@ -76,12 +76,10 @@
     if (!selectedButton) return;
     bypass.add(selectedButton);
     setPhase(PHASES.ANTICIPATION);
-    requestAnimationFrame(() => {
-      setTimeout(() => {
-        setPhase(PHASES.THROWING);
-        selectedButton.click();
-      }, 170);
-    });
+    requestAnimationFrame(() => window.setTimeout(() => {
+      setPhase(PHASES.THROWING);
+      selectedButton.click();
+    }, 170));
   }
 
   function onResultChanged() {
@@ -124,6 +122,7 @@
       stage.querySelector('.dice-stage-kicker').textContent = 'Stół do rzutu';
       stage.querySelector('.dice-stage-title').textContent = 'Wybierz kość';
       stage.querySelector('.dice-stage-detail').textContent = 'Przygotuj rzut lub wybierz procedurę.';
+      stage.dataset.outcome = 'neutral';
     });
     new MutationObserver(onResultChanged).observe(result, { childList: true, subtree: true, attributes: true, attributeFilter: ['aria-label'] });
   }
@@ -153,10 +152,8 @@
     if (!view || !consoleElement) return;
     createStage(consoleElement);
     wireDiceButtons(view);
-    const rollButton = view.querySelector('.dice-stage-roll');
-    if (rollButton) rollButton.disabled = !selectedButton;
-    const doneButton = view.querySelector('.dice-stage-done');
-    if (doneButton) doneButton.hidden = view.dataset.dicePhase !== PHASES.REVEALED;
+    if (selectedButton && !selectedButton.isConnected) selectedButton = null;
+    setPhase(view.dataset.dicePhase || PHASES.IDLE);
   }
 
   const rootObserver = new MutationObserver(() => requestAnimationFrame(enhance));
