@@ -9,6 +9,7 @@ const DESIGN_MODULES = [
   '/styles/dice.css',
   '/styles/dice-screen.css',
   '/styles/dice-roll-fixes.css',
+  '/styles/dice-experience.css',
   '/styles/atmosphere.css',
   '/styles/combat.css',
   '/styles/inventory.css',
