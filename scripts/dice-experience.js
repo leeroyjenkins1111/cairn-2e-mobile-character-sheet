@@ -89,6 +89,17 @@
     fallbackTimer = window.setTimeout(() => revealResult(token), FALLBACK_ROLL_MS);
   }
 
+  function syncFromRendererState() {
+    const result = resultNode();
+    if (!result) return;
+    const busyValue = result.getAttribute('aria-busy');
+    if (busyValue === 'true') {
+      beginRoll();
+      return;
+    }
+    if (busyValue === 'false' && rollToken) revealResult(rollToken);
+  }
+
   function onResultMutations(mutations) {
     const result = resultNode();
     if (!result) return;
@@ -104,12 +115,7 @@
       return;
     }
 
-    if (busyValue === 'true') {
-      beginRoll();
-      return;
-    }
-
-    if (busyValue === 'false' && rollToken) revealResult(rollToken);
+    syncFromRendererState();
   }
 
   function dieGlyph(sides) {
@@ -137,6 +143,9 @@
         selectedSides = sides;
         view.querySelectorAll('.die-button.is-selected').forEach(node => node.classList.remove('is-selected'));
         button.classList.add('is-selected');
+        // The renderer may already have switched aria-busy before this listener runs.
+        // Sync on the next frame so the stage cannot miss the start transition.
+        requestAnimationFrame(syncFromRendererState);
       });
     });
   }
@@ -168,6 +177,7 @@
       attributes: true,
       attributeFilter: ['aria-label', 'aria-busy']
     });
+    syncFromRendererState();
   }
 
   function enhance() {
