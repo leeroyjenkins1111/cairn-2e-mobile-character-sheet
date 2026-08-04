@@ -179,15 +179,14 @@
   transform: none !important;
 }
 
-/* Support both named renderer classes and the structural canvas order. */
-#view-dice .dice-stage-result-slot .result-die-object[data-sides="100"] > .percentile-die-first,
-#view-dice .dice-stage-result-slot .result-die-object[data-sides="100"] > .percentile-die:first-of-type {
+/* Use explicit sibling order. first/last-of-type are unreliable here because
+   the renderer may include other canvases of the same element type. */
+#view-dice .dice-stage-result-slot .result-die-object[data-sides="100"] > .result-die-canvas.percentile-die:nth-of-type(1) {
   left: 0 !important;
   right: auto !important;
 }
 
-#view-dice .dice-stage-result-slot .result-die-object[data-sides="100"] > .percentile-die-second,
-#view-dice .dice-stage-result-slot .result-die-object[data-sides="100"] > .percentile-die:last-of-type {
+#view-dice .dice-stage-result-slot .result-die-object[data-sides="100"] > .result-die-canvas.percentile-die:nth-of-type(2) {
   right: 0 !important;
   left: auto !important;
 }
