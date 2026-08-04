@@ -2,7 +2,6 @@
 
 (() => {
   const LOCK_START = 0.70;
-  const LOCK_END = 0.86;
   const GLYPH_OVERSAMPLE = 4;
 
   const clamp01 = value => Math.max(0, Math.min(1, Number(value) || 0));
@@ -33,10 +32,11 @@
   function advanceAndLockResult(spin, finalRotation, deltaSeconds, progress, pose, advanceSpin) {
     advanceSpin(spin, finalRotation, deltaSeconds, progress, pose);
     if (progress < LOCK_START) return;
-    if (!spin.rendererLockFrom) spin.rendererLockFrom = { ...spin.orientation };
-    const phase = physicalClamp((progress - LOCK_START) / (LOCK_END - LOCK_START));
-    spin.orientation = physicalQuatSlerp(spin.rendererLockFrom, spin.settleTarget, physicalSmootherStep(phase));
-    if (progress >= LOCK_END) spin.orientation = { ...spin.settleTarget };
+
+    // Once the renderer enters its final pose, the result face must already be
+    // exact. Position, lift and shadow may continue settling, but orientation
+    // must not drift through another interpolation frame.
+    spin.orientation = { ...spin.settleTarget };
     spin.rotation = physicalEulerFromQuat(spin.orientation);
   }
 
