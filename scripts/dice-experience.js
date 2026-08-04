@@ -107,9 +107,6 @@
     if (!busyMutation) return;
 
     const busyValue = result.getAttribute('aria-busy');
-
-    // The physical renderer historically removed aria-busy on settle. Normalize that
-    // transition to the explicit ARIA state consumed by the stage and regression tests.
     if (busyValue === null) {
       result.setAttribute('aria-busy', 'false');
       return;
@@ -143,8 +140,7 @@
         selectedSides = sides;
         view.querySelectorAll('.die-button.is-selected').forEach(node => node.classList.remove('is-selected'));
         button.classList.add('is-selected');
-        // The renderer may already have switched aria-busy before this listener runs.
-        // Sync on the next frame so the stage cannot miss the start transition.
+        beginRoll();
         requestAnimationFrame(syncFromRendererState);
       });
     });
