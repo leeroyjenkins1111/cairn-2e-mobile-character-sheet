@@ -165,6 +165,7 @@
 /* The two percentile canvases must have independent boxes. Reset the generic
    canvas inset so WebKit cannot resolve both canvases against the same origin. */
 #view-dice .dice-stage-result-slot .result-die-object[data-sides="100"] {
+  position: relative !important;
   width: 268px !important;
   height: 176px !important;
 }
@@ -178,12 +179,15 @@
   transform: none !important;
 }
 
-#view-dice .dice-stage-result-slot .result-die-object[data-sides="100"] > .percentile-die-first {
+/* Support both named renderer classes and the structural canvas order. */
+#view-dice .dice-stage-result-slot .result-die-object[data-sides="100"] > .percentile-die-first,
+#view-dice .dice-stage-result-slot .result-die-object[data-sides="100"] > .percentile-die:first-of-type {
   left: 0 !important;
   right: auto !important;
 }
 
-#view-dice .dice-stage-result-slot .result-die-object[data-sides="100"] > .percentile-die-second {
+#view-dice .dice-stage-result-slot .result-die-object[data-sides="100"] > .percentile-die-second,
+#view-dice .dice-stage-result-slot .result-die-object[data-sides="100"] > .percentile-die:last-of-type {
   right: 0 !important;
   left: auto !important;
 }
