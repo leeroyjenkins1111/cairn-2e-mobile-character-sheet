@@ -2,7 +2,7 @@
 
 (() => {
   const PHASES = Object.freeze({ IDLE: 'idle', ROLLING: 'rolling', SETTLING: 'settling', REVEALED: 'revealed' });
-  const FALLBACK_ROLL_MS = 1800;
+  const FALLBACK_ROLL_MS = 2200;
   const SETTLE_HOLD_MS = 120;
   let selectedSides = 20;
   let rollToken = 0;
@@ -79,24 +79,26 @@
   function beginRoll() {
     const token = ++rollToken;
     const stage = stageNode();
-    if (!stage) return;
+    const result = resultNode();
+    if (!stage || !result) return;
     window.clearTimeout(fallbackTimer);
     window.clearTimeout(settleTimer);
     stage.dataset.outcome = 'neutral';
     stage.querySelector('.dice-stage-value').textContent = '';
     stage.querySelector('.dice-stage-context').textContent = `Rzut k${selectedSides}`;
+    result.setAttribute('aria-busy', 'true');
     setPhase(PHASES.ROLLING);
-    fallbackTimer = window.setTimeout(() => revealResult(token), FALLBACK_ROLL_MS);
+    fallbackTimer = window.setTimeout(() => {
+      if (token !== rollToken) return;
+      result.setAttribute('aria-busy', 'false');
+    }, FALLBACK_ROLL_MS);
   }
 
   function syncFromRendererState() {
     const result = resultNode();
     if (!result) return;
     const busyValue = result.getAttribute('aria-busy');
-    if (busyValue === 'true') {
-      beginRoll();
-      return;
-    }
+    if (busyValue === 'true') return;
     if (busyValue === 'false' && rollToken) revealResult(rollToken);
   }
 
@@ -141,8 +143,7 @@
         view.querySelectorAll('.die-button.is-selected').forEach(node => node.classList.remove('is-selected'));
         button.classList.add('is-selected');
         beginRoll();
-        requestAnimationFrame(syncFromRendererState);
-      });
+      }, { capture: true });
     });
   }
 
