@@ -65,7 +65,6 @@
     context.fillStyle = body;
     context.fillRect(bounds.minX - 3, bounds.minY - 3, width + 6, height + 6);
 
-    /* Fine mineral grain reads as material without obscuring the polyhedron. */
     for (let index = 0; index < 18; index += 1) {
       const x = bounds.minX + width * (.08 + seeded(seed + index * 37) * .84);
       const y = bounds.minY + height * (.08 + seeded(seed + index * 43 + 5) * .84);
@@ -76,7 +75,6 @@
       context.fill();
     }
 
-    /* One restrained vein per face replaces the previous noisy marbling. */
     const startY = bounds.minY + height * (.28 + seeded(seed + 101) * .38);
     context.beginPath();
     context.moveTo(bounds.minX - width * .05, startY);
@@ -193,5 +191,5 @@
     drawPhysicalFaceValue: drawConsolidatedFaceValue
   });
 
-  document.documentElement.dataset.diceRenderer = 'refined';
+  document.documentElement.dataset.diceRenderer = 'consolidated';
 })();
