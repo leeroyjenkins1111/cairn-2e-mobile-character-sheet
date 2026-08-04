@@ -162,12 +162,13 @@
   height: 34px;
 }
 
-/* The two percentile canvases must have independent boxes. Reset the generic
-   canvas inset so WebKit cannot resolve both canvases against the same origin. */
+/* Keep the two percentile canvases in separate layout boxes. Their shared
+   parent still receives the physical movement transform from the renderer. */
 #view-dice .dice-stage-result-slot .result-die-object[data-sides="100"] {
   position: relative !important;
   width: 268px !important;
   height: 176px !important;
+  display: block !important;
 }
 
 #view-dice .dice-stage-result-slot .result-die-object[data-sides="100"] > .result-die-canvas.percentile-die {
@@ -179,14 +180,12 @@
   transform: none !important;
 }
 
-/* Use explicit sibling order. first/last-of-type are unreliable here because
-   the renderer may include other canvases of the same element type. */
-#view-dice .dice-stage-result-slot .result-die-object[data-sides="100"] > .result-die-canvas.percentile-die:nth-of-type(1) {
+#view-dice .dice-stage-result-slot .result-die-object[data-sides="100"] > .percentile-die-first {
   left: 0 !important;
   right: auto !important;
 }
 
-#view-dice .dice-stage-result-slot .result-die-object[data-sides="100"] > .result-die-canvas.percentile-die:nth-of-type(2) {
+#view-dice .dice-stage-result-slot .result-die-object[data-sides="100"] > .percentile-die-second {
   right: 0 !important;
   left: auto !important;
 }
