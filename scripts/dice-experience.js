@@ -91,22 +91,29 @@
     if (!result) return;
     const busyMutation = mutations.some(mutation => mutation.type === 'attributes' && mutation.attributeName === 'aria-busy');
     const contentMutation = mutations.some(mutation => mutation.type === 'childList');
-    const busy = result.getAttribute('aria-busy') === 'true';
+    const busyValue = result.getAttribute('aria-busy');
 
+    // The physical renderer historically removed aria-busy on settle. Normalize that
+    // transition to the explicit ARIA state consumed by the stage and regression tests.
+    if (busyMutation && busyValue === null) {
+      result.setAttribute('aria-busy', 'false');
+      return;
+    }
+
+    const busy = busyValue === 'true';
     if (contentMutation || (busyMutation && busy)) beginRoll();
-    if (busyMutation && !busy && rollToken) revealResult(rollToken);
+    if (busyMutation && busyValue === 'false' && rollToken) revealResult(rollToken);
   }
 
   function dieGlyph(sides) {
     const common = 'viewBox="0 0 48 48" aria-hidden="true" focusable="false"';
-    const label = sides === 100 ? '00' : String(sides);
     if (sides === 4) return `<svg ${common}><path d="M24 6 43 40H5Z"/><path d="M24 6v34M5 40l19-13 19 13"/><text x="24" y="31">4</text></svg>`;
     if (sides === 6) return `<svg ${common}><path d="m10 15 14-8 14 8v18l-14 8-14-8Z"/><path d="m10 15 14 8 14-8M24 23v18"/><text x="24" y="20">6</text></svg>`;
     if (sides === 8) return `<svg ${common}><path d="M24 5 42 24 24 43 6 24Z"/><path d="M24 5v38M6 24h36"/><text x="24" y="29">8</text></svg>`;
     if (sides === 10) return `<svg ${common}><path d="M24 4 42 18 36 39 12 39 6 18Z"/><path d="m24 4-7 20 7 15 7-15ZM6 18l11 6M42 18l-11 6"/><text x="24" y="28">10</text></svg>`;
     if (sides === 12) return `<svg ${common}><path d="m24 4 16 9 4 17-12 14H16L4 30l4-17Z"/><path d="m24 4-8 13 8 10 8-10ZM8 13l8 4M40 13l-8 4M4 30l20-3 20 3M16 44l8-17 8 17"/><text x="24" y="22">12</text></svg>`;
     if (sides === 20) return `<svg ${common}><path d="M24 3 43 15l-4 22-15 8L9 37 5 15Z"/><path d="M24 3 14 22l10 23 10-23ZM5 15l9 7h20l9-7M9 37l15-15 15 15"/><text x="24" y="20">20</text></svg>`;
-    return `<svg ${common} class="percentile-glyph"><g transform="translate(-4 1)"><path d="M17 7 31 18 27 37H7L3 18Z"/><path d="m17 7-5 15 5 15 5-15ZM3 18l9 4 10-4"/><text x="17" y="27">00</text></g><g transform="translate(19 6)"><path d="M13 5 25 14 22 31H5L1 14Z"/><path d="m13 5-4 13 4 13 4-13ZM1 14l8 4 8-4"/><text x="13" y="23">0</text></g></svg>`;
+    return `<svg ${common} class="percentile-glyph"><g class="percentile-icon-die percentile-icon-tens" transform="translate(-4 1)"><path d="M17 7 31 18 27 37H7L3 18Z"/><path d="m17 7-5 15 5 15 5-15ZM3 18l9 4 10-4"/><text class="percentile-icon-label-tens" x="17" y="27">00</text></g><g class="percentile-icon-die percentile-icon-units" transform="translate(19 6)"><path d="M13 5 25 14 22 31H5L1 14Z"/><path d="m13 5-4 13 4 13 4-13ZM1 14l8 4 8-4"/><text class="percentile-icon-label-units" x="13" y="23">0</text></g></svg>`;
   }
 
   function enhanceQuickDice(view) {
@@ -147,6 +154,7 @@
     stage.querySelector('.dice-stage-result-slot').append(result);
     consoleElement.insertBefore(stage, consoleElement.querySelector('.dice-result-actions') || null);
 
+    if (!result.hasAttribute('aria-busy')) result.setAttribute('aria-busy', 'false');
     new MutationObserver(onResultMutations).observe(result, {
       childList: true,
       subtree: true,
