@@ -162,8 +162,9 @@
   height: 34px;
 }
 
-/* Keep the two percentile canvases in separate layout boxes. Their shared
-   parent still receives the physical movement transform from the renderer. */
+/* Keep both percentile canvases in independent boxes while their common
+   object receives the physical movement transform. Attribute selectors are
+   used because the renderer does not guarantee helper classes on every path. */
 #view-dice .dice-stage-result-slot .result-die-object[data-sides="100"] {
   position: relative !important;
   width: 268px !important;
@@ -171,7 +172,7 @@
   display: block !important;
 }
 
-#view-dice .dice-stage-result-slot .result-die-object[data-sides="100"] > .result-die-canvas.percentile-die {
+#view-dice .dice-stage-result-slot .result-die-object[data-sides="100"] > canvas.result-die-canvas.percentile-die {
   position: absolute !important;
   inset: auto !important;
   top: 28px !important;
@@ -180,12 +181,12 @@
   transform: none !important;
 }
 
-#view-dice .dice-stage-result-slot .result-die-object[data-sides="100"] > .percentile-die-first {
+#view-dice .dice-stage-result-slot .result-die-object[data-sides="100"] > canvas.result-die-canvas.percentile-die:first-of-type {
   left: 0 !important;
   right: auto !important;
 }
 
-#view-dice .dice-stage-result-slot .result-die-object[data-sides="100"] > .percentile-die-second {
+#view-dice .dice-stage-result-slot .result-die-object[data-sides="100"] > canvas.result-die-canvas.percentile-die:last-of-type {
   right: 0 !important;
   left: auto !important;
 }
@@ -211,7 +212,7 @@
     height: 164px !important;
   }
 
-  #view-dice .dice-stage-result-slot .result-die-object[data-sides="100"] > .result-die-canvas.percentile-die {
+  #view-dice .dice-stage-result-slot .result-die-object[data-sides="100"] > canvas.result-die-canvas.percentile-die {
     top: 28px !important;
     width: 104px !important;
     height: 104px !important;
