@@ -7,6 +7,7 @@
   let selectedSides = 20;
   let rollToken = 0;
   let fallbackTimer = 0;
+  let settleTimer = 0;
 
   function viewNode() { return document.querySelector('#view-dice'); }
   function consoleNode() { return viewNode()?.querySelector('.dice-console'); }
@@ -66,8 +67,9 @@
   function revealResult(token) {
     if (token !== rollToken) return;
     window.clearTimeout(fallbackTimer);
+    window.clearTimeout(settleTimer);
     setPhase(PHASES.SETTLING);
-    window.setTimeout(() => {
+    settleTimer = window.setTimeout(() => {
       if (token !== rollToken) return;
       updateResultBand();
       setPhase(PHASES.REVEALED);
@@ -79,6 +81,7 @@
     const stage = stageNode();
     if (!stage) return;
     window.clearTimeout(fallbackTimer);
+    window.clearTimeout(settleTimer);
     stage.dataset.outcome = 'neutral';
     stage.querySelector('.dice-stage-value').textContent = '';
     stage.querySelector('.dice-stage-context').textContent = `Rzut k${selectedSides}`;
@@ -90,19 +93,23 @@
     const result = resultNode();
     if (!result) return;
     const busyMutation = mutations.some(mutation => mutation.type === 'attributes' && mutation.attributeName === 'aria-busy');
-    const contentMutation = mutations.some(mutation => mutation.type === 'childList');
+    if (!busyMutation) return;
+
     const busyValue = result.getAttribute('aria-busy');
 
     // The physical renderer historically removed aria-busy on settle. Normalize that
     // transition to the explicit ARIA state consumed by the stage and regression tests.
-    if (busyMutation && busyValue === null) {
+    if (busyValue === null) {
       result.setAttribute('aria-busy', 'false');
       return;
     }
 
-    const busy = busyValue === 'true';
-    if (contentMutation || (busyMutation && busy)) beginRoll();
-    if (busyMutation && busyValue === 'false' && rollToken) revealResult(rollToken);
+    if (busyValue === 'true') {
+      beginRoll();
+      return;
+    }
+
+    if (busyValue === 'false' && rollToken) revealResult(rollToken);
   }
 
   function dieGlyph(sides) {
