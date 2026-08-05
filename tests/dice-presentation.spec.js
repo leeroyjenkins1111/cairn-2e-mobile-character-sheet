@@ -81,13 +81,18 @@ test.describe('redesign ekranu Kości', () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await loadDemoDice(page);
 
+    const view = page.locator('#view-dice');
     const value = page.locator('.dice-stage-value');
+    const result = page.locator('#diceResult');
+
     await page.getByRole('button', { name: 'Rzuć kością k20', exact: true }).click();
-    await expect(page.locator('#view-dice')).toHaveAttribute('data-dice-phase', 'rolling');
-    await expect(value).toHaveText('');
-    await expect(page.locator('#diceResult')).toHaveAttribute('aria-busy', 'false', { timeout: 2500 });
-    await expect(page.locator('#view-dice')).toHaveAttribute('data-dice-phase', 'revealed', { timeout: 1000 });
-    await expect(value).not.toHaveText('');
+    await expect(view).toHaveAttribute('data-dice-phase', 'rolling');
+    await expect(result).toHaveAttribute('aria-busy', 'true');
+    await expect(value).toHaveText('—');
+
+    await expect(result).toHaveAttribute('aria-busy', 'false', { timeout: 2500 });
+    await expect(view).toHaveAttribute('data-dice-phase', 'revealed', { timeout: 1000 });
+    await expect(value).toHaveText(/^\d+$/);
   });
 
   test('rozdziela dwie kości procentowe bez wzajemnego zasłaniania', async ({ page }) => {
@@ -95,7 +100,11 @@ test.describe('redesign ekranu Kości', () => {
     await loadDemoDice(page);
     await page.getByRole('button', { name: 'Rzuć kością k100', exact: true }).click();
 
-    const dice = page.locator('#diceResult .result-die-object[data-sides="100"] .percentile-die');
+    await expect(page.locator('#view-dice')).toHaveAttribute('data-dice-phase', 'revealed', { timeout: 3000 });
+    const object = page.locator('#diceResult .result-die-object[data-sides="100"]');
+    await expect(object).not.toHaveClass(/is-tumbling/);
+
+    const dice = object.locator('.percentile-die');
     await expect(dice).toHaveCount(2);
     const boxes = await dice.evaluateAll(elements => elements.map(element => {
       const box = element.getBoundingClientRect();
