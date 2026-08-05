@@ -53,6 +53,21 @@
     return 'neutral';
   }
 
+  function rendererIsRolling(result) {
+    const shell = result?.firstElementChild;
+    if (!shell) return false;
+    return shell.classList.contains('rolling')
+      || shell.getAttribute('aria-hidden') === 'true'
+      || Boolean(shell.querySelector('.result-die-object.is-tumbling'));
+  }
+
+  function rendererIsSettled(result) {
+    const shell = result?.firstElementChild;
+    if (!shell || rendererIsRolling(result)) return false;
+    return shell.classList.contains('settled')
+      || Boolean(shell.querySelector('.result-die-object:not(.is-tumbling)'));
+  }
+
   function updateResultBand() {
     const result = resultNode();
     const stage = stageNode();
@@ -91,30 +106,28 @@
     fallbackTimer = window.setTimeout(() => {
       if (token !== rollToken) return;
       result.setAttribute('aria-busy', 'false');
+      revealResult(token);
     }, FALLBACK_ROLL_MS);
   }
 
   function syncFromRendererState() {
     const result = resultNode();
-    if (!result) return;
-    const busyValue = result.getAttribute('aria-busy');
-    if (busyValue === 'true') return;
-    if (busyValue === 'false' && rollToken) revealResult(rollToken);
-  }
+    if (!result || !rollToken) return;
 
-  function onResultMutations(mutations) {
-    const result = resultNode();
-    if (!result) return;
-    const busyMutation = mutations.some(mutation => mutation.type === 'attributes' && mutation.attributeName === 'aria-busy');
-    if (!busyMutation) return;
-
-    const busyValue = result.getAttribute('aria-busy');
-    if (busyValue === null) {
-      result.setAttribute('aria-busy', 'false');
+    if (rendererIsRolling(result)) {
+      if (result.getAttribute('aria-busy') !== 'true') result.setAttribute('aria-busy', 'true');
+      setPhase(PHASES.ROLLING);
       return;
     }
 
-    syncFromRendererState();
+    if (rendererIsSettled(result)) {
+      if (result.getAttribute('aria-busy') !== 'false') result.setAttribute('aria-busy', 'false');
+      revealResult(rollToken);
+    }
+  }
+
+  function onResultMutations() {
+    requestAnimationFrame(syncFromRendererState);
   }
 
   function dieGlyph(sides) {
@@ -143,6 +156,7 @@
         view.querySelectorAll('.die-button.is-selected').forEach(node => node.classList.remove('is-selected'));
         button.classList.add('is-selected');
         beginRoll();
+        requestAnimationFrame(syncFromRendererState);
       }, { capture: true });
     });
   }
@@ -172,9 +186,8 @@
       childList: true,
       subtree: true,
       attributes: true,
-      attributeFilter: ['aria-label', 'aria-busy']
+      attributeFilter: ['aria-label', 'aria-busy', 'aria-hidden', 'class']
     });
-    syncFromRendererState();
   }
 
   function enhance() {
