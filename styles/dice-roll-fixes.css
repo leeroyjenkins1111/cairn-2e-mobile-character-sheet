@@ -162,9 +162,8 @@
   height: 34px;
 }
 
-/* Keep both percentile canvases in independent boxes while their common
-   object receives the physical movement transform. Attribute selectors are
-   used because the renderer does not guarantee helper classes on every path. */
+/* The physical renderer moves the common object. Each percentile canvas gets
+   an explicit coordinate so WebKit does not reuse the legacy centered margins. */
 #view-dice .dice-stage-result-slot .result-die-object[data-sides="100"] {
   position: relative !important;
   width: 268px !important;
@@ -176,19 +175,20 @@
   position: absolute !important;
   inset: auto !important;
   top: 28px !important;
+  right: auto !important;
+  bottom: auto !important;
   width: 118px !important;
   height: 118px !important;
+  margin: 0 !important;
   transform: none !important;
 }
 
-#view-dice .dice-stage-result-slot .result-die-object[data-sides="100"] > canvas.result-die-canvas.percentile-die:first-of-type {
+#view-dice .dice-stage-result-slot .result-die-object[data-sides="100"] > canvas.percentile-die-first {
   left: 0 !important;
-  right: auto !important;
 }
 
-#view-dice .dice-stage-result-slot .result-die-object[data-sides="100"] > canvas.result-die-canvas.percentile-die:last-of-type {
-  right: 0 !important;
-  left: auto !important;
+#view-dice .dice-stage-result-slot .result-die-object[data-sides="100"] > canvas.percentile-die-second {
+  left: 150px !important;
 }
 
 @media (max-width: 360px) {
@@ -216,6 +216,10 @@
     top: 28px !important;
     width: 104px !important;
     height: 104px !important;
+  }
+
+  #view-dice .dice-stage-result-slot .result-die-object[data-sides="100"] > canvas.percentile-die-second {
+    left: 128px !important;
   }
 }
 
