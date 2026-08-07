@@ -74,24 +74,6 @@
   background: radial-gradient(ellipse at center, rgba(7, 8, 5, .24) 0 18%, rgba(7, 8, 5, .08) 44%, transparent 74%);
   pointer-events: none;
 }
-.die-motion-stage::after,
-.dual-dice-stage::after {
-  content: "";
-  position: absolute;
-  z-index: 0;
-  inset: 18px 12px 8px;
-  border: 1px solid color-mix(in srgb, var(--color-accent-secondary) 22%, transparent);
-  border-radius: 50%;
-  background: radial-gradient(circle at center, color-mix(in srgb, var(--color-accent-secondary) 10%, transparent), transparent 62%);
-  box-shadow: inset 0 0 34px color-mix(in srgb, var(--color-accent-secondary) 7%, transparent);
-  opacity: .32;
-  transform: scale(.92);
-  pointer-events: none;
-}
-.animated-dice-result.rolling .die-motion-stage::after,
-.dual-dice-result.rolling .dual-dice-stage::after {
-  animation: dice-aura-breathe 920ms ease-in-out infinite alternate;
-}
 :root[data-theme="light"] .die-motion-stage::before,
 :root[data-theme="light"] .dual-dice-stage::before {
   background: radial-gradient(ellipse at center, rgba(55, 49, 35, .16) 0 18%, rgba(55, 49, 35, .05) 44%, transparent 74%);
@@ -272,11 +254,6 @@
 }
 .dual-dice-result.comparing.is-tie .damage-die-winner::after { content: "remis"; }
 
-@keyframes dice-aura-breathe {
-  from { opacity: .22; transform: scale(.90); }
-  to { opacity: .5; transform: scale(1); }
-}
-
 @keyframes dice-edge-impact {
   0% { opacity: calc(.18 * var(--dice-impact-strength, 1)); transform: scale(.58); }
   42% { opacity: calc(.92 * var(--dice-impact-strength, 1)); }
@@ -301,8 +278,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .animated-dice-result.rolling .die-motion-stage::after,
-  .dual-dice-result.rolling .dual-dice-stage::after,
   .result-die-object.is-edge-impact::after,
   .percentile-die-part.is-edge-impact::after,
   .result-die-scene.is-landing .dice-landing-flare,
