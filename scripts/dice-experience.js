@@ -2,7 +2,9 @@
 
 (() => {
   const PHASES = Object.freeze({ IDLE: 'idle', ROLLING: 'rolling', SETTLING: 'settling', REVEALED: 'revealed' });
-  const FALLBACK_ROLL_MS = 2200;
+  // The fallback must never reveal a result before the longest physical roll
+  // (k100: 2440 ms) has returned from the viewport layer to its landing slot.
+  const FALLBACK_ROLL_MS = 3600;
   const SETTLE_HOLD_MS = 120;
   let selectedSides = 20;
   let rollToken = 0;

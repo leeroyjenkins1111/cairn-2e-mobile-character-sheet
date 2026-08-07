@@ -27,7 +27,7 @@
       return !best || normal[2] > best.normal[2] ? { normal } : best;
     }, null);
     const normal = topFace?.normal || [0, 0, 1];
-    const topDownTurns = { 4: -Math.PI / 6, 6: Math.PI / 4, 8: Math.PI / 2, 10: 0, 12: Math.PI / 10, 20: -Math.PI / 2, 100: 0 };
+    const topDownTurns = { 4: -Math.PI / 6, 6: 0, 8: Math.PI / 2, 10: 0, 12: Math.PI / 10, 20: -Math.PI / 2, 100: 0 };
     const x = Math.atan2(normal[1], normal[2]);
     const y = Math.atan2(-normal[0], Math.hypot(normal[1], normal[2]));
     return { x, y, z: topDownTurns[Number(sides)] || 0 };

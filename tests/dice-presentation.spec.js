@@ -102,6 +102,8 @@ test.describe('redesign ekranu Kości', () => {
 
     await expect(page.locator('#diceResult')).toHaveAttribute('aria-busy', 'false', { timeout: 6000 });
     await expect(page.locator('#view-dice')).toHaveAttribute('data-dice-phase', 'revealed', { timeout: 1000 });
+    await expect(page.locator('body > .result-die-scene.is-viewport-flight')).toHaveCount(0);
+    await expect(page.locator('#diceResult .dice-flight-placeholder')).toHaveCount(0);
     const object = page.locator('#diceResult .result-die-object[data-sides="100"]');
     await expect(object).not.toHaveClass(/is-tumbling/);
 
