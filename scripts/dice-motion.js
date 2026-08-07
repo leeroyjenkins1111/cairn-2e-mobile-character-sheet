@@ -1,9 +1,9 @@
 'use strict';
 
-const PHYSICAL_DICE_DURATION = 2280;
-const PHYSICAL_PERCENTILE_DURATION = 2440;
+const PHYSICAL_DICE_DURATION = 2640;
+const PHYSICAL_PERCENTILE_DURATION = 2820;
 const PHYSICAL_DUAL_DICE_DURATION = 1980;
-const PHYSICAL_DICE_IMPACTS = Object.freeze([0.115, 0.305, 0.495, 0.685]);
+const PHYSICAL_DICE_IMPACTS = Object.freeze([0.14, 0.285, 0.43, 0.575, 0.72]);
 const PHYSICAL_D10_CACHE = new Map();
 let activePhysicalFlight = null;
 const baseCreateDieMesh = createDieMesh;
@@ -148,16 +148,18 @@ function physicalSeed(sides, value, salt = 0) {
 
 function createPhysicalD10Mesh() {
   if (PHYSICAL_D10_CACHE.has(10)) return PHYSICAL_D10_CACHE.get(10);
-  const vertices = [[0, 0, 1.34], [0, 0, -1.34]];
+  const apexHeight = 1.34;
+  const ringHeight = apexHeight * (1 - Math.cos(Math.PI / 5)) / (1 + Math.cos(Math.PI / 5));
+  const vertices = [[0, 0, apexHeight], [0, 0, -apexHeight]];
   const upperStart = vertices.length;
   for (let index = 0; index < 5; index += 1) {
     const angle = index / 5 * Math.PI * 2 - Math.PI / 2;
-    vertices.push([Math.cos(angle), Math.sin(angle), 0.28]);
+    vertices.push([Math.cos(angle), Math.sin(angle), ringHeight]);
   }
   const lowerStart = vertices.length;
   for (let index = 0; index < 5; index += 1) {
     const angle = (index + 0.5) / 5 * Math.PI * 2 - Math.PI / 2;
-    vertices.push([Math.cos(angle), Math.sin(angle), -0.28]);
+    vertices.push([Math.cos(angle), Math.sin(angle), -ringHeight]);
   }
   const faces = [];
   for (let index = 0; index < 5; index += 1) {
@@ -634,36 +636,29 @@ function physicalViewportBounds(flight, object) {
 
 function physicalViewportPose(progress, bounds, seed, landingX = 0, directionOverride = 0) {
   const direction = directionOverride || (physicalSignedHash(seed + 41) >= 0 ? 1 : -1);
-  const mirror = x => bounds.left + bounds.right - x;
   const spanX = Math.max(1, bounds.right - bounds.left);
   const spanY = Math.max(1, bounds.bottom - bounds.top);
-  const clockwise = [
-    { progress: 0, x: landingX, y: 0, scale: .82 },
-    { progress: .115, x: physicalLerp(bounds.left, bounds.right, .28), y: bounds.top, scale: 1.04 },
-    { progress: .19, x: physicalLerp(bounds.left, bounds.right, .70), y: bounds.top + spanY * .11, scale: .98 },
-    { progress: .305, x: bounds.right, y: bounds.top + spanY * .34, scale: 1.06 },
-    { progress: .38, x: bounds.right - spanX * .12, y: bounds.top + spanY * .72, scale: .98 },
-    { progress: .495, x: physicalLerp(bounds.left, bounds.right, .62), y: bounds.bottom, scale: 1.05 },
-    { progress: .57, x: physicalLerp(bounds.left, bounds.right, .25), y: bounds.bottom - spanY * .12, scale: .98 },
-    { progress: .685, x: bounds.left, y: bounds.top + spanY * .62, scale: 1.04 },
-    { progress: .76, x: bounds.left + spanX * .15, y: bounds.top + spanY * .29, scale: .99 },
-    { progress: .885, x: landingX + 24, y: -22, scale: 1.08 },
-    { progress: 1, x: landingX, y: 0, scale: 1 }
-  ];
-  const counterClockwise = clockwise.map(node => ({ ...node, x: mirror(node.x) }));
-  counterClockwise[0].x = landingX;
-  counterClockwise[counterClockwise.length - 2].x = landingX - 24;
-  counterClockwise[counterClockwise.length - 1].x = landingX;
-  const nodes = direction > 0 ? clockwise : counterClockwise;
-  const nextIndex = nodes.findIndex(node => node.progress >= progress);
-  if (nextIndex <= 0) return { x: nodes[0].x, y: nodes[0].y, scale: nodes[0].scale };
-  const from = nodes[nextIndex - 1];
-  const to = nodes[nextIndex] || nodes[nodes.length - 1];
-  const phase = physicalEaseOutCubic((progress - from.progress) / Math.max(.001, to.progress - from.progress));
+  const centerX = (bounds.left + bounds.right) / 2;
+  const centerY = (bounds.top + bounds.bottom) / 2;
+  const radiusX = spanX / 2;
+  const radiusY = spanY / 2;
+  if (progress < .14) {
+    const launch = physicalSmoothStep(progress / .14);
+    return { x: physicalLerp(landingX, centerX, launch), y: physicalLerp(0, bounds.top, launch), scale: physicalLerp(.82, 1.04, launch) };
+  }
+  if (progress < .72) {
+    const orbit = (progress - .14) / .58;
+    const angle = -Math.PI / 2 + direction * orbit * Math.PI * 2;
+    const rounded = value => Math.sign(value) * Math.pow(Math.abs(value), .55);
+    return { x: centerX + radiusX * rounded(Math.cos(angle)), y: centerY + radiusY * rounded(Math.sin(angle)), scale: 1 + .045 * Math.sin(orbit * Math.PI * 8) };
+  }
+  const settle = physicalSmoothStep((progress - .72) / .28);
+  const angle = -Math.PI / 2 + direction * settle * Math.PI * 2.5;
+  const decay = 1 - settle;
   return {
-    x: physicalLerp(from.x, to.x, phase),
-    y: physicalLerp(from.y, to.y, phase),
-    scale: physicalLerp(from.scale, to.scale, phase)
+    x: physicalLerp(centerX, landingX, settle) + Math.cos(angle) * radiusX * decay,
+    y: physicalLerp(centerY, 0, settle) + Math.sin(angle) * radiusY * decay,
+    scale: 1 + Math.sin(settle * Math.PI) * .06
   };
 }
 
@@ -739,7 +734,7 @@ function physicalAdvanceSpinBase(spin, finalRotation, deltaSeconds, progress, po
   if (pose) spin.previousPose = { x: pose.x, y: pose.y };
   spin.impactEnergy *= Math.exp(-deltaSeconds * 7.2);
 
-  const settleStart = 0.80;
+  const settleStart = 0.72;
   if (progress >= settleStart) {
     if (!spin.settleFrom) spin.settleFrom = { ...spin.orientation };
     const settle = physicalSmootherStep((progress - settleStart) / (1 - settleStart));

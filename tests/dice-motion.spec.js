@@ -75,10 +75,10 @@ test.describe('physical dice renderer and motion', () => {
 
   test('orbits the full viewport and returns to the landing frame', async ({ page }) => {
     const samples = await page.evaluate(() => ({
-      top: physicalViewportPose(.115, { left: -130, right: 130, top: -240, bottom: 430 }, 44, 0, 1),
-      right: physicalViewportPose(.305, { left: -130, right: 130, top: -240, bottom: 430 }, 44, 0, 1),
-      bottom: physicalViewportPose(.495, { left: -130, right: 130, top: -240, bottom: 430 }, 44, 0, 1),
-      left: physicalViewportPose(.685, { left: -130, right: 130, top: -240, bottom: 430 }, 44, 0, 1),
+      top: physicalViewportPose(.14, { left: -130, right: 130, top: -240, bottom: 430 }, 44, 0, 1),
+      right: physicalViewportPose(.285, { left: -130, right: 130, top: -240, bottom: 430 }, 44, 0, 1),
+      bottom: physicalViewportPose(.43, { left: -130, right: 130, top: -240, bottom: 430 }, 44, 0, 1),
+      left: physicalViewportPose(.575, { left: -130, right: 130, top: -240, bottom: 430 }, 44, 0, 1),
       settled: physicalViewportPose(1, { left: -130, right: 130, top: -240, bottom: 430 }, 44, 0, 1)
     }));
 
@@ -93,8 +93,8 @@ test.describe('physical dice renderer and motion', () => {
     const samples = await page.evaluate(() => {
       const bounds = { left: -140, right: 140, top: -260, bottom: 440 };
       return {
-        tensAtRightWall: physicalViewportPose(.305, bounds, 71, -68, -1),
-        unitsAtRightWall: physicalViewportPose(.305, bounds, 91, 68, 1),
+        tensAtRightWall: physicalViewportPose(.285, bounds, 71, -68, -1),
+        unitsAtRightWall: physicalViewportPose(.285, bounds, 91, 68, 1),
         tensSettled: physicalViewportPose(1, bounds, 71, -68, -1),
         unitsSettled: physicalViewportPose(1, bounds, 91, 68, 1)
       };

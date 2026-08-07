@@ -2306,12 +2306,15 @@ function createResultDie(value, sides, rolling = false) {
     object,
     createEl('span', { className: 'result-die-shadow', attrs: { 'aria-hidden': 'true' } })
   ]);
-  requestAnimationFrame(() => canvases.forEach((canvas, index) => paintResultDie(
-    canvas,
-    numericSides === 100 ? 10 : numericSides,
-    { ...finalDieRotation(numericSides, value), y: finalDieRotation(numericSides, value).y + index * 0.72 },
-    index ? 2 : -2
-  )));
+  requestAnimationFrame(() => {
+    const resolvedRotation = finalDieRotation(numericSides, value);
+    canvases.forEach((canvas, index) => paintResultDie(
+      canvas,
+      numericSides === 100 ? 10 : numericSides,
+      numericSides === 100 ? { ...resolvedRotation, z: resolvedRotation.z + (index ? .11 : -.11) } : resolvedRotation,
+      0
+    ));
+  });
   return scene;
 }
 

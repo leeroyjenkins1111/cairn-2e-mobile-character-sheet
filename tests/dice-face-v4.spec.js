@@ -25,21 +25,21 @@ test.describe('consolidated carved dice renderer', () => {
     await expect(settledObject).toHaveAttribute('data-face-reveal', '1');
   });
 
-  test('hard-locks the result orientation before the final pose', async ({ page }) => {
+  test('keeps rotating through the approach and locks only at landing', async ({ page }) => {
     const result = await page.evaluate(() => {
       const target = finalDieRotation(6, 4);
       const entry = { sides: 6, value: 4, seed: 42, finalRotation: target };
       const spin = physicalInitialSpin(entry, 1);
       physicalAdvanceSpin(spin, target, 1 / 60, 0.92, { x: 12, y: -2 });
       const first = { ...spin.rotation };
-      physicalAdvanceSpin(spin, target, 1 / 60, 0.98, { x: 1, y: 0 });
+      physicalAdvanceSpin(spin, target, 1 / 60, 0.99, { x: 1, y: 0 });
       return { target, first, second: { ...spin.rotation } };
     });
 
-    expect(result.first.x).toBeCloseTo(result.target.x, 5);
-    expect(result.first.y).toBeCloseTo(result.target.y, 5);
-    expect(result.first.z).toBeCloseTo(result.target.z, 5);
-    expect(result.second).toEqual(result.first);
+    expect(Math.abs(result.first.x - result.target.x) + Math.abs(result.first.y - result.target.y) + Math.abs(result.first.z - result.target.z)).toBeGreaterThan(.001);
+    expect(result.second.x).toBeCloseTo(result.target.x, 5);
+    expect(result.second.y).toBeCloseTo(result.target.y, 5);
+    expect(result.second.z).toBeCloseTo(result.target.z, 5);
   });
 
   test('aligns one complete face with the top-down camera for every die', async ({ page }) => {
