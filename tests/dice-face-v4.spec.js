@@ -15,13 +15,14 @@ test.describe('consolidated carved dice renderer', () => {
       animateDiceResult(host, 4, 'Wynik', 6, 'neutral');
     });
 
-    const object = page.locator('#dice-renderer-test-host .result-die-object');
-    await expect(object).toHaveClass(/is-tumbling/);
+    const flyingObject = page.locator('body > .result-die-scene.is-viewport-flight .result-die-object');
+    await expect(flyingObject).toHaveClass(/is-tumbling/);
     await page.waitForTimeout(1200);
-    await expect(object).toHaveAttribute('data-face-reveal', '0');
+    await expect(flyingObject).toHaveAttribute('data-face-reveal', '0');
 
-    await expect(object).not.toHaveClass(/is-tumbling/, { timeout: 2500 });
-    await expect(object).toHaveAttribute('data-face-reveal', '1');
+    const settledObject = page.locator('#dice-renderer-test-host .result-die-object');
+    await expect(settledObject).not.toHaveClass(/is-tumbling/, { timeout: 4000 });
+    await expect(settledObject).toHaveAttribute('data-face-reveal', '1');
   });
 
   test('hard-locks the result orientation before the final pose', async ({ page }) => {
@@ -29,7 +30,7 @@ test.describe('consolidated carved dice renderer', () => {
       const target = finalDieRotation(6, 4);
       const entry = { sides: 6, value: 4, seed: 42, finalRotation: target };
       const spin = physicalInitialSpin(entry, 1);
-      physicalAdvanceSpin(spin, target, 1 / 60, 0.85, { x: 12, y: -2 });
+      physicalAdvanceSpin(spin, target, 1 / 60, 0.92, { x: 12, y: -2 });
       const first = { ...spin.rotation };
       physicalAdvanceSpin(spin, target, 1 / 60, 0.98, { x: 1, y: 0 });
       return { target, first, second: { ...spin.rotation } };
@@ -39,6 +40,24 @@ test.describe('consolidated carved dice renderer', () => {
     expect(result.first.y).toBeCloseTo(result.target.y, 5);
     expect(result.first.z).toBeCloseTo(result.target.z, 5);
     expect(result.second).toEqual(result.first);
+  });
+
+  test('aligns one complete face with the top-down camera for every die', async ({ page }) => {
+    const results = await page.evaluate(() => [4, 6, 8, 10, 12, 20, 100].map(sides => {
+      const mesh = createDieMesh(sides);
+      const rotation = finalDieRotation(sides, Math.min(sides, 7));
+      const transformed = mesh.vertices.map(vertex => rotateDiePoint(vertex, rotation));
+      const dominantNormal = Math.max(...mesh.faces.map(face => {
+        const [a, b, c] = face.map(index => transformed[index]);
+        return vectorNormalize(vectorCross(
+          b.map((entry, axis) => entry - a[axis]),
+          c.map((entry, axis) => entry - a[axis])
+        ))[2];
+      }));
+      return { sides, dominantNormal };
+    }));
+
+    for (const result of results) expect(result.dominantNormal, `k${result.sides}`).toBeGreaterThan(.999);
   });
 
   test('captures the final consolidated k6 for visual review', async ({ page }) => {

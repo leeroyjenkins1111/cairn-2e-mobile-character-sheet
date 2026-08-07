@@ -1,7 +1,7 @@
 'use strict';
 
 (() => {
-  const LOCK_START = 0.70;
+  const LOCK_START = 0.90;
   const GLYPH_OVERSAMPLE = 4;
 
   const clamp01 = value => Math.max(0, Math.min(1, Number(value) || 0));
@@ -17,16 +17,20 @@
   }
 
   function heroRotation(sides) {
-    const presets = {
-      4: { x: -0.38, y: 0.44, z: 0.01 },
-      6: { x: -0.31, y: 0.42, z: -0.02 },
-      8: { x: -0.36, y: 0.41, z: 0.02 },
-      10: { x: -0.32, y: 0.36, z: -0.04 },
-      12: { x: -0.48, y: 0.27, z: 0.08 },
-      20: { x: -0.46, y: 0.30, z: -0.04 },
-      100: { x: -0.31, y: 0.35, z: 0.03 }
-    };
-    return presets[Number(sides)] || presets[20];
+    const mesh = createDieMesh(Number(sides) === 100 ? 10 : sides);
+    const topFace = mesh.faces.reduce((best, face) => {
+      const [a, b, c] = face.map(index => mesh.vertices[index]);
+      const normal = vectorNormalize(vectorCross(
+        b.map((entry, axis) => entry - a[axis]),
+        c.map((entry, axis) => entry - a[axis])
+      ));
+      return !best || normal[2] > best.normal[2] ? { normal } : best;
+    }, null);
+    const normal = topFace?.normal || [0, 0, 1];
+    const topDownTurns = { 4: -Math.PI / 6, 6: Math.PI / 4, 8: Math.PI / 2, 10: 0, 12: Math.PI / 10, 20: -Math.PI / 2, 100: 0 };
+    const x = Math.atan2(normal[1], normal[2]);
+    const y = Math.atan2(-normal[0], Math.hypot(normal[1], normal[2]));
+    return { x, y, z: topDownTurns[Number(sides)] || 0 };
   }
 
   function advanceAndLockResult(spin, finalRotation, deltaSeconds, progress, pose, advanceSpin) {

@@ -73,20 +73,63 @@ test.describe('physical dice renderer and motion', () => {
     expect(['none', 'absent']).toContain(result.notationState);
   });
 
-  test('travels to the right wall and rebounds without a stationary spin phase', async ({ page }) => {
+  test('orbits the full viewport and returns to the landing frame', async ({ page }) => {
     const samples = await page.evaluate(() => ({
-      launch: physicalSinglePose(0.18, 120, 44),
-      beforeWall: physicalSinglePose(0.54, 120, 44),
-      wall: physicalSinglePose(0.56, 120, 44),
-      rebound: physicalSinglePose(0.66, 120, 44),
-      settled: physicalSinglePose(1, 120, 44)
+      top: physicalViewportPose(.115, { left: -130, right: 130, top: -240, bottom: 430 }, 44, 0, 1),
+      right: physicalViewportPose(.305, { left: -130, right: 130, top: -240, bottom: 430 }, 44, 0, 1),
+      bottom: physicalViewportPose(.495, { left: -130, right: 130, top: -240, bottom: 430 }, 44, 0, 1),
+      left: physicalViewportPose(.685, { left: -130, right: 130, top: -240, bottom: 430 }, 44, 0, 1),
+      settled: physicalViewportPose(1, { left: -130, right: 130, top: -240, bottom: 430 }, 44, 0, 1)
     }));
 
-    expect(samples.wall.x).toBeGreaterThan(samples.beforeWall.x);
-    expect(Math.abs(samples.wall.y)).toBeLessThan(0.01);
-    expect(samples.rebound.x).toBeLessThan(samples.wall.x);
-    expect(samples.rebound.y).toBeLessThan(-12);
-    expect(Math.abs(samples.settled.y)).toBeLessThan(0.01);
+    expect(samples.top.y).toBeCloseTo(-240, 5);
+    expect(samples.right.x).toBeCloseTo(130, 5);
+    expect(samples.bottom.y).toBeCloseTo(430, 5);
+    expect(samples.left.x).toBeCloseTo(-130, 5);
+    expect(samples.settled).toEqual({ x: 0, y: 0, scale: 1 });
+  });
+
+  test('moves the k100 pair on opposite viewport routes and lands side by side', async ({ page }) => {
+    const samples = await page.evaluate(() => {
+      const bounds = { left: -140, right: 140, top: -260, bottom: 440 };
+      return {
+        tensAtRightWall: physicalViewportPose(.305, bounds, 71, -68, -1),
+        unitsAtRightWall: physicalViewportPose(.305, bounds, 91, 68, 1),
+        tensSettled: physicalViewportPose(1, bounds, 71, -68, -1),
+        unitsSettled: physicalViewportPose(1, bounds, 91, 68, 1)
+      };
+    });
+
+    expect(Math.abs(samples.tensAtRightWall.x - samples.unitsAtRightWall.x)).toBeGreaterThan(220);
+    expect(samples.tensSettled.x).toBe(-68);
+    expect(samples.unitsSettled.x).toBe(68);
+  });
+
+  test('portals a live roll above the whole screen and restores its landing slot', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    await page.reload();
+    await page.waitForFunction(() => document.documentElement.dataset.physicalDice === 'true');
+
+    const state = await page.evaluate(async () => {
+      const host = document.createElement('div');
+      host.style.width = '320px';
+      host.style.minHeight = '220px';
+      document.body.append(host);
+      animateDiceResult(host, 5, 'wynik', 6, 'neutral');
+      await new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+      const scene = document.querySelector('body > .result-die-scene.is-viewport-flight');
+      const result = {
+        portalParent: scene?.parentElement?.tagName,
+        hasPlaceholder: Boolean(host.querySelector('.dice-flight-placeholder')),
+        position: scene ? getComputedStyle(scene).position : ''
+      };
+      physicalCancelViewportFlight();
+      result.restored = Boolean(host.querySelector('.result-die-scene'));
+      host.remove();
+      return result;
+    });
+
+    expect(state).toEqual({ portalParent: 'BODY', hasPlaceholder: true, position: 'fixed', restored: true });
   });
 
   test('couples angular motion to travelled distance', async ({ page }) => {

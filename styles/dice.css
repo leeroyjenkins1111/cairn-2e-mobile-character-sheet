@@ -46,6 +46,21 @@
 .result-die-canvas {
   pointer-events: none;
 }
+.dice-flight-placeholder {
+  display: block;
+  place-self: center;
+  visibility: hidden;
+  pointer-events: none;
+}
+.result-die-scene.is-viewport-flight {
+  position: fixed !important;
+  z-index: var(--z-toast);
+  margin: 0 !important;
+  overflow: visible !important;
+  transform: none !important;
+  isolation: isolate;
+  pointer-events: none;
+}
 .die-motion-stage::before, .dual-dice-stage::before {
   content: "";
   position: absolute;
@@ -77,10 +92,6 @@
 .dual-dice-result.rolling .dual-dice-stage::after {
   animation: dice-aura-breathe 920ms ease-in-out infinite alternate;
 }
-.die-motion-stage.is-impacting::after,
-.dual-dice-stage.is-impacting::after {
-  animation: dice-impact-ring 320ms ease-out both;
-}
 :root[data-theme="light"] .die-motion-stage::before,
 :root[data-theme="light"] .dual-dice-stage::before {
   background: radial-gradient(ellipse at center, rgba(55, 49, 35, .16) 0 18%, rgba(55, 49, 35, .05) 44%, transparent 74%);
@@ -89,6 +100,21 @@
   z-index: 2;
   will-change: transform, opacity;
   transform-origin: 50% 68%;
+}
+.result-die-object.is-edge-impact::after,
+.percentile-die-part.is-edge-impact::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: -16%;
+  border: 2px solid color-mix(in srgb, var(--color-accent-secondary) 70%, transparent);
+  border-radius: 50%;
+  box-shadow:
+    0 0 16px color-mix(in srgb, var(--color-accent-secondary) 54%, transparent),
+    inset 0 0 12px color-mix(in srgb, var(--color-accent-secondary) 34%, transparent);
+  opacity: 0;
+  pointer-events: none;
+  animation: dice-edge-impact 280ms ease-out both;
 }
 .die-motion-stage .result-die-shadow, .dual-dice-stage .result-die-shadow {
   z-index: 1;
@@ -149,6 +175,45 @@
 .percentile-die-shadow-tens { transform: translate3d(calc(0px - var(--percentile-separation)), 0, 0); }
 .percentile-die-shadow-units { transform: translate3d(var(--percentile-separation), 0, 0); }
 .percentile-dice-scene > .result-die-shadow { display: none; }
+.dice-landing-flare {
+  position: absolute;
+  z-index: 0;
+  top: 50%;
+  left: 50%;
+  width: min(104%, 232px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  opacity: 0;
+  transform: translate(-50%, -50%) scale(.34);
+  background:
+    radial-gradient(circle, color-mix(in srgb, #fff3a8 34%, transparent) 0 10%, color-mix(in srgb, var(--color-accent-secondary) 30%, transparent) 23%, transparent 66%);
+  box-shadow:
+    0 0 38px color-mix(in srgb, var(--color-accent-secondary) 32%, transparent),
+    inset 0 0 32px color-mix(in srgb, #fff3a8 20%, transparent);
+  pointer-events: none;
+}
+.dice-landing-flare::before,
+.dice-landing-flare::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+}
+.dice-landing-flare::before {
+  inset: 15%;
+  border: 2px solid color-mix(in srgb, #fff3a8 60%, transparent);
+  box-shadow: 0 0 18px color-mix(in srgb, var(--color-accent-secondary) 62%, transparent);
+}
+.dice-landing-flare::after {
+  inset: 3%;
+  border: 1px solid color-mix(in srgb, var(--color-accent-secondary) 42%, transparent);
+}
+.result-die-scene.is-landing .dice-landing-flare {
+  animation: dice-landing-flare 940ms cubic-bezier(.16,.76,.24,1) both;
+}
+.result-die-scene.is-landing .dice-landing-flare::before {
+  animation: dice-landing-ring 940ms ease-out both;
+}
 .result-die-canvas {
   position: absolute;
   inset: 0;
@@ -212,10 +277,23 @@
   to { opacity: .5; transform: scale(1); }
 }
 
-@keyframes dice-impact-ring {
-  0% { opacity: calc(.22 * var(--dice-impact-strength, 1)); transform: scale(.76); }
-  48% { opacity: calc(.78 * var(--dice-impact-strength, 1)); }
-  100% { opacity: 0; transform: scale(1.12); }
+@keyframes dice-edge-impact {
+  0% { opacity: calc(.18 * var(--dice-impact-strength, 1)); transform: scale(.58); }
+  42% { opacity: calc(.92 * var(--dice-impact-strength, 1)); }
+  100% { opacity: 0; transform: scale(1.18); }
+}
+
+@keyframes dice-landing-flare {
+  0% { opacity: 0; transform: translate(-50%, -50%) scale(.28); filter: blur(7px); }
+  28% { opacity: .98; transform: translate(-50%, -50%) scale(.82); filter: blur(1px); }
+  58% { opacity: .72; transform: translate(-50%, -50%) scale(1.04); filter: blur(0); }
+  100% { opacity: .34; transform: translate(-50%, -50%) scale(.92); filter: blur(.5px); }
+}
+
+@keyframes dice-landing-ring {
+  0% { opacity: 0; transform: scale(.42) rotate(-18deg); }
+  32% { opacity: 1; }
+  100% { opacity: .34; transform: scale(1.18) rotate(8deg); }
 }
 
 @media (max-width: 350px) {
@@ -225,8 +303,10 @@
 @media (prefers-reduced-motion: reduce) {
   .animated-dice-result.rolling .die-motion-stage::after,
   .dual-dice-result.rolling .dual-dice-stage::after,
-  .die-motion-stage.is-impacting::after,
-  .dual-dice-stage.is-impacting::after {
+  .result-die-object.is-edge-impact::after,
+  .percentile-die-part.is-edge-impact::after,
+  .result-die-scene.is-landing .dice-landing-flare,
+  .result-die-scene.is-landing .dice-landing-flare::before {
     animation: none;
   }
 }
