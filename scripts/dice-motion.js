@@ -368,7 +368,6 @@ paintResultDie = function paintPhysicalMossDie(canvas, sides, rotation, lift = 0
   const context = canvas?.getContext?.('2d');
   if (!context) return false;
   const object = canvas.closest?.('.result-die-object');
-  const isSettled = !object?.classList?.contains('is-tumbling');
   const bounds = canvas.getBoundingClientRect();
   const cssSize = Math.max(104, Math.round(Math.min(bounds.width || 136, bounds.height || 136)));
   const pixelRatio = Math.min(2, globalThis.devicePixelRatio || 1);
@@ -384,7 +383,10 @@ paintResultDie = function paintPhysicalMossDie(canvas, sides, rotation, lift = 0
   const transformed = mesh.vertices.map(vertex => rotateDiePoint(vertex, rotation));
   const center = cssSize / 2;
   const radius = cssSize * physicalRadiusForSides(mesh.sides);
-  const project = point => [center + point[0] * radius, center + lift + point[1] * radius];
+  const project = point => {
+    const perspective = 3.9 / (3.9 - point[2]);
+    return [center + point[0] * radius * perspective, center + lift + point[1] * radius * perspective];
+  };
   const light = vectorNormalize([-0.18, -0.32, 0.93]);
   const isLight = document.documentElement.dataset.theme === 'light';
   const visibleFaces = mesh.faces.map((face, faceIndex) => {
@@ -396,7 +398,8 @@ paintResultDie = function paintPhysicalMossDie(canvas, sides, rotation, lift = 0
     const depth = face.reduce((sum, index) => sum + transformed[index][2], 0) / face.length;
     const points = face.map(index => project(transformed[index]));
     return { face, faceIndex, normal, depth, points, area: physicalFaceArea(points) };
-  }).filter(entry => entry.normal[2] > (isSettled ? 0.999 : -0.035)).sort((left, right) => left.depth - right.depth);
+  }).filter(entry => entry.normal[2] > -0.035).sort((left, right) => left.depth - right.depth);
+  canvas.dataset.visibleFaceCount = String(visibleFaces.filter(entry => entry.area > 1).length);
 
   context.lineCap = 'round';
   context.lineJoin = 'round';
