@@ -365,6 +365,8 @@ function drawPhysicalFaceValueBase(context, face, label, reveal, isLight) {
 paintResultDie = function paintPhysicalMossDie(canvas, sides, rotation, lift = 0) {
   const context = canvas?.getContext?.('2d');
   if (!context) return false;
+  const object = canvas.closest?.('.result-die-object');
+  const isSettled = !object?.classList?.contains('is-tumbling');
   const bounds = canvas.getBoundingClientRect();
   const cssSize = Math.max(104, Math.round(Math.min(bounds.width || 136, bounds.height || 136)));
   const pixelRatio = Math.min(2, globalThis.devicePixelRatio || 1);
@@ -392,7 +394,7 @@ paintResultDie = function paintPhysicalMossDie(canvas, sides, rotation, lift = 0
     const depth = face.reduce((sum, index) => sum + transformed[index][2], 0) / face.length;
     const points = face.map(index => project(transformed[index]));
     return { face, faceIndex, normal, depth, points, area: physicalFaceArea(points) };
-  }).filter(entry => entry.normal[2] > -0.035).sort((left, right) => left.depth - right.depth);
+  }).filter(entry => entry.normal[2] > (isSettled ? 0.999 : -0.035)).sort((left, right) => left.depth - right.depth);
 
   context.lineCap = 'round';
   context.lineJoin = 'round';
@@ -450,7 +452,6 @@ paintResultDie = function paintPhysicalMossDie(canvas, sides, rotation, lift = 0
     context.stroke();
   }
 
-  const object = canvas.closest?.('.result-die-object');
   const value = Number(object?.dataset?.value);
   const defaultReveal = object?.classList?.contains('is-tumbling') ? 0 : 1;
   const reveal = physicalClamp(Number(object?.dataset?.faceReveal ?? defaultReveal));
