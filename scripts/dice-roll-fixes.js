@@ -416,8 +416,6 @@
       add('path', { d: 'M6.7 3v9.3M1.7 7l5 5.3 5.4-5.3M3.6 17.6l3.1-5.3 3.5 5.3' });
       add('polygon', { class: 'percentile-icon-die percentile-icon-units', points: '17.3,6.4 22.7,10.4 20.8,21 14.2,21 12.3,10.4' });
       add('path', { d: 'M17.3 6.4v9.3M12.3 10.4l5 5.3 5.4-5.3M14.2 21l3.1-5.3 3.5 5.3' });
-      add('text', { class: 'percentile-icon-label percentile-icon-label-tens', x: '6.7', y: '11.2', 'text-anchor': 'middle' }, '00');
-      add('text', { class: 'percentile-icon-label percentile-icon-label-units', x: '17.3', y: '14.7', 'text-anchor': 'middle' }, '0');
     } else {
       return polishedDieIcon(20);
     }

@@ -41,7 +41,8 @@
   }
 
   function paintStableResult(entry, rotation, lift = 0, paintEntry) {
-    if (entry?.object?.classList?.contains('is-tumbling')) entry.object.dataset.faceReveal = '0';
+    const owner = entry?.faceOwner || entry?.object;
+    if (owner?.classList?.contains('is-tumbling')) owner.dataset.faceReveal = '0';
     return paintEntry(entry, rotation, lift);
   }
 
@@ -109,23 +110,6 @@
     drawRefinedStone(context, face, sides);
   }
 
-  function localFaceAngle(points) {
-    const centroid = physicalFaceCentroid(points);
-    const candidates = points.map((start, index) => {
-      const end = points[(index + 1) % points.length];
-      const dx = end[0] - start[0];
-      const dy = end[1] - start[1];
-      let angle = Math.atan2(dy, dx);
-      if (angle > Math.PI / 2) angle -= Math.PI;
-      if (angle < -Math.PI / 2) angle += Math.PI;
-      const midpointY = (start[1] + end[1]) / 2;
-      const length = Math.hypot(dx, dy);
-      return { angle, score: Math.abs(angle) + (midpointY > centroid[1] ? .05 : 0) + 12 / Math.max(20, length) };
-    });
-    candidates.sort((left, right) => left.score - right.score);
-    return physicalClamp(candidates[0]?.angle || 0, -.26, .26);
-  }
-
   function glyphFontSize(face, label) {
     const area = physicalFaceArea(face.points);
     const factor = label.length > 1 ? .30 : .42;
@@ -176,7 +160,9 @@
     physicalPath(context, face.points);
     context.clip();
     context.translate(centroid[0], centroid[1]);
-    context.rotate(localFaceAngle(face.points));
+    // The resolved value always faces the player, independent of the edge
+    // angle of the winning polygon. This is the stable, top-down hero pose.
+    context.rotate(0);
     context.imageSmoothingEnabled = true;
     context.imageSmoothingQuality = 'high';
     context.drawImage(glyph.canvas, -glyph.cssSize / 2, -glyph.cssSize / 2, glyph.cssSize, glyph.cssSize);

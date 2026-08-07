@@ -106,6 +106,7 @@ test.describe('redesign ekranu Kości', () => {
 
     const dice = object.locator('.percentile-die');
     await expect(dice).toHaveCount(2);
+    await expect(object.locator('.percentile-die-part')).toHaveCount(2);
     const boxes = await dice.evaluateAll(elements => elements.map(element => {
       const box = element.getBoundingClientRect();
       return { left: box.left, right: box.right, width: box.width };

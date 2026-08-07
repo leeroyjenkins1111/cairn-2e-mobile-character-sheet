@@ -118,12 +118,21 @@ test.describe('poprawki rzutu kośćmi', () => {
     const icon = page.getByRole('button', { name: 'Rzuć kością k100', exact: true }).locator('svg[data-die="100"]');
     await expect(icon).toBeVisible();
     await expect(icon.locator('.percentile-icon-die')).toHaveCount(2);
-    await expect(icon.locator('.percentile-icon-label-tens')).toHaveText('00');
-    await expect(icon.locator('.percentile-icon-label-units')).toHaveText('0');
+    await expect(icon.locator('text')).toHaveCount(0);
 
     await page.getByRole('button', { name: 'Rzuć kością k100', exact: true }).click();
     await expect(page.locator('#diceResult .result-die-object[data-sides="100"]')).toBeVisible();
+    await expect(page.locator('#diceResult .percentile-die-part')).toHaveCount(2);
     await expect(page.locator('#diceResult canvas.percentile-die')).toHaveCount(2);
+  });
+
+  test('miniatury pokazują wyłącznie bryłę, a podpis pozostaje pod ikoną', async ({ page }) => {
+    await loadDemoDice(page);
+
+    const buttons = page.locator('#view-dice .die-button');
+    await expect(buttons).toHaveCount(7);
+    await expect(buttons.locator('svg text')).toHaveCount(0);
+    await expect(buttons.locator(':scope > span:last-child')).toHaveText(['k4', 'k6', 'k8', 'k10', 'k12', 'k20', 'k100']);
   });
 
   test('nie tworzy poziomego overflow na 320 px', async ({ page }) => {

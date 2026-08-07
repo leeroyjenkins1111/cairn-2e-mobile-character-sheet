@@ -30,7 +30,6 @@ const siteFiles = [
   'scripts/app-config.js',
   'scripts/render-hooks.js',
   'scripts/dice-motion.js',
-  'scripts/dice-feedback.js',
   'scripts/dice-renderer.js',
   'scripts/dice-roll-fixes.js',
   'scripts/dice-experience.js',
