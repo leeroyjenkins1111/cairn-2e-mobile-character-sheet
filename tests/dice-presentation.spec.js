@@ -100,7 +100,8 @@ test.describe('redesign ekranu Kości', () => {
     await loadDemoDice(page);
     await page.getByRole('button', { name: 'Rzuć kością k100', exact: true }).click();
 
-    await expect(page.locator('#view-dice')).toHaveAttribute('data-dice-phase', 'revealed', { timeout: 3000 });
+    await expect(page.locator('#diceResult')).toHaveAttribute('aria-busy', 'false', { timeout: 6000 });
+    await expect(page.locator('#view-dice')).toHaveAttribute('data-dice-phase', 'revealed', { timeout: 1000 });
     const object = page.locator('#diceResult .result-die-object[data-sides="100"]');
     await expect(object).not.toHaveClass(/is-tumbling/);
 
