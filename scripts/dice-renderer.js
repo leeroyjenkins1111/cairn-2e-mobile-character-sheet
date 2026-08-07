@@ -1,7 +1,7 @@
 'use strict';
 
 (() => {
-  const LOCK_START = 0.90;
+  const LOCK_START = 0.985;
   const GLYPH_OVERSAMPLE = 4;
 
   const clamp01 = value => Math.max(0, Math.min(1, Number(value) || 0));
