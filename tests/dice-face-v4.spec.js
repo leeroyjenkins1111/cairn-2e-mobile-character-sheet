@@ -60,6 +60,13 @@ test.describe('consolidated carved dice renderer', () => {
     for (const result of results) expect(result.dominantNormal, `k${result.sides}`).toBeGreaterThan(.999);
   });
 
+  test('keeps the settled k6 square parallel to the phone edges', async ({ page }) => {
+    const rotation = await page.evaluate(() => finalDieRotation(6, 4));
+    expect(rotation.x).toBeCloseTo(0, 8);
+    expect(rotation.y).toBeCloseTo(0, 8);
+    expect(rotation.z).toBeCloseTo(0, 8);
+  });
+
   test('captures the final consolidated k6 for visual review', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.reload();
