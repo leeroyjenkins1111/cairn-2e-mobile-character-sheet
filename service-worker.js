@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cairn-mobile-sheet-v0.30.1-dice-refactor';
+const CACHE_NAME = 'cairn-mobile-sheet-v0.30.1-dice-top-projection-v2';
 const APP_SHELL = [
   './',
   './index.html',

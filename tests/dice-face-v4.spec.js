@@ -67,6 +67,22 @@ test.describe('consolidated carved dice renderer', () => {
     expect(rotation.z).toBeCloseTo(0, 8);
   });
 
+  test('keeps the surrounding 3D facets visible on a settled k20', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.reload();
+    await page.waitForFunction(() => document.documentElement.dataset.diceRenderer === 'consolidated');
+    await page.evaluate(() => {
+      const host = document.createElement('div');
+      host.id = 'settled-k20-test';
+      document.body.append(host);
+      animateDiceResult(host, 14, 'Wynik', 20, 'neutral');
+    });
+
+    const canvas = page.locator('#settled-k20-test .result-die-canvas');
+    await expect(canvas).toHaveAttribute('data-visible-face-count', /^[2-9]|[1-9]\d+$/);
+    await page.locator('#settled-k20-test .result-die-scene').screenshot({ path: 'ui-review-screenshots/04-k20-settled-actual.png' });
+  });
+
   test('captures the final consolidated k6 for visual review', async ({ page }) => {
     await page.emulateMedia({ reducedMotion: 'reduce' });
     await page.reload();
