@@ -1,10 +1,11 @@
 'use strict';
 
-const PHYSICAL_DICE_DURATION = 1750;
-const PHYSICAL_PERCENTILE_DURATION = 2050;
+const PHYSICAL_DICE_DURATION = 2280;
+const PHYSICAL_PERCENTILE_DURATION = 2440;
 const PHYSICAL_DUAL_DICE_DURATION = 1980;
-const PHYSICAL_DICE_IMPACTS = Object.freeze([0.56, 0.76, 0.90]);
+const PHYSICAL_DICE_IMPACTS = Object.freeze([0.115, 0.305, 0.495, 0.685]);
 const PHYSICAL_D10_CACHE = new Map();
+let activePhysicalFlight = null;
 const baseCreateDieMesh = createDieMesh;
 const physicalDiceAdapters = Object.create(null);
 globalThis.CairnDiceRenderer = Object.freeze({
@@ -207,7 +208,7 @@ const PHYSICAL_FINAL_POSES = Object.freeze({
   ])
 });
 
-finalDieRotation = function finalPhysicalDieRotation(sides, value) {
+function finalPhysicalDieRotationBase(sides, value) {
   const numericSides = DICE_SIDES.includes(Number(sides)) ? Number(sides) : 20;
   const poses = PHYSICAL_FINAL_POSES[numericSides] || PHYSICAL_FINAL_POSES[20];
   const index = Math.abs(Number(value) || 0) % poses.length;
@@ -218,6 +219,11 @@ finalDieRotation = function finalPhysicalDieRotation(sides, value) {
     y: pose.y + physicalSignedHash(seed + 1) * 0.055,
     z: pose.z + physicalSignedHash(seed + 2) * 0.035
   };
+}
+
+finalDieRotation = function finalPhysicalDieRotation(sides, value) {
+  const adapter = physicalDiceAdapters.finalDieRotation;
+  return adapter ? adapter(sides, value, finalPhysicalDieRotationBase) : finalPhysicalDieRotationBase(sides, value);
 };
 
 function physicalFaceArea(points) {
@@ -374,11 +380,8 @@ paintResultDie = function paintPhysicalMossDie(canvas, sides, rotation, lift = 0
   const transformed = mesh.vertices.map(vertex => rotateDiePoint(vertex, rotation));
   const center = cssSize / 2;
   const radius = cssSize * physicalRadiusForSides(mesh.sides);
-  const project = point => {
-    const perspective = 4.35 / (4.35 - point[2]);
-    return [center + point[0] * radius * perspective, center + lift + point[1] * radius * perspective];
-  };
-  const light = vectorNormalize([-0.52, -0.72, 0.68]);
+  const project = point => [center + point[0] * radius, center + lift + point[1] * radius];
+  const light = vectorNormalize([-0.18, -0.32, 0.93]);
   const isLight = document.documentElement.dataset.theme === 'light';
   const visibleFaces = mesh.faces.map((face, faceIndex) => {
     const [a, b, c] = face.map(index => transformed[index]);
@@ -498,8 +501,7 @@ function physicalPercentileEntries(scene, roll, salt = 0) {
       seed: physicalSeed(100, roll.value, salt + index * 19),
       finalRotation: {
         ...baseRotation,
-        y: baseRotation.y + (index === 0 ? -0.16 : 0.18),
-        z: baseRotation.z + (index === 0 ? -0.035 : 0.035)
+        z: baseRotation.z + (index === 0 ? -0.11 : 0.11)
       }
     };
   });
@@ -513,15 +515,11 @@ function physicalPaintEntry(entry, rotation, lift = 0) {
 function physicalPaintEntryBase(entry, rotation, lift = 0) {
   entry.canvases.forEach(canvas => {
     const percentile = entry.sides === 100;
-    const secondPercentile = canvas.classList.contains('percentile-die-second');
-    const offset = percentile
-      ? { x: secondPercentile ? 0.18 : -0.12, y: secondPercentile ? 0.42 : -0.38, z: secondPercentile ? 0.09 : -0.12 }
-      : { x: 0, y: 0, z: 0 };
     paintResultDie(
       canvas,
       percentile ? 10 : entry.sides,
-      { x: rotation.x + offset.x, y: rotation.y + offset.y, z: rotation.z + offset.z },
-      lift + (percentile ? (secondPercentile ? 3 : -1) : 0)
+      rotation,
+      lift
     );
   });
 }
@@ -539,105 +537,155 @@ function physicalSetPose(entry, x, y, scale = 1, opacity = 1) {
   entry.shadow.style.filter = `blur(${physicalLerp(10, 5.5, proximity)}px)`;
 }
 
-function physicalPulseImpact(scene, strength = 1) {
-  if (!scene || shouldReduceMotion()) return;
-  scene.style.setProperty('--dice-impact-strength', String(physicalClamp(strength, 0.25, 1)));
-  scene.classList.remove('is-impacting');
+function physicalPulseObjectImpact(object, strength = 1) {
+  if (!object || shouldReduceMotion()) return;
+  object.style.setProperty('--dice-impact-strength', String(physicalClamp(strength, 0.25, 1)));
+  object.classList.remove('is-edge-impact');
+  void object.offsetWidth;
+  object.classList.add('is-edge-impact');
+}
+
+function physicalCancelViewportFlight() {
+  activePhysicalFlight?.restore();
+}
+
+function physicalCreateViewportFlight(scene) {
+  physicalCancelViewportFlight();
+  let rect = scene.getBoundingClientRect();
+  const viewportHeight = globalThis.innerHeight || document.documentElement.clientHeight || 844;
+  if (rect.top < 12 || rect.bottom > viewportHeight - 84) {
+    scene.scrollIntoView({ block: 'center', inline: 'nearest', behavior: 'auto' });
+    rect = scene.getBoundingClientRect();
+  }
+  const placeholder = document.createElement('span');
+  placeholder.className = 'dice-flight-placeholder';
+  placeholder.setAttribute('aria-hidden', 'true');
+  placeholder.style.width = `${rect.width}px`;
+  placeholder.style.height = `${rect.height}px`;
+
+  const sizedNodes = [
+    ...scene.querySelectorAll('.result-die-object, .percentile-die-part')
+  ].map(node => {
+    const bounds = node.getBoundingClientRect();
+    const previous = {
+      width: node.style.width,
+      height: node.style.height,
+      marginLeft: node.style.marginLeft,
+      marginTop: node.style.marginTop
+    };
+    node.style.width = `${bounds.width}px`;
+    node.style.height = `${bounds.height}px`;
+    if (node.classList.contains('percentile-die-part')) {
+      node.style.marginLeft = `${bounds.width / -2}px`;
+      node.style.marginTop = `${bounds.height / -2}px`;
+    }
+    return { node, previous };
+  });
+
+  scene.before(placeholder);
+  document.body.append(scene);
+  scene.classList.add('is-viewport-flight');
+  scene.style.left = `${rect.left}px`;
+  scene.style.top = `${rect.top}px`;
+  scene.style.width = `${rect.width}px`;
+  scene.style.height = `${rect.height}px`;
+
+  let restored = false;
+  const flight = {
+    centerX: rect.left + rect.width / 2,
+    centerY: rect.top + rect.height / 2,
+    viewportWidth: document.documentElement.clientWidth || globalThis.innerWidth || 390,
+    viewportHeight,
+    restore() {
+      if (restored) return;
+      restored = true;
+      scene.classList.remove('is-viewport-flight');
+      scene.style.removeProperty('left');
+      scene.style.removeProperty('top');
+      scene.style.removeProperty('width');
+      scene.style.removeProperty('height');
+      sizedNodes.forEach(({ node, previous }) => {
+        node.style.width = previous.width;
+        node.style.height = previous.height;
+        node.style.marginLeft = previous.marginLeft;
+        node.style.marginTop = previous.marginTop;
+      });
+      if (placeholder.isConnected) placeholder.replaceWith(scene);
+      else scene.remove();
+      if (activePhysicalFlight === flight) activePhysicalFlight = null;
+    }
+  };
+  activePhysicalFlight = flight;
+  return flight;
+}
+
+function physicalViewportBounds(flight, object) {
+  const objectBounds = object.getBoundingClientRect();
+  const radius = Math.max(objectBounds.width, objectBounds.height) / 2;
+  const edgeInset = Math.max(12, radius * .72);
+  return {
+    left: edgeInset - flight.centerX,
+    right: flight.viewportWidth - edgeInset - flight.centerX,
+    top: edgeInset - flight.centerY,
+    bottom: flight.viewportHeight - edgeInset - flight.centerY
+  };
+}
+
+function physicalViewportPose(progress, bounds, seed, landingX = 0, directionOverride = 0) {
+  const direction = directionOverride || (physicalSignedHash(seed + 41) >= 0 ? 1 : -1);
+  const mirror = x => bounds.left + bounds.right - x;
+  const spanX = Math.max(1, bounds.right - bounds.left);
+  const spanY = Math.max(1, bounds.bottom - bounds.top);
+  const clockwise = [
+    { progress: 0, x: landingX, y: 0, scale: .82 },
+    { progress: .115, x: physicalLerp(bounds.left, bounds.right, .28), y: bounds.top, scale: 1.04 },
+    { progress: .19, x: physicalLerp(bounds.left, bounds.right, .70), y: bounds.top + spanY * .11, scale: .98 },
+    { progress: .305, x: bounds.right, y: bounds.top + spanY * .34, scale: 1.06 },
+    { progress: .38, x: bounds.right - spanX * .12, y: bounds.top + spanY * .72, scale: .98 },
+    { progress: .495, x: physicalLerp(bounds.left, bounds.right, .62), y: bounds.bottom, scale: 1.05 },
+    { progress: .57, x: physicalLerp(bounds.left, bounds.right, .25), y: bounds.bottom - spanY * .12, scale: .98 },
+    { progress: .685, x: bounds.left, y: bounds.top + spanY * .62, scale: 1.04 },
+    { progress: .76, x: bounds.left + spanX * .15, y: bounds.top + spanY * .29, scale: .99 },
+    { progress: .885, x: landingX + 24, y: -22, scale: 1.08 },
+    { progress: 1, x: landingX, y: 0, scale: 1 }
+  ];
+  const counterClockwise = clockwise.map(node => ({ ...node, x: mirror(node.x) }));
+  counterClockwise[0].x = landingX;
+  counterClockwise[counterClockwise.length - 2].x = landingX - 24;
+  counterClockwise[counterClockwise.length - 1].x = landingX;
+  const nodes = direction > 0 ? clockwise : counterClockwise;
+  const nextIndex = nodes.findIndex(node => node.progress >= progress);
+  if (nextIndex <= 0) return { x: nodes[0].x, y: nodes[0].y, scale: nodes[0].scale };
+  const from = nodes[nextIndex - 1];
+  const to = nodes[nextIndex] || nodes[nodes.length - 1];
+  const phase = physicalEaseOutCubic((progress - from.progress) / Math.max(.001, to.progress - from.progress));
+  return {
+    x: physicalLerp(from.x, to.x, phase),
+    y: physicalLerp(from.y, to.y, phase),
+    scale: physicalLerp(from.scale, to.scale, phase)
+  };
+}
+
+function physicalSetViewportPose(entry, pose, opacity = 1) {
+  entry.object.style.transform = `translate3d(${pose.x}px, ${pose.y}px, 0) scale(${pose.scale})`;
+  entry.object.style.opacity = String(opacity);
+  if (!entry.shadow) return;
+  entry.shadow.style.transform = `translate3d(${pose.x}px, ${pose.y}px, 0) scale(${.46 + pose.scale * .18}, .62)`;
+  entry.shadow.style.opacity = String(opacity * .13);
+  entry.shadow.style.filter = 'blur(10px)';
+}
+
+function physicalPlayLanding(scene) {
+  let flare = scene.querySelector('.dice-landing-flare');
+  if (!flare) {
+    flare = document.createElement('span');
+    flare.className = 'dice-landing-flare';
+    flare.setAttribute('aria-hidden', 'true');
+    scene.prepend(flare);
+  }
+  scene.classList.remove('is-landing');
   void scene.offsetWidth;
-  scene.classList.add('is-impacting');
-}
-
-function physicalTravel(stage, object) {
-  const stageWidth = stage?.clientWidth || stage?.getBoundingClientRect?.().width || 320;
-  const objectWidth = object?.offsetWidth || object?.getBoundingClientRect?.().width || 144;
-  return Math.max(88, Math.min(148, (stageWidth - objectWidth) / 2 + 24));
-}
-
-function physicalSinglePose(progress, travel, seed) {
-  const finalX = 0;
-  const firstLanding = 0.18;
-  const wallImpact = PHYSICAL_DICE_IMPACTS[0];
-  const reboundEnd = PHYSICAL_DICE_IMPACTS[1];
-  const settleBounceEnd = PHYSICAL_DICE_IMPACTS[2];
-  if (progress < firstLanding) {
-    const phase = progress / firstLanding;
-    return {
-      x: physicalLerp(-travel - 30, -travel * 0.55, phase),
-      y: -(1 - phase) * 11 - Math.sin(phase * Math.PI) * 18,
-      scale: 0.96 + phase * 0.04
-    };
-  }
-  if (progress < wallImpact) {
-    const phase = (progress - firstLanding) / (wallImpact - firstLanding);
-    const hopEnvelope = 1 - phase * 0.72;
-    return {
-      x: physicalLerp(-travel * 0.55, travel, phase),
-      y: -Math.abs(Math.sin(phase * Math.PI * 4)) * (2.2 + hopEnvelope * 5.4),
-      scale: 1
-    };
-  }
-  if (progress < reboundEnd) {
-    const phase = (progress - wallImpact) / (reboundEnd - wallImpact);
-    return {
-      x: physicalLerp(travel, finalX + 30, physicalEaseOutCubic(phase)),
-      y: -Math.sin(phase * Math.PI) * (29 + physicalHash(seed + 5) * 4),
-      scale: 1
-    };
-  }
-  if (progress < settleBounceEnd) {
-    const phase = (progress - reboundEnd) / (settleBounceEnd - reboundEnd);
-    return {
-      x: physicalLerp(finalX + 30, finalX - 6, physicalEaseOutCubic(phase)),
-      y: -Math.sin(phase * Math.PI) * (10 + physicalHash(seed + 6) * 2.5),
-      scale: 1
-    };
-  }
-  const phase = (progress - settleBounceEnd) / (1 - settleBounceEnd);
-  return {
-    x: physicalLerp(finalX - 6, finalX, physicalEaseOutCubic(phase)),
-    y: -Math.abs(Math.sin(phase * Math.PI * 2)) * (1 - phase) * 2.6,
-    scale: 1
-  };
-}
-
-function physicalPercentilePose(progress, side, separation, travel, seed, index) {
-  const wallImpact = index === 0 ? 0.43 : 0.47;
-  const reboundEnd = index === 0 ? 0.72 : 0.75;
-  const settleBounceEnd = index === 0 ? 0.90 : 0.92;
-  const startX = side * (18 + index * 4);
-  const wallX = side * travel;
-  const targetX = side * separation;
-
-  if (progress < wallImpact) {
-    const phase = progress / wallImpact;
-    return {
-      x: physicalLerp(startX, wallX, physicalEaseOutCubic(phase)),
-      y: -Math.sin(phase * Math.PI) * (28 + physicalHash(seed + 4) * 7) - (1 - phase) * (7 + index * 2),
-      scale: physicalLerp(0.94, 1, phase)
-    };
-  }
-  if (progress < reboundEnd) {
-    const phase = (progress - wallImpact) / (reboundEnd - wallImpact);
-    return {
-      x: physicalLerp(wallX, side * (separation - 15), physicalEaseOutCubic(phase)),
-      y: -Math.sin(phase * Math.PI) * (18 + physicalHash(seed + 7) * 5),
-      scale: 1
-    };
-  }
-  if (progress < settleBounceEnd) {
-    const phase = (progress - reboundEnd) / (settleBounceEnd - reboundEnd);
-    return {
-      x: physicalLerp(side * (separation - 15), targetX, physicalEaseOutCubic(phase)),
-      y: -Math.sin(phase * Math.PI) * (7 + physicalHash(seed + 10) * 2),
-      scale: 1
-    };
-  }
-  const phase = (progress - settleBounceEnd) / (1 - settleBounceEnd);
-  return {
-    x: targetX,
-    y: -Math.abs(Math.sin(phase * Math.PI * 2)) * (1 - phase) * 1.8,
-    scale: 1
-  };
+  scene.classList.add('is-landing');
 }
 
 function physicalInitialSpin(entry, direction = 1) {
@@ -736,41 +784,52 @@ function animatePhysicalPercentileResult({ shell, scene, copy, context, entries,
     return;
   }
 
+  const flight = physicalCreateViewportFlight(scene);
+  const bounds = entries.map(entry => physicalViewportBounds(flight, entry.object));
   shell.setAttribute('aria-hidden', 'true');
   const started = performance.now();
   let previous = started;
-  const travel = Math.max(separation + 24, Math.min(134, stageWidth / 2 - 18));
   const spins = entries.map((entry, index) => physicalInitialSpin(entry, index === 0 ? -1 : 1));
   const impacts = [
-    { progress: 0.43, indexes: [0], strength: 1 },
-    { progress: 0.47, indexes: [1], strength: 1 },
-    { progress: 0.73, indexes: [0, 1], strength: 0.48 },
-    { progress: 0.91, indexes: [0, 1], strength: 0.22 }
+    { progress: .115, indexes: [0], strength: 1 },
+    { progress: .14, indexes: [1], strength: 1 },
+    { progress: .305, indexes: [0], strength: .82 },
+    { progress: .33, indexes: [1], strength: .82 },
+    { progress: .495, indexes: [0], strength: .64 },
+    { progress: .52, indexes: [1], strength: .64 },
+    { progress: .685, indexes: [0], strength: .46 },
+    { progress: .71, indexes: [1], strength: .46 }
   ];
   let nextImpact = 0;
 
   const tick = now => {
-    if (token !== diceAnimationToken || !shell.isConnected) return;
+    if (token !== diceAnimationToken || !shell.isConnected) {
+      flight.restore();
+      return;
+    }
     const progress = Math.min(1, (now - started) / PHYSICAL_PERCENTILE_DURATION);
     const deltaSeconds = Math.min(0.034, Math.max(0, (now - previous) / 1000));
     previous = now;
 
     while (nextImpact < impacts.length && progress >= impacts[nextImpact].progress) {
       const impact = impacts[nextImpact];
-      impact.indexes.forEach(index => physicalApplyImpact(spins[index], nextImpact, index === 0 ? -1 : 1));
-      physicalPulseImpact(scene, impact.strength);
-      triggerHaptic(nextImpact < 2 ? 'impact' : 'tick');
+      impact.indexes.forEach(index => {
+        physicalApplyImpact(spins[index], nextImpact, index === 0 ? -1 : 1);
+        physicalPulseObjectImpact(entries[index].object, impact.strength);
+      });
+      triggerHaptic(nextImpact < 4 ? 'impact' : 'tick');
       nextImpact += 1;
     }
 
-    const reveal = progress < 0.86 ? 0 : physicalSmootherStep((progress - 0.86) / 0.12);
+    const reveal = progress < 0.92 ? 0 : physicalSmootherStep((progress - 0.92) / 0.07);
     entries[0].faceOwner.dataset.faceReveal = String(reveal);
     entries.forEach((entry, index) => {
       const side = index === 0 ? -1 : 1;
-      const pose = physicalPercentilePose(progress, side, separation, travel, entry.seed, index);
+      const localProgress = physicalClamp(progress + (index === 0 ? -.022 : .022) * Math.sin(progress * Math.PI));
+      const pose = physicalViewportPose(localProgress, bounds[index], entry.seed, side * separation, side);
       physicalAdvanceSpin(spins[index], entry.finalRotation, deltaSeconds, progress, pose);
-      physicalSetPose(entry, pose.x, pose.y, pose.scale, 1);
-      physicalPaintEntry(entry, spins[index].rotation, pose.y * 0.05);
+      physicalSetViewportPose(entry, pose);
+      physicalPaintEntry(entry, spins[index].rotation);
     });
 
     if (progress < 1) {
@@ -778,7 +837,9 @@ function animatePhysicalPercentileResult({ shell, scene, copy, context, entries,
       return;
     }
 
+    flight.restore();
     physicalSetPercentileSettled(entries, separation);
+    physicalPlayLanding(scene);
     copy.textContent = label;
     shell.removeAttribute('aria-hidden');
     shell.classList.remove('rolling');
@@ -792,6 +853,7 @@ function animatePhysicalPercentileResult({ shell, scene, copy, context, entries,
 
 animateDiceResult = function animatePhysicalDiceResult(container, value, label, sides = 6, tone = 'neutral', contextLabel = '') {
   if (!container) return;
+  physicalCancelViewportFlight();
   const token = ++diceAnimationToken;
   const numericSides = DICE_SIDES.includes(Number(sides)) ? Number(sides) : 6;
   const reduced = shouldReduceMotion();
@@ -820,39 +882,44 @@ animateDiceResult = function animatePhysicalDiceResult(container, value, label, 
     return;
   }
 
+  const flight = physicalCreateViewportFlight(scene);
+  const bounds = physicalViewportBounds(flight, entry.object);
   shell.setAttribute('aria-hidden', 'true');
   const started = performance.now();
   let previous = started;
-  const travel = physicalTravel(scene, entry.object);
   const direction = physicalSignedHash(entry.seed + 20) >= 0 ? 1 : -1;
   const spin = physicalInitialSpin(entry, direction);
   let nextImpact = 0;
 
   const tick = now => {
-    if (token !== diceAnimationToken || !shell.isConnected) return;
+    if (token !== diceAnimationToken || !shell.isConnected) {
+      flight.restore();
+      return;
+    }
     const progress = Math.min(1, (now - started) / PHYSICAL_DICE_DURATION);
     const deltaSeconds = Math.min(0.034, Math.max(0, (now - previous) / 1000));
     previous = now;
 
     while (nextImpact < PHYSICAL_DICE_IMPACTS.length && progress >= PHYSICAL_DICE_IMPACTS[nextImpact]) {
       physicalApplyImpact(spin, nextImpact, direction);
-      physicalPulseImpact(scene, [1, 0.48, 0.22][nextImpact]);
+      physicalPulseObjectImpact(entry.object, [1, .82, .64, .46][nextImpact]);
       triggerHaptic(nextImpact === 0 ? 'impact' : 'tick');
       nextImpact += 1;
     }
 
-    const pose = physicalSinglePose(progress, travel, entry.seed);
+    const pose = physicalViewportPose(progress, bounds, entry.seed, 0, direction);
     physicalAdvanceSpin(spin, entry.finalRotation, deltaSeconds, progress, pose);
     const reveal = progress < 0.92 ? 0 : physicalSmootherStep((progress - 0.92) / 0.08);
     entry.object.dataset.faceReveal = String(reveal);
-    physicalSetPose(entry, pose.x, pose.y, pose.scale, 1);
-    physicalPaintEntry(entry, spin.rotation, pose.y * 0.055);
+    physicalSetViewportPose(entry, pose);
+    physicalPaintEntry(entry, spin.rotation);
 
     if (progress < 1) {
       requestAnimationFrame(tick);
       return;
     }
 
+    flight.restore();
     entry.number.textContent = String(value);
     entry.object.dataset.faceReveal = '1';
     entry.object.classList.remove('is-tumbling');
@@ -861,8 +928,9 @@ animateDiceResult = function animatePhysicalDiceResult(container, value, label, 
     shell.classList.remove('rolling');
     shell.classList.add('settled');
     shell.setAttribute('aria-label', `${label}: ${value}. ${context.textContent}.`);
-    physicalSetPose(entry, pose.x, 0, 1, 1);
-    physicalPaintEntry(entry, spin.rotation);
+    physicalSetPose(entry, 0, 0, 1, 1);
+    physicalPaintEntry(entry, entry.finalRotation);
+    physicalPlayLanding(scene);
     triggerHaptic(resultHapticForTone(tone));
   };
 

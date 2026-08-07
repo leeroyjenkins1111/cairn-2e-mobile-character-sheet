@@ -90,7 +90,7 @@ test.describe('redesign ekranu Kości', () => {
     await expect(result).toHaveAttribute('aria-busy', 'true');
     await expect(value).toHaveText('—');
 
-    await expect(result).toHaveAttribute('aria-busy', 'false', { timeout: 2500 });
+    await expect(result).toHaveAttribute('aria-busy', 'false', { timeout: 4000 });
     await expect(view).toHaveAttribute('data-dice-phase', 'revealed', { timeout: 1000 });
     await expect(value).toHaveText(/^\d+$/);
   });

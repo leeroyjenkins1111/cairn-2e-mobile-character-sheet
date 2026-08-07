@@ -83,6 +83,7 @@ test('renderery używają jawnych rejestrów zamiast globalnych nadpisań', () =
   assert.match(diceRenderer, /finalDieRotation:\s*sides/);
   assert.doesNotMatch(index, /dice-feedback\.js/);
   assert.match(diceMotion, /animatePhysicalPercentileResult/);
+  assert.match(diceMotion, /physicalDiceAdapters\.finalDieRotation/);
 });
 
 test('runtime nie tworzy ani nie wstrzykuje arkuszy CSS', () => {
