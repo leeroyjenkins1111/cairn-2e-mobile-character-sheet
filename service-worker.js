@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cairn-mobile-sheet-v0.30.1-dice-experience';
+const CACHE_NAME = 'cairn-mobile-sheet-v0.30.1-dice-refactor';
 const APP_SHELL = [
   './',
   './index.html',
@@ -23,7 +23,6 @@ const APP_SHELL = [
   './scripts/app-bootstrap.js?v=0.30.1',
   './scripts/render-hooks.js?v=0.30.1',
   './scripts/dice-motion.js?v=0.30.1',
-  './scripts/dice-feedback.js?v=0.30.1',
   './scripts/ux-direct-editing.js?v=0.30.1',
   './scripts/inventory-view.js?v=0.30.1',
   './scripts/character-redesign.js?v=0.30.1',

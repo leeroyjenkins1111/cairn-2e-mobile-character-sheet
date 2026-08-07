@@ -1,6 +1,7 @@
 'use strict';
 
 const PHYSICAL_DICE_DURATION = 1750;
+const PHYSICAL_PERCENTILE_DURATION = 2050;
 const PHYSICAL_DUAL_DICE_DURATION = 1980;
 const PHYSICAL_DICE_IMPACTS = Object.freeze([0.56, 0.76, 0.90]);
 const PHYSICAL_D10_CACHE = new Map();
@@ -468,6 +469,7 @@ function physicalEntry(scene, roll, salt = 0) {
   return {
     scene,
     object,
+    faceOwner: object,
     shadow: scene.querySelector('.result-die-shadow'),
     number: scene.querySelector('.result-die-value'),
     canvases: [...scene.querySelectorAll('.result-die-canvas')],
@@ -478,22 +480,48 @@ function physicalEntry(scene, roll, salt = 0) {
   };
 }
 
+function physicalPercentileEntries(scene, roll, salt = 0) {
+  const owner = scene.querySelector('.result-die-object[data-sides="100"]');
+  if (!owner) return [];
+  owner.dataset.faceReveal = owner.classList.contains('is-tumbling') ? '0' : '1';
+  return [...owner.querySelectorAll('.percentile-die-part')].map((part, index) => {
+    const baseRotation = finalDieRotation(100, roll.value);
+    return {
+      scene,
+      object: part,
+      faceOwner: owner,
+      shadow: owner.querySelector(`.percentile-die-shadow[data-percentile-part="${index === 0 ? 'tens' : 'units'}"]`),
+      number: owner.querySelector('.result-die-value'),
+      canvases: [...part.querySelectorAll('.result-die-canvas')],
+      sides: 100,
+      value: Number(roll.value),
+      seed: physicalSeed(100, roll.value, salt + index * 19),
+      finalRotation: {
+        ...baseRotation,
+        y: baseRotation.y + (index === 0 ? -0.16 : 0.18),
+        z: baseRotation.z + (index === 0 ? -0.035 : 0.035)
+      }
+    };
+  });
+}
+
 function physicalPaintEntry(entry, rotation, lift = 0) {
   const adapter = physicalDiceAdapters.physicalPaintEntry;
   return adapter ? adapter(entry, rotation, lift, physicalPaintEntryBase) : physicalPaintEntryBase(entry, rotation, lift);
 }
 
 function physicalPaintEntryBase(entry, rotation, lift = 0) {
-  entry.canvases.forEach((canvas, index) => {
+  entry.canvases.forEach(canvas => {
     const percentile = entry.sides === 100;
+    const secondPercentile = canvas.classList.contains('percentile-die-second');
     const offset = percentile
-      ? { x: index ? 0.18 : -0.12, y: index ? 0.42 : -0.38, z: index ? 0.09 : -0.12 }
+      ? { x: secondPercentile ? 0.18 : -0.12, y: secondPercentile ? 0.42 : -0.38, z: secondPercentile ? 0.09 : -0.12 }
       : { x: 0, y: 0, z: 0 };
     paintResultDie(
       canvas,
       percentile ? 10 : entry.sides,
       { x: rotation.x + offset.x, y: rotation.y + offset.y, z: rotation.z + offset.z },
-      lift + (percentile ? (index ? 3 : -1) : 0)
+      lift + (percentile ? (secondPercentile ? 3 : -1) : 0)
     );
   });
 }
@@ -511,6 +539,14 @@ function physicalSetPose(entry, x, y, scale = 1, opacity = 1) {
   entry.shadow.style.filter = `blur(${physicalLerp(10, 5.5, proximity)}px)`;
 }
 
+function physicalPulseImpact(scene, strength = 1) {
+  if (!scene || shouldReduceMotion()) return;
+  scene.style.setProperty('--dice-impact-strength', String(physicalClamp(strength, 0.25, 1)));
+  scene.classList.remove('is-impacting');
+  void scene.offsetWidth;
+  scene.classList.add('is-impacting');
+}
+
 function physicalTravel(stage, object) {
   const stageWidth = stage?.clientWidth || stage?.getBoundingClientRect?.().width || 320;
   const objectWidth = object?.offsetWidth || object?.getBoundingClientRect?.().width || 144;
@@ -518,7 +554,7 @@ function physicalTravel(stage, object) {
 }
 
 function physicalSinglePose(progress, travel, seed) {
-  const finalX = physicalSignedHash(seed + 3) * 10;
+  const finalX = 0;
   const firstLanding = 0.18;
   const wallImpact = PHYSICAL_DICE_IMPACTS[0];
   const reboundEnd = PHYSICAL_DICE_IMPACTS[1];
@@ -560,6 +596,46 @@ function physicalSinglePose(progress, travel, seed) {
   return {
     x: physicalLerp(finalX - 6, finalX, physicalEaseOutCubic(phase)),
     y: -Math.abs(Math.sin(phase * Math.PI * 2)) * (1 - phase) * 2.6,
+    scale: 1
+  };
+}
+
+function physicalPercentilePose(progress, side, separation, travel, seed, index) {
+  const wallImpact = index === 0 ? 0.43 : 0.47;
+  const reboundEnd = index === 0 ? 0.72 : 0.75;
+  const settleBounceEnd = index === 0 ? 0.90 : 0.92;
+  const startX = side * (18 + index * 4);
+  const wallX = side * travel;
+  const targetX = side * separation;
+
+  if (progress < wallImpact) {
+    const phase = progress / wallImpact;
+    return {
+      x: physicalLerp(startX, wallX, physicalEaseOutCubic(phase)),
+      y: -Math.sin(phase * Math.PI) * (28 + physicalHash(seed + 4) * 7) - (1 - phase) * (7 + index * 2),
+      scale: physicalLerp(0.94, 1, phase)
+    };
+  }
+  if (progress < reboundEnd) {
+    const phase = (progress - wallImpact) / (reboundEnd - wallImpact);
+    return {
+      x: physicalLerp(wallX, side * (separation - 15), physicalEaseOutCubic(phase)),
+      y: -Math.sin(phase * Math.PI) * (18 + physicalHash(seed + 7) * 5),
+      scale: 1
+    };
+  }
+  if (progress < settleBounceEnd) {
+    const phase = (progress - reboundEnd) / (settleBounceEnd - reboundEnd);
+    return {
+      x: physicalLerp(side * (separation - 15), targetX, physicalEaseOutCubic(phase)),
+      y: -Math.sin(phase * Math.PI) * (7 + physicalHash(seed + 10) * 2),
+      scale: 1
+    };
+  }
+  const phase = (progress - settleBounceEnd) / (1 - settleBounceEnd);
+  return {
+    x: targetX,
+    y: -Math.abs(Math.sin(phase * Math.PI * 2)) * (1 - phase) * 1.8,
     scale: 1
   };
 }
@@ -637,6 +713,83 @@ function appendPhysicalContext(shell, text) {
   return context;
 }
 
+function physicalSetPercentileSettled(entries, separation) {
+  entries.forEach((entry, index) => {
+    const side = index === 0 ? -1 : 1;
+    entry.faceOwner.dataset.faceReveal = '1';
+    entry.faceOwner.classList.remove('is-tumbling');
+    entry.number.textContent = String(entry.value);
+    physicalSetPose(entry, side * separation, 0, 1, 1);
+    physicalPaintEntry(entry, entry.finalRotation);
+  });
+}
+
+function animatePhysicalPercentileResult({ shell, scene, copy, context, entries, token, value, label, tone, reduced }) {
+  const stageWidth = scene.clientWidth || scene.getBoundingClientRect?.().width || 320;
+  const separation = Math.max(60, Math.min(74, stageWidth * 0.31));
+  scene.classList.add('percentile-motion-stage');
+
+  if (reduced || entries.length !== 2) {
+    physicalSetPercentileSettled(entries, separation);
+    shell.setAttribute('aria-label', `${label}: ${value}. ${context.textContent}.`);
+    triggerHaptic(resultHapticForTone(tone));
+    return;
+  }
+
+  shell.setAttribute('aria-hidden', 'true');
+  const started = performance.now();
+  let previous = started;
+  const travel = Math.max(separation + 24, Math.min(134, stageWidth / 2 - 18));
+  const spins = entries.map((entry, index) => physicalInitialSpin(entry, index === 0 ? -1 : 1));
+  const impacts = [
+    { progress: 0.43, indexes: [0], strength: 1 },
+    { progress: 0.47, indexes: [1], strength: 1 },
+    { progress: 0.73, indexes: [0, 1], strength: 0.48 },
+    { progress: 0.91, indexes: [0, 1], strength: 0.22 }
+  ];
+  let nextImpact = 0;
+
+  const tick = now => {
+    if (token !== diceAnimationToken || !shell.isConnected) return;
+    const progress = Math.min(1, (now - started) / PHYSICAL_PERCENTILE_DURATION);
+    const deltaSeconds = Math.min(0.034, Math.max(0, (now - previous) / 1000));
+    previous = now;
+
+    while (nextImpact < impacts.length && progress >= impacts[nextImpact].progress) {
+      const impact = impacts[nextImpact];
+      impact.indexes.forEach(index => physicalApplyImpact(spins[index], nextImpact, index === 0 ? -1 : 1));
+      physicalPulseImpact(scene, impact.strength);
+      triggerHaptic(nextImpact < 2 ? 'impact' : 'tick');
+      nextImpact += 1;
+    }
+
+    const reveal = progress < 0.86 ? 0 : physicalSmootherStep((progress - 0.86) / 0.12);
+    entries[0].faceOwner.dataset.faceReveal = String(reveal);
+    entries.forEach((entry, index) => {
+      const side = index === 0 ? -1 : 1;
+      const pose = physicalPercentilePose(progress, side, separation, travel, entry.seed, index);
+      physicalAdvanceSpin(spins[index], entry.finalRotation, deltaSeconds, progress, pose);
+      physicalSetPose(entry, pose.x, pose.y, pose.scale, 1);
+      physicalPaintEntry(entry, spins[index].rotation, pose.y * 0.05);
+    });
+
+    if (progress < 1) {
+      requestAnimationFrame(tick);
+      return;
+    }
+
+    physicalSetPercentileSettled(entries, separation);
+    copy.textContent = label;
+    shell.removeAttribute('aria-hidden');
+    shell.classList.remove('rolling');
+    shell.classList.add('settled');
+    shell.setAttribute('aria-label', `${label}: ${value}. ${context.textContent}.`);
+    triggerHaptic(resultHapticForTone(tone));
+  };
+
+  requestAnimationFrame(tick);
+}
+
 animateDiceResult = function animatePhysicalDiceResult(container, value, label, sides = 6, tone = 'neutral', contextLabel = '') {
   if (!container) return;
   const token = ++diceAnimationToken;
@@ -646,9 +799,16 @@ animateDiceResult = function animatePhysicalDiceResult(container, value, label, 
   const scene = shell.querySelector('.result-die-scene');
   const copy = shell.querySelector('.result-die-copy');
   const context = appendPhysicalContext(shell, physicalResultContext(numericSides, contextLabel));
-  const entry = physicalEntry(scene, { sides: numericSides, value }, token);
   scene.classList.add('die-motion-stage');
   container.replaceChildren(shell);
+
+  if (numericSides === 100) {
+    const entries = physicalPercentileEntries(scene, { sides: numericSides, value }, token);
+    animatePhysicalPercentileResult({ shell, scene, copy, context, entries, token, value, label, tone, reduced });
+    return;
+  }
+
+  const entry = physicalEntry(scene, { sides: numericSides, value }, token);
 
   if (reduced) {
     entry.object.dataset.faceReveal = '1';
@@ -676,6 +836,7 @@ animateDiceResult = function animatePhysicalDiceResult(container, value, label, 
 
     while (nextImpact < PHYSICAL_DICE_IMPACTS.length && progress >= PHYSICAL_DICE_IMPACTS[nextImpact]) {
       physicalApplyImpact(spin, nextImpact, direction);
+      physicalPulseImpact(scene, [1, 0.48, 0.22][nextImpact]);
       triggerHaptic(nextImpact === 0 ? 'impact' : 'tick');
       nextImpact += 1;
     }
@@ -913,4 +1074,3 @@ openItemDamageResultSheet = function openItemDamageResultSheetWithPhysicalDice(i
   const resultSides = mode === 'impaired' ? 4 : mode === 'enhanced' ? 12 : (result.rolls?.[0]?.sides || 6);
   animateDiceResult(resultPanel, result.total, 'obrażeń', resultSides, 'success', `${item.name} · ${notation}`);
 };
-

@@ -2281,15 +2281,28 @@ function createResultDie(value, sides, rolling = false) {
         createEl('canvas', { className: 'result-die-canvas percentile-die percentile-die-second', attrs: { 'aria-hidden': 'true' } })
       ]
     : [createEl('canvas', { className: 'result-die-canvas', attrs: { 'aria-hidden': 'true' } })];
+  const visualParts = numericSides === 100
+    ? canvases.map((canvas, index) => createEl('span', {
+        className: `percentile-die-part percentile-die-part-${index === 0 ? 'tens' : 'units'}`,
+        attrs: { 'data-percentile-part': index === 0 ? 'tens' : 'units', 'aria-hidden': 'true' }
+      }, [canvas]))
+    : canvases;
+  const percentileShadows = numericSides === 100
+    ? ['tens', 'units'].map(part => createEl('span', {
+        className: `percentile-die-shadow percentile-die-shadow-${part}`,
+        attrs: { 'data-percentile-part': part, 'aria-hidden': 'true' }
+      }))
+    : [];
   const object = createEl('div', {
     className: `result-die-object${rolling ? ' is-tumbling' : ''}`,
     attrs: { 'data-sides': String(numericSides), 'data-value': String(value) }
   }, [
-    ...canvases,
+    ...visualParts,
+    ...percentileShadows,
     createEl('span', { className: 'result-die-notation', text: `k${numericSides}` }),
     createEl('strong', { className: 'result-die-value', text: rolling ? '' : String(value) })
   ]);
-  const scene = createEl('div', { className: 'result-die-scene' }, [
+  const scene = createEl('div', { className: `result-die-scene${numericSides === 100 ? ' percentile-dice-scene' : ''}` }, [
     object,
     createEl('span', { className: 'result-die-shadow', attrs: { 'aria-hidden': 'true' } })
   ]);

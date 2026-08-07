@@ -138,57 +138,9 @@
   fill: color-mix(in srgb, currentColor 7%, transparent);
 }
 
-.die-icon .percentile-icon-label,
-.die-icon .percentile-icon-label-tens,
-.die-icon .percentile-icon-label-units {
-  fill: currentColor;
-  stroke: var(--color-surface-soft);
-  stroke-width: 1.15px;
-  stroke-linejoin: round;
-  font-family: var(--font-ui);
-  font-size: 4.35px;
-  font-weight: 850;
-  letter-spacing: -.2px;
-  dominant-baseline: central;
-  paint-order: stroke fill;
-}
-
-.die-icon .percentile-icon-label-tens {
-  font-size: 3.75px;
-}
-
 #view-dice .die-button svg[data-die="100"] {
   width: 34px;
   height: 34px;
-}
-
-/* The physical renderer moves the common object. Each percentile canvas gets
-   an explicit coordinate so WebKit does not reuse the legacy centered margins. */
-#view-dice .dice-stage-result-slot .result-die-object[data-sides="100"] {
-  position: relative !important;
-  width: 268px !important;
-  height: 176px !important;
-  display: block !important;
-}
-
-#view-dice .dice-stage-result-slot .result-die-object[data-sides="100"] > canvas.result-die-canvas.percentile-die {
-  position: absolute !important;
-  inset: auto !important;
-  top: 28px !important;
-  right: auto !important;
-  bottom: auto !important;
-  width: 118px !important;
-  height: 118px !important;
-  margin: 0 !important;
-  transform: none !important;
-}
-
-#view-dice .dice-stage-result-slot .result-die-object[data-sides="100"] > canvas.percentile-die-first {
-  left: 0 !important;
-}
-
-#view-dice .dice-stage-result-slot .result-die-object[data-sides="100"] > canvas.percentile-die-second {
-  left: 150px !important;
 }
 
 @media (max-width: 360px) {
@@ -207,20 +159,6 @@
     min-height: 122px;
   }
 
-  #view-dice .dice-stage-result-slot .result-die-object[data-sides="100"] {
-    width: 232px !important;
-    height: 164px !important;
-  }
-
-  #view-dice .dice-stage-result-slot .result-die-object[data-sides="100"] > canvas.result-die-canvas.percentile-die {
-    top: 28px !important;
-    width: 104px !important;
-    height: 104px !important;
-  }
-
-  #view-dice .dice-stage-result-slot .result-die-object[data-sides="100"] > canvas.percentile-die-second {
-    left: 128px !important;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -243,10 +181,4 @@
     opacity: .5;
   }
 
-  .die-icon .percentile-icon-label,
-  .die-icon .percentile-icon-label-tens,
-  .die-icon .percentile-icon-label-units {
-    fill: CanvasText;
-    stroke: Canvas;
-  }
 }
